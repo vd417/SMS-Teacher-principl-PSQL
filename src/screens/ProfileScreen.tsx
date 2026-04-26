@@ -1,0 +1,268 @@
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Colors, Radii, Shadows } from '../theme';
+import { FontFamily } from '../theme/typography';
+import { Avatar, Card } from '../components';
+import { teacher, quickStats } from '../data';
+import type { ProfileStackParamList } from '../navigation/types';
+
+type ProfileNav = NativeStackNavigationProp<ProfileStackParamList, 'ProfileScreen'>;
+
+const MENU_ITEMS = [
+  {
+    icon: 'document-text-outline',
+    label: 'My Payslip',
+    screen: 'PayslipScreen',
+    color: Colors.present,
+  },
+  { icon: 'calendar-outline', label: 'Leave Requests', screen: 'LeaveScreen', color: Colors.coral },
+  { icon: 'settings-outline', label: 'Settings', screen: 'SettingsScreen', color: Colors.blue },
+  {
+    icon: 'shield-checkmark-outline',
+    label: 'Privacy & Security',
+    screen: 'SettingsScreen',
+    color: Colors.teal,
+  },
+  {
+    icon: 'help-circle-outline',
+    label: 'Help & Support',
+    screen: 'SettingsScreen',
+    color: Colors.late,
+  },
+  { icon: 'log-out-outline', label: 'Sign Out', screen: null, color: Colors.absent },
+] as const;
+
+export const ProfileScreen: React.FC = () => {
+  const navigation = useNavigation<ProfileNav>();
+  const insets = useSafeAreaInsets();
+
+  const handleMenuPress = (screen: string | null) => {
+    if (!screen) return;
+    navigation.navigate(screen as keyof ProfileStackParamList);
+  };
+
+  return (
+    <ScrollView
+      style={styles.screen}
+      contentContainerStyle={[styles.scroll, { paddingBottom: 40 }]}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Hero */}
+      <LinearGradient
+        colors={[Colors.primaryDeep, Colors.primary, Colors.primaryBright]}
+        style={[styles.hero, { paddingTop: insets.top + 24 }]}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+      >
+        <Animated.View entering={FadeInDown.delay(50).springify()} style={styles.heroContent}>
+          <Avatar initials={teacher.initials} size={80} backgroundColor="rgba(255,255,255,0.2)" />
+          <Text style={styles.heroName}>{teacher.name}</Text>
+          <Text style={styles.heroTitle}>{teacher.title}</Text>
+          <Text style={styles.heroSchool}>{teacher.school}</Text>
+        </Animated.View>
+
+        {/* Stats row */}
+        <Animated.View entering={FadeInDown.delay(150).springify()} style={styles.heroStats}>
+          {[
+            { label: 'Classes', value: String(quickStats.totalClasses) },
+            { label: 'Students', value: String(quickStats.totalStudents) },
+            { label: 'Since', value: teacher.joined },
+          ].map((s, i) => (
+            <View key={s.label} style={[styles.heroStat, i < 2 && styles.heroStatBorder]}>
+              <Text style={styles.heroStatVal}>{s.value}</Text>
+              <Text style={styles.heroStatLbl}>{s.label}</Text>
+            </View>
+          ))}
+        </Animated.View>
+      </LinearGradient>
+
+      {/* Info Card */}
+      <Animated.View entering={FadeInDown.delay(200).springify()} style={styles.infoSection}>
+        <Text style={styles.sectionTitle}>Contact Info</Text>
+        <Card style={styles.infoCard}>
+          {[
+            { icon: 'mail-outline', label: 'Email', value: teacher.email },
+            { icon: 'call-outline', label: 'Phone', value: teacher.phone },
+            { icon: 'location-outline', label: 'Classroom', value: teacher.classroom },
+            { icon: 'card-outline', label: 'Employee ID', value: teacher.employee },
+          ].map((item) => (
+            <View key={item.label} style={styles.infoRow}>
+              <View style={styles.infoIconWrap}>
+                <Ionicons name={item.icon as never} size={18} color={Colors.primary} />
+              </View>
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>{item.label}</Text>
+                <Text style={styles.infoValue}>{item.value}</Text>
+              </View>
+            </View>
+          ))}
+        </Card>
+      </Animated.View>
+
+      {/* Menu */}
+      <Animated.View entering={FadeInDown.delay(280).springify()} style={styles.menuSection}>
+        <Text style={styles.sectionTitle}>Quick Links</Text>
+        <Card padding={0} style={styles.menuCard}>
+          {MENU_ITEMS.map((item, i) => (
+            <TouchableOpacity
+              key={item.label}
+              style={[styles.menuRow, i < MENU_ITEMS.length - 1 && styles.menuRowBorder]}
+              onPress={() => handleMenuPress(item.screen)}
+              activeOpacity={0.7}
+            >
+              <View style={[styles.menuIconWrap, { backgroundColor: item.color + '20' }]}>
+                <Ionicons name={item.icon as never} size={20} color={item.color} />
+              </View>
+              <Text
+                style={[styles.menuLabel, item.label === 'Sign Out' && { color: Colors.absent }]}
+              >
+                {item.label}
+              </Text>
+              <Ionicons name="chevron-forward" size={18} color={Colors.inkSoft} />
+            </TouchableOpacity>
+          ))}
+        </Card>
+      </Animated.View>
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: Colors.paper,
+  },
+  scroll: {},
+  hero: {
+    paddingHorizontal: 20,
+    paddingBottom: 28,
+  },
+  heroContent: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  heroName: {
+    fontFamily: FontFamily.extraBold,
+    fontSize: 24,
+    color: Colors.white,
+    marginTop: 14,
+  },
+  heroTitle: {
+    fontFamily: FontFamily.medium,
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: 4,
+  },
+  heroSchool: {
+    fontFamily: FontFamily.regular,
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.6)',
+    marginTop: 3,
+  },
+  heroStats: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderRadius: Radii.lg,
+    paddingVertical: 16,
+  },
+  heroStat: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  heroStatBorder: {
+    borderRightWidth: 1,
+    borderRightColor: 'rgba(255,255,255,0.2)',
+  },
+  heroStatVal: {
+    fontFamily: FontFamily.extraBold,
+    fontSize: 18,
+    color: Colors.white,
+  },
+  heroStatLbl: {
+    fontFamily: FontFamily.regular,
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.65)',
+    marginTop: 3,
+  },
+  infoSection: {
+    paddingHorizontal: 20,
+    paddingTop: 28,
+  },
+  sectionTitle: {
+    fontFamily: FontFamily.bold,
+    fontSize: 16,
+    color: Colors.ink,
+    marginBottom: 12,
+  },
+  infoCard: {
+    padding: 0,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.ruleSoft,
+  },
+  infoIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: Radii.sm,
+    backgroundColor: Colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  infoContent: {
+    flex: 1,
+  },
+  infoLabel: {
+    fontFamily: FontFamily.regular,
+    fontSize: 12,
+    color: Colors.inkMuted,
+  },
+  infoValue: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 14,
+    color: Colors.ink,
+    marginTop: 2,
+  },
+  menuSection: {
+    paddingHorizontal: 20,
+    paddingTop: 24,
+  },
+  menuCard: {
+    overflow: 'hidden',
+  },
+  menuRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  menuRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.ruleSoft,
+  },
+  menuIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: Radii.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  menuLabel: {
+    fontFamily: FontFamily.medium,
+    fontSize: 15,
+    color: Colors.ink,
+    flex: 1,
+  },
+});

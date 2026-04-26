@@ -1,0 +1,62 @@
+import type { NavigatorScreenParams } from '@react-navigation/native';
+
+// Main tab navigator params
+export type MainTabParamList = {
+  Home: undefined;
+  Calendar: undefined;
+  Classes: undefined;
+  Inbox: undefined;
+  Profile: undefined;
+};
+
+// Home stack params
+export type HomeStackParamList = {
+  HomeScreen: undefined;
+  AttendancePickClass: undefined;
+  AttendanceScreen: { classId: string };
+  StudentScreen: { studentId: string };
+  ExamsScreen: undefined;
+  ExamDetail: { examId: string };
+  ExamNew: undefined;
+  GradesScreen: undefined;
+  AssignmentsScreen: undefined;
+  AnnouncementsScreen: undefined;
+  MoreScreen: undefined;
+  LibraryScreen: undefined;
+  PayslipScreen: undefined;
+  LeaveScreen: undefined;
+};
+
+// Classes stack params
+export type ClassesStackParamList = {
+  ClassesScreen: undefined;
+  ClassDetailScreen: { classId: string };
+  StudentScreen: { studentId: string };
+  AttendanceScreen: { classId: string };
+};
+
+// Calendar stack params
+export type CalendarStackParamList = {
+  CalendarScreen: undefined;
+  ScheduleScreen: undefined;
+};
+
+// Inbox stack params
+export type InboxStackParamList = {
+  ChatScreen: undefined;
+  ChatThreadScreen: { contactId: string };
+};
+
+// Profile stack params
+export type ProfileStackParamList = {
+  ProfileScreen: undefined;
+  SettingsScreen: undefined;
+  PayslipScreen: undefined;
+  LeaveScreen: undefined;
+};
+
+// Root navigator
+export type RootStackParamList = {
+  Login: undefined;
+  Main: NavigatorScreenParams<MainTabParamList>;
+};

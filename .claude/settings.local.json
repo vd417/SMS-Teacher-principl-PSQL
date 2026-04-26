@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:api.anthropic.com)",
+      "Bash(file webfetch-1777235585500-gbptj8.bin)",
+      "Bash(python3 -c ' *)",
+      "Bash(gunzip -c webfetch-1777235585500-gbptj8.bin)",
+      "Bash(mkdir -p \"C:\\\\Users\\\\Manish Goud\\\\.claude\\\\projects\\\\D--SMS-Project-SMS-Teacher-App\\\\design-bundle\")",
+      "Bash(tar -xzf \"../9c2de0d3-79d1-4f29-b2e8-3dd1e25ff2c5/tool-results/webfetch-1777235585500-gbptj8.bin\")",
+      "Bash(npm --version)",
+      "Bash(npx create-expo-app@latest . --template blank-typescript)",
+      "Bash(mkdir -p /tmp/expo-temp)",
+      "Bash(npx create-expo-app@latest /tmp/expo-temp --template blank-typescript)",
+      "Bash(git init *)",
+      "Bash(npx husky *)",
+      "Bash(node -e \"const e = require\\('eslint'\\); console.log\\(e.Linter.version || e.linter.version || 'v9+'\\)\")",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(npx eslint *)"
+    ]
+  }
+}
