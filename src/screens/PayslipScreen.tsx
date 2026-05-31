@@ -7,12 +7,16 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { ScreenHeader, Pill, Card } from '../components';
-import { payslips, teacher } from '../data';
+import { usePayslips } from '@/features/payroll/hooks';
+import { Skeleton } from '@/ui/state/Skeleton';
+import { ErrorState } from '@/ui/state/ErrorState';
+import { EmptyState } from '@/ui/state/EmptyState';
 
 export const PayslipScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
+  const { data: payslips = [], isLoading, isError, refetch } = usePayslips();
+
   const latest = payslips[payslips.length - 1];
-  const paid = payslips.filter((p) => p.status === 'paid');
 
   return (
     <ScrollView
@@ -24,102 +28,117 @@ export const PayslipScreen: React.FC = () => {
         <ScreenHeader title="My Payslip" subtitle="Salary details" showBack />
       </Animated.View>
 
-      {/* Latest Payslip Card */}
-      <Animated.View entering={FadeInDown.delay(100).springify()}>
-        <LinearGradient
-          colors={[Colors.primaryDeep, Colors.primary]}
-          style={styles.heroCard}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        >
-          <View style={styles.heroTop}>
-            <View>
-              <Text style={styles.heroMonth}>
-                {latest.month} {latest.year}
-              </Text>
-              <Text style={styles.heroLabel}>Net Salary</Text>
-            </View>
-            <Pill
-              label={latest.status === 'paid' ? 'Paid' : 'Pending'}
-              color={latest.status === 'paid' ? Colors.present : Colors.late}
-              backgroundColor="rgba(255,255,255,0.15)"
-            />
-          </View>
-          <Text style={styles.heroAmount}>${latest.net.toLocaleString()}</Text>
-          <View style={styles.heroBreakdown}>
-            <View style={styles.heroBreakdownItem}>
-              <Text style={styles.heroBreakdownLabel}>Gross</Text>
-              <Text style={styles.heroBreakdownVal}>${latest.gross.toLocaleString()}</Text>
-            </View>
-            <View style={styles.heroBreakdownDivider} />
-            <View style={styles.heroBreakdownItem}>
-              <Text style={styles.heroBreakdownLabel}>Deductions</Text>
-              <Text style={styles.heroBreakdownVal}>-${latest.deductions.toLocaleString()}</Text>
-            </View>
-          </View>
-        </LinearGradient>
-      </Animated.View>
-
-      {/* Details */}
-      <Animated.View entering={FadeInDown.delay(160).springify()}>
-        <Text style={styles.sectionTitle}>Breakdown</Text>
-        <Card padding={0}>
-          {[
-            { label: 'Basic Salary', value: `$${(latest.gross * 0.6).toFixed(0)}` },
-            { label: 'HRA', value: `$${(latest.gross * 0.2).toFixed(0)}` },
-            { label: 'Special Allowance', value: `$${(latest.gross * 0.1).toFixed(0)}` },
-            { label: 'Transport', value: `$${(latest.gross * 0.1).toFixed(0)}` },
-            { label: 'Provident Fund', value: `-$${(latest.deductions * 0.5).toFixed(0)}` },
-            { label: 'Tax Deduction', value: `-$${(latest.deductions * 0.3).toFixed(0)}` },
-            { label: 'Insurance', value: `-$${(latest.deductions * 0.2).toFixed(0)}` },
-          ].map((item, i, arr) => (
-            <View
-              key={item.label}
-              style={[styles.detailRow, i < arr.length - 1 && styles.detailBorder]}
+      {isLoading ? (
+        <>
+          <Skeleton height={160} radius={16} />
+          <Skeleton height={200} radius={12} />
+        </>
+      ) : isError ? (
+        <ErrorState onRetry={refetch} />
+      ) : payslips.length === 0 || !latest ? (
+        <EmptyState label="No payslips available" />
+      ) : (
+        <>
+          {/* Latest Payslip Card */}
+          <Animated.View entering={FadeInDown.delay(100).springify()}>
+            <LinearGradient
+              colors={[Colors.primaryDeep, Colors.primary]}
+              style={styles.heroCard}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
             >
-              <Text style={styles.detailLabel}>{item.label}</Text>
-              <Text
-                style={[styles.detailValue, item.value.startsWith('-') && styles.detailValueRed]}
-              >
-                {item.value}
-              </Text>
-            </View>
-          ))}
-        </Card>
-      </Animated.View>
-
-      {/* History */}
-      <Animated.View entering={FadeInDown.delay(220).springify()}>
-        <Text style={styles.sectionTitle}>Payment History</Text>
-        {payslips.map((p, i) => (
-          <Animated.View
-            key={`${p.month}-${p.year}`}
-            entering={FadeInDown.delay(250 + i * 40).springify()}
-          >
-            <View style={styles.historyRow}>
-              <View style={styles.historyMonthBadge}>
-                <Text style={styles.historyMonthText}>{p.month.slice(0, 3)}</Text>
-                <Text style={styles.historyYearText}>{p.year}</Text>
+              <View style={styles.heroTop}>
+                <View>
+                  <Text style={styles.heroMonth}>
+                    {latest.month} {latest.year}
+                  </Text>
+                  <Text style={styles.heroLabel}>Net Salary</Text>
+                </View>
+                <Pill
+                  label={latest.status === 'paid' ? 'Paid' : 'Pending'}
+                  color={latest.status === 'paid' ? Colors.present : Colors.late}
+                  backgroundColor="rgba(255,255,255,0.15)"
+                />
               </View>
-              <View style={styles.historyInfo}>
-                <Text style={styles.historyNet}>${p.net.toLocaleString()}</Text>
-                <Text style={styles.historyGross}>Gross ${p.gross.toLocaleString()}</Text>
+              <Text style={styles.heroAmount}>${latest.net.toLocaleString()}</Text>
+              <View style={styles.heroBreakdown}>
+                <View style={styles.heroBreakdownItem}>
+                  <Text style={styles.heroBreakdownLabel}>Gross</Text>
+                  <Text style={styles.heroBreakdownVal}>${latest.gross.toLocaleString()}</Text>
+                </View>
+                <View style={styles.heroBreakdownDivider} />
+                <View style={styles.heroBreakdownItem}>
+                  <Text style={styles.heroBreakdownLabel}>Deductions</Text>
+                  <Text style={styles.heroBreakdownVal}>
+                    -${latest.deductions.toLocaleString()}
+                  </Text>
+                </View>
               </View>
-              <Pill
-                label={p.status === 'paid' ? 'Paid' : 'Pending'}
-                color={p.status === 'paid' ? Colors.present : Colors.late}
-                backgroundColor={p.status === 'paid' ? Colors.presentSoft : Colors.lateSoft}
-                size="sm"
-              />
-              {p.status === 'paid' && (
-                <TouchableOpacity style={styles.downloadBtn}>
-                  <Ionicons name="download-outline" size={16} color={Colors.primary} />
-                </TouchableOpacity>
-              )}
-            </View>
+            </LinearGradient>
           </Animated.View>
-        ))}
-      </Animated.View>
+
+          {/* Details */}
+          <Animated.View entering={FadeInDown.delay(160).springify()}>
+            <Text style={styles.sectionTitle}>Breakdown</Text>
+            <Card padding={0}>
+              {[
+                { label: 'Basic Salary', value: `$${(latest.gross * 0.6).toFixed(0)}` },
+                { label: 'HRA', value: `$${(latest.gross * 0.2).toFixed(0)}` },
+                { label: 'Special Allowance', value: `$${(latest.gross * 0.1).toFixed(0)}` },
+                { label: 'Transport', value: `$${(latest.gross * 0.1).toFixed(0)}` },
+                { label: 'Provident Fund', value: `-$${(latest.deductions * 0.5).toFixed(0)}` },
+                { label: 'Tax Deduction', value: `-$${(latest.deductions * 0.3).toFixed(0)}` },
+                { label: 'Insurance', value: `-$${(latest.deductions * 0.2).toFixed(0)}` },
+              ].map((item, i, arr) => (
+                <View
+                  key={item.label}
+                  style={[styles.detailRow, i < arr.length - 1 && styles.detailBorder]}
+                >
+                  <Text style={styles.detailLabel}>{item.label}</Text>
+                  <Text
+                    style={[
+                      styles.detailValue,
+                      item.value.startsWith('-') && styles.detailValueRed,
+                    ]}
+                  >
+                    {item.value}
+                  </Text>
+                </View>
+              ))}
+            </Card>
+          </Animated.View>
+
+          {/* History */}
+          <Animated.View entering={FadeInDown.delay(220).springify()}>
+            <Text style={styles.sectionTitle}>Payment History</Text>
+            {payslips.map((p, i) => (
+              <Animated.View key={p.id} entering={FadeInDown.delay(250 + i * 40).springify()}>
+                <View style={styles.historyRow}>
+                  <View style={styles.historyMonthBadge}>
+                    <Text style={styles.historyMonthText}>{p.month.slice(0, 3)}</Text>
+                    <Text style={styles.historyYearText}>{p.year}</Text>
+                  </View>
+                  <View style={styles.historyInfo}>
+                    <Text style={styles.historyNet}>${p.net.toLocaleString()}</Text>
+                    <Text style={styles.historyGross}>Gross ${p.gross.toLocaleString()}</Text>
+                  </View>
+                  <Pill
+                    label={p.status === 'paid' ? 'Paid' : 'Pending'}
+                    color={p.status === 'paid' ? Colors.present : Colors.late}
+                    backgroundColor={p.status === 'paid' ? Colors.presentSoft : Colors.lateSoft}
+                    size="sm"
+                  />
+                  {p.status === 'paid' && (
+                    <TouchableOpacity style={styles.downloadBtn}>
+                      <Ionicons name="download-outline" size={16} color={Colors.primary} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </Animated.View>
+            ))}
+          </Animated.View>
+        </>
+      )}
     </ScrollView>
   );
 };
