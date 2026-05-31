@@ -15,8 +15,9 @@ export async function createStore(): Promise<Store> {
   const tableNames = Object.keys(seed).filter((k) => k !== 'session') as TableName[];
   const tables = {} as Omit<SeedShape, 'session'>;
   for (const name of tableNames) {
-    // @ts-expect-error indexed hydrate
-    tables[name] = await readJson(`${STORAGE_PREFIX}${name}`, seed[name]);
+    // Clone the seed fallback so mock writes never mutate the shared seed constant.
+    const fallback = JSON.parse(JSON.stringify(seed[name]));
+    tables[name] = await readJson(`${STORAGE_PREFIX}${name}`, fallback);
   }
   let counter = 0;
   return {
