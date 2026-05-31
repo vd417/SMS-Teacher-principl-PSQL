@@ -15,5 +15,6 @@ export function useClass(id: string) {
   return useQuery({
     queryKey: queryKeys.class(tenantId, id),
     queryFn: () => repos.classes.get(id),
+    enabled: id !== '',
   });
 }

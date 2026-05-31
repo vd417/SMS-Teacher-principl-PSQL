@@ -9,6 +9,7 @@ export function useStudentsByClass(classId: string) {
   return useQuery({
     queryKey: queryKeys.studentsByClass(tenantId, classId),
     queryFn: () => repos.students.listByClass(classId),
+    enabled: classId !== '',
   });
 }
 
@@ -18,5 +19,6 @@ export function useStudent(id: string) {
   return useQuery({
     queryKey: queryKeys.student(tenantId, id),
     queryFn: () => repos.students.get(id),
+    enabled: id !== '',
   });
 }

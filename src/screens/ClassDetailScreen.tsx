@@ -8,7 +8,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
-import { Avatar, Pill, ScreenHeader } from '../components';
+import { Avatar, Pill } from '../components';
 import { useClass } from '@/features/classes/hooks';
 import { useStudentsByClass } from '@/features/students/hooks';
 import { deriveColorSet } from '@/theme/derive';
