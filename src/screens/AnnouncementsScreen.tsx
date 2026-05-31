@@ -1,13 +1,16 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { ScreenHeader, Pill } from '../components';
-import { announcements } from '../data';
-import type { AnnouncementType } from '../types';
+import { useAnnouncements } from '@/features/announcements/hooks';
+import { Skeleton } from '@/ui/state/Skeleton';
+import { ErrorState } from '@/ui/state/ErrorState';
+import { EmptyState } from '@/ui/state/EmptyState';
+import type { AnnouncementType } from '@/data/domain';
 
 const TYPE_CONFIG: Record<AnnouncementType, { color: string; soft: string; icon: string }> = {
   info: { color: Colors.blue, soft: Colors.blueSoft, icon: 'information-circle' },
@@ -18,6 +21,7 @@ const TYPE_CONFIG: Record<AnnouncementType, { color: string; soft: string; icon:
 
 export const AnnouncementsScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
+  const { data: announcements = [], isLoading, isError, refetch } = useAnnouncements();
 
   const pinned = announcements.filter((a) => a.pinned);
   const rest = announcements.filter((a) => !a.pinned);
@@ -32,16 +36,63 @@ export const AnnouncementsScreen: React.FC = () => {
         <ScreenHeader title="Announcements" subtitle={`${announcements.length} total`} showBack />
       </Animated.View>
 
-      {pinned.length > 0 && (
+      {isLoading ? (
         <>
-          <Animated.View entering={FadeInDown.delay(100).springify()}>
-            <Text style={styles.sectionLabel}>📌 Pinned</Text>
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} height={90} radius={12} />
+          ))}
+        </>
+      ) : isError ? (
+        <ErrorState onRetry={refetch} />
+      ) : announcements.length === 0 ? (
+        <EmptyState label="No announcements" />
+      ) : (
+        <>
+          {pinned.length > 0 && (
+            <>
+              <Animated.View entering={FadeInDown.delay(100).springify()}>
+                <Text style={styles.sectionLabel}>📌 Pinned</Text>
+              </Animated.View>
+              {pinned.map((ann, i) => {
+                const cfg = TYPE_CONFIG[ann.type];
+                return (
+                  <Animated.View key={ann.id} entering={FadeInDown.delay(130 + i * 50).springify()}>
+                    <View style={[styles.annCard, styles.pinnedCard]}>
+                      <View style={[styles.typeIcon, { backgroundColor: cfg.soft }]}>
+                        <Ionicons name={cfg.icon as never} size={20} color={cfg.color} />
+                      </View>
+                      <View style={styles.annContent}>
+                        <View style={styles.annHeader}>
+                          <Text style={styles.annTitle}>{ann.title}</Text>
+                          <Pill
+                            label={ann.type.charAt(0).toUpperCase() + ann.type.slice(1)}
+                            color={cfg.color}
+                            backgroundColor={cfg.soft}
+                            size="sm"
+                          />
+                        </View>
+                        <Text style={styles.annBody} numberOfLines={2}>
+                          {ann.body}
+                        </Text>
+                        <Text style={styles.annMeta}>
+                          {ann.from} · {ann.date}
+                        </Text>
+                      </View>
+                    </View>
+                  </Animated.View>
+                );
+              })}
+            </>
+          )}
+
+          <Animated.View entering={FadeInDown.delay(250).springify()}>
+            <Text style={styles.sectionLabel}>Recent</Text>
           </Animated.View>
-          {pinned.map((ann, i) => {
+          {rest.map((ann, i) => {
             const cfg = TYPE_CONFIG[ann.type];
             return (
-              <Animated.View key={ann.id} entering={FadeInDown.delay(130 + i * 50).springify()}>
-                <View style={[styles.annCard, styles.pinnedCard]}>
+              <Animated.View key={ann.id} entering={FadeInDown.delay(280 + i * 50).springify()}>
+                <View style={styles.annCard}>
                   <View style={[styles.typeIcon, { backgroundColor: cfg.soft }]}>
                     <Ionicons name={cfg.icon as never} size={20} color={cfg.color} />
                   </View>
@@ -68,39 +119,6 @@ export const AnnouncementsScreen: React.FC = () => {
           })}
         </>
       )}
-
-      <Animated.View entering={FadeInDown.delay(250).springify()}>
-        <Text style={styles.sectionLabel}>Recent</Text>
-      </Animated.View>
-      {rest.map((ann, i) => {
-        const cfg = TYPE_CONFIG[ann.type];
-        return (
-          <Animated.View key={ann.id} entering={FadeInDown.delay(280 + i * 50).springify()}>
-            <View style={styles.annCard}>
-              <View style={[styles.typeIcon, { backgroundColor: cfg.soft }]}>
-                <Ionicons name={cfg.icon as never} size={20} color={cfg.color} />
-              </View>
-              <View style={styles.annContent}>
-                <View style={styles.annHeader}>
-                  <Text style={styles.annTitle}>{ann.title}</Text>
-                  <Pill
-                    label={ann.type.charAt(0).toUpperCase() + ann.type.slice(1)}
-                    color={cfg.color}
-                    backgroundColor={cfg.soft}
-                    size="sm"
-                  />
-                </View>
-                <Text style={styles.annBody} numberOfLines={2}>
-                  {ann.body}
-                </Text>
-                <Text style={styles.annMeta}>
-                  {ann.from} · {ann.date}
-                </Text>
-              </View>
-            </View>
-          </Animated.View>
-        );
-      })}
     </ScrollView>
   );
 };

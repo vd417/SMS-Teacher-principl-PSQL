@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,8 +8,13 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
-import { Avatar, Pill, ScreenHeader } from '../components';
-import { classes, students } from '../data';
+import { Avatar, Pill } from '../components';
+import { useClass } from '@/features/classes/hooks';
+import { useStudentsByClass } from '@/features/students/hooks';
+import { deriveColorSet } from '@/theme/derive';
+import { Skeleton } from '@/ui/state/Skeleton';
+import { ErrorState } from '@/ui/state/ErrorState';
+import { EmptyState } from '@/ui/state/EmptyState';
 import type { ClassesStackParamList } from '../navigation/types';
 
 type ClassDetailNav = NativeStackNavigationProp<ClassesStackParamList, 'ClassDetailScreen'>;
@@ -21,8 +26,46 @@ export const ClassDetailScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { classId } = route.params;
 
-  const cls = classes.find((c) => c.id === classId)!;
-  const classStudents = students.filter((s) => s.classId === classId);
+  const {
+    data: cls,
+    isLoading: clsLoading,
+    isError: clsError,
+    refetch: refetchCls,
+  } = useClass(classId);
+  const {
+    data: classStudents = [],
+    isLoading: studentsLoading,
+    isError: studentsError,
+    refetch: refetchStudents,
+  } = useStudentsByClass(classId);
+
+  const isLoading = clsLoading || studentsLoading;
+  const isError = clsError || studentsError;
+
+  if (isLoading) {
+    return (
+      <View style={[styles.screen, { paddingTop: insets.top + 16, paddingHorizontal: 20 }]}>
+        <Skeleton height={200} />
+        <Skeleton height={60} />
+        <Skeleton height={60} />
+        <Skeleton height={60} />
+      </View>
+    );
+  }
+
+  if (isError || !cls) {
+    return (
+      <ErrorState
+        message="Could not load class data."
+        onRetry={() => {
+          void refetchCls();
+          void refetchStudents();
+        }}
+      />
+    );
+  }
+
+  const cs = deriveColorSet(cls.id);
 
   return (
     <ScrollView
@@ -32,7 +75,7 @@ export const ClassDetailScreen: React.FC = () => {
     >
       {/* Hero */}
       <LinearGradient
-        colors={[cls.color, cls.colorSoft]}
+        colors={[cs.color, cs.colorSoft]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={[styles.hero, { paddingTop: insets.top + 16 }]}
@@ -84,57 +127,61 @@ export const ClassDetailScreen: React.FC = () => {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Students ({classStudents.length})</Text>
         </View>
-        {classStudents.map((student, i) => (
-          <Animated.View key={student.id} entering={FadeInDown.delay(i * 40).springify()}>
-            <TouchableOpacity
-              style={styles.studentRow}
-              onPress={() => navigation.navigate('StudentScreen', { studentId: student.id })}
-            >
-              <Avatar initials={student.initials} size={44} backgroundColor={cls.color} />
-              <View style={styles.studentInfo}>
-                <Text style={styles.studentName}>{student.name}</Text>
-                <Text style={styles.studentRoll}>Roll #{student.roll}</Text>
-              </View>
-              <View style={styles.studentRight}>
-                <View
-                  style={[
-                    styles.attBadge,
-                    {
-                      backgroundColor:
-                        student.attendance >= 90
-                          ? Colors.presentSoft
-                          : student.attendance >= 75
-                            ? Colors.lateSoft
-                            : Colors.absentSoft,
-                    },
-                  ]}
-                >
-                  <Text
+        {classStudents.length === 0 ? (
+          <EmptyState label="No students in this class" />
+        ) : (
+          classStudents.map((student, i) => (
+            <Animated.View key={student.id} entering={FadeInDown.delay(i * 40).springify()}>
+              <TouchableOpacity
+                style={styles.studentRow}
+                onPress={() => navigation.navigate('StudentScreen', { studentId: student.id })}
+              >
+                <Avatar initials={student.initials} size={44} backgroundColor={cs.color} />
+                <View style={styles.studentInfo}>
+                  <Text style={styles.studentName}>{student.name}</Text>
+                  <Text style={styles.studentRoll}>Roll #{student.roll}</Text>
+                </View>
+                <View style={styles.studentRight}>
+                  <View
                     style={[
-                      styles.attText,
+                      styles.attBadge,
                       {
-                        color:
+                        backgroundColor:
                           student.attendance >= 90
-                            ? Colors.present
+                            ? Colors.presentSoft
                             : student.attendance >= 75
-                              ? Colors.late
-                              : Colors.absent,
+                              ? Colors.lateSoft
+                              : Colors.absentSoft,
                       },
                     ]}
                   >
-                    {student.attendance}%
-                  </Text>
+                    <Text
+                      style={[
+                        styles.attText,
+                        {
+                          color:
+                            student.attendance >= 90
+                              ? Colors.present
+                              : student.attendance >= 75
+                                ? Colors.late
+                                : Colors.absent,
+                        },
+                      ]}
+                    >
+                      {student.attendance}%
+                    </Text>
+                  </View>
+                  <Pill
+                    label={student.grade}
+                    color={cs.color}
+                    backgroundColor={cs.colorSoft}
+                    size="sm"
+                  />
                 </View>
-                <Pill
-                  label={student.grade}
-                  color={cls.color}
-                  backgroundColor={cls.colorSoft}
-                  size="sm"
-                />
-              </View>
-            </TouchableOpacity>
-          </Animated.View>
-        ))}
+              </TouchableOpacity>
+            </Animated.View>
+          ))
+        )}
       </View>
     </ScrollView>
   );

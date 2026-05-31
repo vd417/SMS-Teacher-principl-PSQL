@@ -16,26 +16,20 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
-  withTiming,
-  withDelay,
   FadeInDown,
 } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { useNavigation } from '@react-navigation/native';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
-import type { RootStackParamList } from '../navigation/types';
-
-type LoginNav = NativeStackNavigationProp<RootStackParamList, 'Login'>;
+import { useLogin } from '@/features/auth/hooks';
 
 export const LoginScreen: React.FC = () => {
-  const navigation = useNavigation<LoginNav>();
   const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('aanya.k@westbrook.edu');
   const [password, setPassword] = useState('password123');
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
+
+  const login = useLogin();
 
   const btnScale = useSharedValue(1);
   const btnStyle = useAnimatedStyle(() => ({
@@ -43,14 +37,10 @@ export const LoginScreen: React.FC = () => {
   }));
 
   const handleLogin = () => {
-    setLoading(true);
     btnScale.value = withSpring(0.96, {}, () => {
       btnScale.value = withSpring(1);
     });
-    setTimeout(() => {
-      setLoading(false);
-      (navigation as any).replace('Main');
-    }, 1200);
+    login.mutate({ email, password });
   };
 
   return (
@@ -148,12 +138,12 @@ export const LoginScreen: React.FC = () => {
             {/* Sign In Button */}
             <Animated.View style={btnStyle}>
               <TouchableOpacity
-                style={[styles.signInBtn, loading && styles.signInBtnLoading]}
+                style={[styles.signInBtn, login.isPending && styles.signInBtnLoading]}
                 onPress={handleLogin}
                 activeOpacity={0.9}
-                disabled={loading}
+                disabled={login.isPending}
               >
-                {loading ? (
+                {login.isPending ? (
                   <Text style={styles.signInBtnText}>Signing in...</Text>
                 ) : (
                   <>

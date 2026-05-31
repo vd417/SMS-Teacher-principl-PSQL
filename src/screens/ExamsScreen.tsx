@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -8,8 +15,9 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { ScreenHeader, Pill } from '../components';
-import { exams } from '../data';
-import type { ExamStatus } from '../types';
+import { useExams } from '../features/exams/hooks';
+import { deriveColorSet } from '../theme/derive';
+import type { ExamStatus } from '../data/domain';
 import type { HomeStackParamList } from '../navigation/types';
 
 type ExamsNav = NativeStackNavigationProp<HomeStackParamList, 'ExamsScreen'>;
@@ -43,6 +51,7 @@ export const ExamsScreen: React.FC = () => {
   const navigation = useNavigation<ExamsNav>();
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<ExamStatus | 'all'>('all');
+  const { data: exams = [], isLoading, isError } = useExams();
 
   const filtered = filter === 'all' ? exams : exams.filter((e) => e.status === filter);
 
@@ -88,51 +97,72 @@ export const ExamsScreen: React.FC = () => {
         </ScrollView>
       </Animated.View>
 
-      {filtered.map((exam, i) => (
-        <Animated.View key={exam.id} entering={FadeInDown.delay(140 + i * 60).springify()}>
-          <TouchableOpacity
-            style={styles.examCard}
-            onPress={() => navigation.navigate('ExamDetail', { examId: exam.id })}
-            activeOpacity={0.85}
-          >
-            <View style={[styles.examColorBar, { backgroundColor: exam.color }]} />
-            <View style={styles.examContent}>
-              <View style={styles.examHeader}>
-                <Text style={styles.examTitle} numberOfLines={1}>
-                  {exam.title}
+      {isLoading && (
+        <View style={styles.centered}>
+          <ActivityIndicator color={Colors.primary} />
+        </View>
+      )}
+
+      {isError && (
+        <View style={styles.centered}>
+          <Text style={styles.errorText}>Failed to load exams.</Text>
+        </View>
+      )}
+
+      {!isLoading && !isError && filtered.length === 0 && (
+        <View style={styles.centered}>
+          <Text style={styles.emptyText}>No exams found.</Text>
+        </View>
+      )}
+
+      {filtered.map((exam, i) => {
+        const { color } = deriveColorSet(exam.id);
+        return (
+          <Animated.View key={exam.id} entering={FadeInDown.delay(140 + i * 60).springify()}>
+            <TouchableOpacity
+              style={styles.examCard}
+              onPress={() => navigation.navigate('ExamDetail', { examId: exam.id })}
+              activeOpacity={0.85}
+            >
+              <View style={[styles.examColorBar, { backgroundColor: color }]} />
+              <View style={styles.examContent}>
+                <View style={styles.examHeader}>
+                  <Text style={styles.examTitle} numberOfLines={1}>
+                    {exam.title}
+                  </Text>
+                  <Pill
+                    label={STATUS_LABELS[exam.status]}
+                    color={STATUS_COLORS[exam.status]}
+                    backgroundColor={STATUS_SOFT[exam.status]}
+                    size="sm"
+                  />
+                </View>
+                <Text style={styles.examClass}>
+                  {exam.className} · {exam.subject}
                 </Text>
-                <Pill
-                  label={STATUS_LABELS[exam.status]}
-                  color={STATUS_COLORS[exam.status]}
-                  backgroundColor={STATUS_SOFT[exam.status]}
-                  size="sm"
-                />
-              </View>
-              <Text style={styles.examClass}>
-                {exam.className} · {exam.subject}
-              </Text>
-              <View style={styles.examMeta}>
-                <View style={styles.metaItem}>
-                  <Ionicons name="calendar-outline" size={13} color={Colors.inkMuted} />
-                  <Text style={styles.metaText}>{exam.date}</Text>
-                </View>
-                <View style={styles.metaItem}>
-                  <Ionicons name="time-outline" size={13} color={Colors.inkMuted} />
-                  <Text style={styles.metaText}>{exam.time}</Text>
-                </View>
-                <View style={styles.metaItem}>
-                  <Ionicons name="hourglass-outline" size={13} color={Colors.inkMuted} />
-                  <Text style={styles.metaText}>{exam.duration}m</Text>
-                </View>
-                <View style={styles.metaItem}>
-                  <Ionicons name="checkmark-circle-outline" size={13} color={Colors.inkMuted} />
-                  <Text style={styles.metaText}>{exam.maxMarks} marks</Text>
+                <View style={styles.examMeta}>
+                  <View style={styles.metaItem}>
+                    <Ionicons name="calendar-outline" size={13} color={Colors.inkMuted} />
+                    <Text style={styles.metaText}>{exam.date}</Text>
+                  </View>
+                  <View style={styles.metaItem}>
+                    <Ionicons name="time-outline" size={13} color={Colors.inkMuted} />
+                    <Text style={styles.metaText}>{exam.time}</Text>
+                  </View>
+                  <View style={styles.metaItem}>
+                    <Ionicons name="hourglass-outline" size={13} color={Colors.inkMuted} />
+                    <Text style={styles.metaText}>{exam.duration}m</Text>
+                  </View>
+                  <View style={styles.metaItem}>
+                    <Ionicons name="checkmark-circle-outline" size={13} color={Colors.inkMuted} />
+                    <Text style={styles.metaText}>{exam.maxMarks} marks</Text>
+                  </View>
                 </View>
               </View>
-            </View>
-          </TouchableOpacity>
-        </Animated.View>
-      ))}
+            </TouchableOpacity>
+          </Animated.View>
+        );
+      })}
     </ScrollView>
   );
 };
@@ -166,6 +196,9 @@ const styles = StyleSheet.create({
   filterChipActive: { backgroundColor: Colors.primary },
   filterLabel: { fontFamily: FontFamily.semiBold, fontSize: 13, color: Colors.inkMuted },
   filterLabelActive: { color: Colors.white },
+  centered: { paddingVertical: 40, alignItems: 'center' },
+  errorText: { fontFamily: FontFamily.regular, fontSize: 14, color: Colors.absent },
+  emptyText: { fontFamily: FontFamily.regular, fontSize: 14, color: Colors.inkMuted },
   examCard: {
     flexDirection: 'row',
     backgroundColor: Colors.card,

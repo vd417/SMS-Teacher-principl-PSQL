@@ -8,7 +8,11 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { Avatar, Card, Donut, Pill } from '../components';
-import { students, classes } from '../data';
+import { useStudent } from '@/features/students/hooks';
+import { useClass } from '@/features/classes/hooks';
+import { deriveColorSet } from '@/theme/derive';
+import { Skeleton } from '@/ui/state/Skeleton';
+import { ErrorState } from '@/ui/state/ErrorState';
 import type { HomeStackParamList } from '../navigation/types';
 
 type StudentRoute = RouteProp<HomeStackParamList, 'StudentScreen'>;
@@ -19,8 +23,45 @@ export const StudentScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { studentId } = route.params;
 
-  const student = students.find((s) => s.id === studentId)!;
-  const cls = classes.find((c) => c.id === student.classId)!;
+  const {
+    data: student,
+    isLoading: studentLoading,
+    isError: studentError,
+    refetch: refetchStudent,
+  } = useStudent(studentId);
+  const {
+    data: cls,
+    isLoading: clsLoading,
+    isError: clsError,
+    refetch: refetchCls,
+  } = useClass(student?.classId ?? '');
+
+  const isLoading = studentLoading || clsLoading;
+  const isError = studentError || clsError;
+
+  if (isLoading) {
+    return (
+      <View style={[styles.screen, { paddingTop: insets.top + 16, paddingHorizontal: 20 }]}>
+        <Skeleton height={200} />
+        <Skeleton height={100} />
+        <Skeleton height={160} />
+      </View>
+    );
+  }
+
+  if (isError || !student || !cls) {
+    return (
+      <ErrorState
+        message="Could not load student data."
+        onRetry={() => {
+          void refetchStudent();
+          void refetchCls();
+        }}
+      />
+    );
+  }
+
+  const cs = deriveColorSet(cls.id);
 
   return (
     <ScrollView
@@ -29,7 +70,7 @@ export const StudentScreen: React.FC = () => {
       showsVerticalScrollIndicator={false}
     >
       <LinearGradient
-        colors={[cls.color, cls.colorSoft]}
+        colors={[cs.color, cs.colorSoft]}
         style={[styles.hero, { paddingTop: insets.top + 16 }]}
       >
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -42,7 +83,7 @@ export const StudentScreen: React.FC = () => {
         </Text>
         <Pill
           label={`Grade: ${student.grade}`}
-          color={cls.color}
+          color={cs.color}
           backgroundColor="rgba(255,255,255,0.9)"
           style={styles.gradePill}
         />

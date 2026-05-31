@@ -1,5 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -8,7 +15,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { Card, Pill } from '../components';
-import { exams } from '../data';
+import { useExam, useDeleteExam } from '../features/exams/hooks';
+import { deriveColorSet } from '../theme/derive';
 import type { HomeStackParamList } from '../navigation/types';
 
 type ExamDetailRoute = RouteProp<HomeStackParamList, 'ExamDetail'>;
@@ -18,11 +26,6 @@ const STATUS_COLORS: Record<string, string> = {
   completed: Colors.present,
   draft: Colors.inkMuted,
 };
-const STATUS_SOFT: Record<string, string> = {
-  upcoming: Colors.blueSoft,
-  completed: Colors.presentSoft,
-  draft: Colors.ruleSoft,
-};
 
 export const ExamDetailScreen: React.FC = () => {
   const route = useRoute<ExamDetailRoute>();
@@ -30,7 +33,29 @@ export const ExamDetailScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { examId } = route.params;
 
-  const exam = exams.find((e) => e.id === examId)!;
+  const { data: exam, isLoading, isError } = useExam(examId);
+  const deleteExam = useDeleteExam();
+
+  if (isLoading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator color={Colors.primary} />
+      </View>
+    );
+  }
+
+  if (isError || !exam) {
+    return (
+      <View style={styles.centered}>
+        <Text style={styles.errorText}>Failed to load exam.</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtnSimple}>
+          <Text style={styles.backBtnText}>Go back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  const { color, colorSoft } = deriveColorSet(exam.id);
 
   return (
     <ScrollView
@@ -39,7 +64,7 @@ export const ExamDetailScreen: React.FC = () => {
       showsVerticalScrollIndicator={false}
     >
       <LinearGradient
-        colors={[exam.color, exam.colorSoft]}
+        colors={[color, colorSoft]}
         style={[styles.hero, { paddingTop: insets.top + 16 }]}
       >
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -47,7 +72,7 @@ export const ExamDetailScreen: React.FC = () => {
         </TouchableOpacity>
         <Pill
           label={exam.status.charAt(0).toUpperCase() + exam.status.slice(1)}
-          color={exam.color}
+          color={STATUS_COLORS[exam.status] ?? color}
           backgroundColor="rgba(255,255,255,0.9)"
           style={styles.statusPill}
         />
@@ -117,13 +142,24 @@ export const ExamDetailScreen: React.FC = () => {
         {/* Actions */}
         {exam.status !== 'completed' && (
           <Animated.View entering={FadeInDown.delay(260).springify()} style={styles.actions}>
-            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: exam.color }]}>
+            <TouchableOpacity style={[styles.actionBtn, { backgroundColor: color }]}>
               <Ionicons name="create-outline" size={18} color={Colors.white} />
               <Text style={styles.actionBtnText}>Edit Exam</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionBtnSecondary}>
               <Ionicons name="notifications-outline" size={18} color={Colors.primary} />
               <Text style={styles.actionBtnSecondaryText}>Notify Students</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.actionBtnDanger}
+              onPress={() => {
+                deleteExam.mutate(exam.id, {
+                  onSuccess: () => navigation.goBack(),
+                });
+              }}
+            >
+              <Ionicons name="trash-outline" size={18} color={Colors.absent} />
+              <Text style={styles.actionBtnDangerText}>Delete Exam</Text>
             </TouchableOpacity>
           </Animated.View>
         )}
@@ -135,6 +171,10 @@ export const ExamDetailScreen: React.FC = () => {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.paper },
   scroll: {},
+  centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 },
+  errorText: { fontFamily: FontFamily.regular, fontSize: 14, color: Colors.absent },
+  backBtnSimple: { marginTop: 12 },
+  backBtnText: { fontFamily: FontFamily.semiBold, fontSize: 14, color: Colors.primary },
   hero: {
     paddingHorizontal: 20,
     paddingBottom: 32,
@@ -212,4 +252,16 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primarySoft,
   },
   actionBtnSecondaryText: { fontFamily: FontFamily.bold, fontSize: 15, color: Colors.primary },
+  actionBtnDanger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    borderRadius: Radii.full,
+    height: 50,
+    borderWidth: 1.5,
+    borderColor: Colors.absentSoft ?? Colors.ruleSoft,
+    backgroundColor: Colors.absentSoft ?? Colors.ruleSoft,
+  },
+  actionBtnDangerText: { fontFamily: FontFamily.bold, fontSize: 15, color: Colors.absent },
 });

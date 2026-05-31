@@ -8,7 +8,11 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { ScreenHeader, SearchField } from '../components';
-import { classes, students } from '../data';
+import { useClasses } from '@/features/classes/hooks';
+import { deriveColorSet } from '@/theme/derive';
+import { Skeleton } from '@/ui/state/Skeleton';
+import { ErrorState } from '@/ui/state/ErrorState';
+import { EmptyState } from '@/ui/state/EmptyState';
 import type { ClassesStackParamList } from '../navigation/types';
 
 type ClassesNav = NativeStackNavigationProp<ClassesStackParamList, 'ClassesScreen'>;
@@ -17,12 +21,90 @@ export const ClassesScreen: React.FC = () => {
   const navigation = useNavigation<ClassesNav>();
   const insets = useSafeAreaInsets();
   const [search, setSearch] = useState('');
+  const { data: classes = [], isLoading, isError, refetch } = useClasses();
 
   const filtered = classes.filter(
     (c) =>
       c.name.toLowerCase().includes(search.toLowerCase()) ||
       c.subject.toLowerCase().includes(search.toLowerCase())
   );
+
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <>
+          <Skeleton height={84} />
+          <Skeleton height={84} />
+          <Skeleton height={84} />
+          <Skeleton height={84} />
+        </>
+      );
+    }
+    if (isError) {
+      return <ErrorState onRetry={refetch} />;
+    }
+    if (filtered.length === 0) {
+      return <EmptyState label="No classes yet" />;
+    }
+    return filtered.map((cls, i) => {
+      const cs = deriveColorSet(cls.id);
+      return (
+        <Animated.View key={cls.id} entering={FadeInDown.delay(140 + i * 60).springify()}>
+          <TouchableOpacity
+            style={[styles.classCard, { backgroundColor: cs.color }]}
+            onPress={() => navigation.navigate('ClassDetailScreen', { classId: cls.id })}
+            activeOpacity={0.88}
+          >
+            <View style={styles.cardHeader}>
+              <View>
+                <Text style={styles.className}>
+                  {cls.name} – {cls.section}
+                </Text>
+                <Text style={styles.classSubject}>{cls.subject}</Text>
+              </View>
+              <View style={styles.iconBadge}>
+                <Ionicons name="school" size={22} color={cs.color} />
+              </View>
+            </View>
+
+            <View style={styles.cardInfo}>
+              <View style={styles.infoItem}>
+                <Ionicons name="people-outline" size={14} color="rgba(255,255,255,0.8)" />
+                <Text style={styles.infoText}>{cls.studentCount} Students</Text>
+              </View>
+              <View style={styles.infoItem}>
+                <Ionicons name="location-outline" size={14} color="rgba(255,255,255,0.8)" />
+                <Text style={styles.infoText}>{cls.room}</Text>
+              </View>
+              {cls.nextPeriod && (
+                <View style={styles.infoItem}>
+                  <Ionicons name="time-outline" size={14} color="rgba(255,255,255,0.8)" />
+                  <Text style={styles.infoText}>{cls.nextPeriod}</Text>
+                </View>
+              )}
+            </View>
+
+            <View style={styles.cardActions}>
+              <TouchableOpacity
+                style={styles.actionBtn}
+                onPress={() => navigation.navigate('AttendanceScreen', { classId: cls.id })}
+              >
+                <Ionicons name="checkmark-done" size={14} color={cs.color} />
+                <Text style={[styles.actionBtnText, { color: cs.color }]}>Attendance</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.actionBtn}
+                onPress={() => navigation.navigate('ClassDetailScreen', { classId: cls.id })}
+              >
+                <Ionicons name="people" size={14} color={cs.color} />
+                <Text style={[styles.actionBtnText, { color: cs.color }]}>Students</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
+      );
+    });
+  };
 
   return (
     <ScrollView
@@ -38,64 +120,7 @@ export const ClassesScreen: React.FC = () => {
         <SearchField placeholder="Search classes..." value={search} onChangeText={setSearch} />
       </Animated.View>
 
-      {filtered.map((cls, i) => {
-        const classStudents = students.filter((s) => s.classId === cls.id);
-        return (
-          <Animated.View key={cls.id} entering={FadeInDown.delay(140 + i * 60).springify()}>
-            <TouchableOpacity
-              style={[styles.classCard, { backgroundColor: cls.color }]}
-              onPress={() => navigation.navigate('ClassDetailScreen', { classId: cls.id })}
-              activeOpacity={0.88}
-            >
-              <View style={styles.cardHeader}>
-                <View>
-                  <Text style={styles.className}>
-                    {cls.name} – {cls.section}
-                  </Text>
-                  <Text style={styles.classSubject}>{cls.subject}</Text>
-                </View>
-                <View style={styles.iconBadge}>
-                  <Ionicons name="school" size={22} color={cls.color} />
-                </View>
-              </View>
-
-              <View style={styles.cardInfo}>
-                <View style={styles.infoItem}>
-                  <Ionicons name="people-outline" size={14} color="rgba(255,255,255,0.8)" />
-                  <Text style={styles.infoText}>{classStudents.length} Students</Text>
-                </View>
-                <View style={styles.infoItem}>
-                  <Ionicons name="location-outline" size={14} color="rgba(255,255,255,0.8)" />
-                  <Text style={styles.infoText}>{cls.room}</Text>
-                </View>
-                {cls.nextPeriod && (
-                  <View style={styles.infoItem}>
-                    <Ionicons name="time-outline" size={14} color="rgba(255,255,255,0.8)" />
-                    <Text style={styles.infoText}>{cls.nextPeriod}</Text>
-                  </View>
-                )}
-              </View>
-
-              <View style={styles.cardActions}>
-                <TouchableOpacity
-                  style={styles.actionBtn}
-                  onPress={() => navigation.navigate('AttendanceScreen', { classId: cls.id })}
-                >
-                  <Ionicons name="checkmark-done" size={14} color={cls.color} />
-                  <Text style={[styles.actionBtnText, { color: cls.color }]}>Attendance</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.actionBtn}
-                  onPress={() => navigation.navigate('ClassDetailScreen', { classId: cls.id })}
-                >
-                  <Ionicons name="people" size={14} color={cls.color} />
-                  <Text style={[styles.actionBtnText, { color: cls.color }]}>Students</Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
-          </Animated.View>
-        );
-      })}
+      {renderContent()}
     </ScrollView>
   );
 };

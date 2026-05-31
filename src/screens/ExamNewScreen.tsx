@@ -17,7 +17,9 @@ import { useNavigation } from '@react-navigation/native';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { ScreenHeader, Toast } from '../components';
-import { classes } from '../data';
+import { useClasses } from '../features/classes/hooks';
+import { useCreateExam } from '../features/exams/hooks';
+import { deriveColorSet } from '../theme/derive';
 import { examSchema, ExamSchemaType } from '../validation/schemas';
 
 export const ExamNewScreen: React.FC = () => {
@@ -25,6 +27,9 @@ export const ExamNewScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const [toastVisible, setToastVisible] = useState(false);
   const [topicInput, setTopicInput] = useState('');
+
+  const { data: classes = [] } = useClasses();
+  const createExam = useCreateExam();
 
   const {
     control,
@@ -66,9 +71,24 @@ export const ExamNewScreen: React.FC = () => {
   };
 
   const onSubmit = (data: ExamSchemaType) => {
-    console.log('Exam data:', data);
-    setToastVisible(true);
-    setTimeout(() => navigation.goBack(), 1500);
+    createExam.mutate(
+      {
+        title: data.title,
+        classId: data.classId,
+        date: data.date,
+        time: data.time,
+        duration: data.duration,
+        maxMarks: data.maxMarks,
+        topics: data.topics,
+        status: 'upcoming',
+      },
+      {
+        onSuccess: () => {
+          setToastVisible(true);
+          setTimeout(() => navigation.goBack(), 1500);
+        },
+      }
+    );
   };
 
   return (
@@ -106,28 +126,24 @@ export const ExamNewScreen: React.FC = () => {
         <Animated.View entering={FadeInDown.delay(140).springify()} style={styles.fieldGroup}>
           <Text style={styles.label}>Class *</Text>
           <View style={styles.classGrid}>
-            {classes.map((cls) => (
-              <TouchableOpacity
-                key={cls.id}
-                style={[
-                  styles.classChip,
-                  selectedClassId === cls.id && {
-                    backgroundColor: cls.color,
-                    borderColor: cls.color,
-                  },
-                ]}
-                onPress={() => setValue('classId', cls.id)}
-              >
-                <Text
+            {classes.map((cls) => {
+              const { color } = deriveColorSet(cls.id);
+              const isSelected = selectedClassId === cls.id;
+              return (
+                <TouchableOpacity
+                  key={cls.id}
                   style={[
-                    styles.classChipText,
-                    selectedClassId === cls.id && { color: Colors.white },
+                    styles.classChip,
+                    isSelected && { backgroundColor: color, borderColor: color },
                   ]}
+                  onPress={() => setValue('classId', cls.id)}
                 >
-                  {cls.name}-{cls.section}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <Text style={[styles.classChipText, isSelected && { color: Colors.white }]}>
+                    {cls.name}-{cls.section}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
           {errors.classId && <Text style={styles.errorText}>{errors.classId.message}</Text>}
         </Animated.View>
@@ -268,8 +284,14 @@ export const ExamNewScreen: React.FC = () => {
 
         {/* Submit */}
         <Animated.View entering={FadeInDown.delay(340).springify()}>
-          <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit(onSubmit)}>
-            <Text style={styles.submitBtnText}>Create Exam</Text>
+          <TouchableOpacity
+            style={[styles.submitBtn, createExam.isPending && styles.submitBtnDisabled]}
+            onPress={handleSubmit(onSubmit)}
+            disabled={createExam.isPending}
+          >
+            <Text style={styles.submitBtnText}>
+              {createExam.isPending ? 'Creating...' : 'Create Exam'}
+            </Text>
           </TouchableOpacity>
         </Animated.View>
       </ScrollView>
@@ -356,5 +378,6 @@ const styles = StyleSheet.create({
     marginTop: 8,
     ...Shadows.pop,
   },
+  submitBtnDisabled: { opacity: 0.6 },
   submitBtnText: { fontFamily: FontFamily.bold, fontSize: 16, color: Colors.white },
 });

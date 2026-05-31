@@ -1,5 +1,12 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
   FadeInDown,
@@ -7,15 +14,21 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
 } from 'react-native-reanimated';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useRoute, RouteProp } from '@react-navigation/native';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { Avatar, ScreenHeader, Toast } from '../components';
-import { classes, students } from '../data';
-import type { AttendanceStatus } from '../types';
+import { useClass } from '@/features/classes/hooks';
+import { useStudentsByClass } from '@/features/students/hooks';
+import { useAttendance, useMarkAttendance } from '@/features/attendance/hooks';
+import { deriveColorSet } from '@/theme/derive';
+import type { AttendanceStatus, AttendanceRecord } from '@/data/domain';
 import type { HomeStackParamList } from '../navigation/types';
 
 type AttRoute = RouteProp<HomeStackParamList, 'AttendanceScreen'>;
+
+// Use the seed date so existing records show up
+const ATTENDANCE_DATE = '2026-04-27';
 
 type StudentAttendance = Record<string, AttendanceStatus>;
 
@@ -78,20 +91,43 @@ export const AttendanceScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { classId } = route.params;
 
-  const cls = classes.find((c) => c.id === classId)!;
-  const classStudents = students.filter((s) => s.classId === classId);
+  const { data: cls, isLoading: clsLoading, isError: clsError } = useClass(classId);
+  const {
+    data: classStudents = [],
+    isLoading: studentsLoading,
+    isError: studentsError,
+  } = useStudentsByClass(classId);
+  const {
+    data: attendanceRecords,
+    isLoading: attLoading,
+    isError: attError,
+  } = useAttendance(classId, ATTENDANCE_DATE);
+  const mutation = useMarkAttendance(classId, ATTENDANCE_DATE);
 
-  const initState: StudentAttendance = {};
-  classStudents.forEach((s) => {
-    initState[s.id] = 'P';
-  });
+  const isLoading = clsLoading || studentsLoading || attLoading;
+  const isError = clsError || studentsError || attError;
 
-  const [attendance, setAttendance] = useState<StudentAttendance>(initState);
+  const [attendance, setAttendance] = useState<StudentAttendance>({});
   const [toastVisible, setToastVisible] = useState(false);
+
+  // Sync local state when attendance records arrive
+  useEffect(() => {
+    if (!attendanceRecords || classStudents.length === 0) return;
+    const map: StudentAttendance = {};
+    // Start with defaults for all students
+    for (const s of classStudents) {
+      map[s.id] = 'P';
+    }
+    // Override with loaded records
+    for (const rec of attendanceRecords) {
+      map[rec.studentId] = rec.status;
+    }
+    setAttendance(map);
+  }, [attendanceRecords, classStudents]);
 
   const cycleStatus = (studentId: string) => {
     setAttendance((prev) => {
-      const current = prev[studentId];
+      const current = prev[studentId] ?? 'P';
       const idx = STATUS_CYCLE.indexOf(current);
       const next = STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length];
       return { ...prev, [studentId]: next };
@@ -106,16 +142,41 @@ export const AttendanceScreen: React.FC = () => {
   };
 
   const handleSubmit = () => {
-    setToastVisible(true);
+    const records: AttendanceRecord[] = classStudents.map((s) => ({
+      studentId: s.id,
+      status: attendance[s.id] ?? 'P',
+      date: ATTENDANCE_DATE,
+    }));
+    mutation.mutate(records, {
+      onSuccess: () => setToastVisible(true),
+    });
   };
 
   const markAllPresent = () => {
     const newState: StudentAttendance = {};
-    classStudents.forEach((s) => {
+    for (const s of classStudents) {
       newState[s.id] = 'P';
-    });
+    }
     setAttendance(newState);
   };
+
+  const { color: clsColor } = cls ? deriveColorSet(cls.id) : { color: Colors.primary };
+
+  if (isLoading) {
+    return (
+      <View style={[styles.flex, styles.center]}>
+        <ActivityIndicator color={Colors.primary} />
+      </View>
+    );
+  }
+
+  if (isError || !cls) {
+    return (
+      <View style={[styles.flex, styles.center]}>
+        <Text style={styles.errorText}>Failed to load attendance data</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.flex}>
@@ -151,17 +212,24 @@ export const AttendanceScreen: React.FC = () => {
           </TouchableOpacity>
         </Animated.View>
 
+        {/* Empty state */}
+        {classStudents.length === 0 && (
+          <View style={styles.center}>
+            <Text style={styles.emptyText}>No students in this class</Text>
+          </View>
+        )}
+
         {/* Students */}
         {classStudents.map((student, i) => (
           <Animated.View key={student.id} entering={FadeInDown.delay(160 + i * 30).springify()}>
             <View style={styles.studentRow}>
-              <Avatar initials={student.initials} size={44} backgroundColor={cls.color} />
+              <Avatar initials={student.initials} size={44} backgroundColor={clsColor} />
               <View style={styles.studentInfo}>
                 <Text style={styles.studentName}>{student.name}</Text>
                 <Text style={styles.studentRoll}>Roll #{student.roll}</Text>
               </View>
               <StatusBadge
-                status={attendance[student.id]}
+                status={attendance[student.id] ?? 'P'}
                 onPress={() => cycleStatus(student.id)}
               />
             </View>
@@ -171,11 +239,22 @@ export const AttendanceScreen: React.FC = () => {
 
       {/* Submit FAB */}
       <View style={[styles.fab, { bottom: insets.bottom + 24 }]}>
-        <TouchableOpacity style={styles.fabBtn} onPress={handleSubmit} activeOpacity={0.85}>
-          <Text style={styles.fabText}>Submit Attendance</Text>
-          <View style={styles.fabBadge}>
-            <Text style={styles.fabBadgeText}>{classStudents.length}</Text>
-          </View>
+        <TouchableOpacity
+          style={styles.fabBtn}
+          onPress={handleSubmit}
+          activeOpacity={0.85}
+          disabled={mutation.isPending}
+        >
+          {mutation.isPending ? (
+            <ActivityIndicator color={Colors.white} />
+          ) : (
+            <>
+              <Text style={styles.fabText}>Submit Attendance</Text>
+              <View style={styles.fabBadge}>
+                <Text style={styles.fabBadgeText}>{classStudents.length}</Text>
+              </View>
+            </>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -193,6 +272,9 @@ const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: Colors.paper },
   screen: { flex: 1 },
   scroll: { paddingHorizontal: 20, gap: 10 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 },
+  errorText: { fontFamily: FontFamily.regular, fontSize: 14, color: Colors.absent },
+  emptyText: { fontFamily: FontFamily.regular, fontSize: 14, color: Colors.inkMuted },
   statsBar: {
     flexDirection: 'row',
     gap: 8,

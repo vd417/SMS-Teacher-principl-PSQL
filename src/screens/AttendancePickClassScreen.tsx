@@ -1,5 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -8,7 +15,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { ScreenHeader } from '../components';
-import { classes, students } from '../data';
+import { useClasses } from '@/features/classes/hooks';
+import { deriveColorSet } from '@/theme/derive';
 import type { HomeStackParamList } from '../navigation/types';
 
 type AttPickNav = NativeStackNavigationProp<HomeStackParamList, 'AttendancePickClass'>;
@@ -16,6 +24,8 @@ type AttPickNav = NativeStackNavigationProp<HomeStackParamList, 'AttendancePickC
 export const AttendancePickClassScreen: React.FC = () => {
   const navigation = useNavigation<AttPickNav>();
   const insets = useSafeAreaInsets();
+
+  const { data: classes = [], isLoading, isError } = useClasses();
 
   return (
     <ScrollView
@@ -32,8 +42,26 @@ export const AttendancePickClassScreen: React.FC = () => {
         <Text style={styles.dateText}>Monday, 27 April 2026</Text>
       </Animated.View>
 
+      {isLoading && (
+        <View style={styles.center}>
+          <ActivityIndicator color={Colors.primary} />
+        </View>
+      )}
+
+      {isError && (
+        <View style={styles.center}>
+          <Text style={styles.errorText}>Failed to load classes</Text>
+        </View>
+      )}
+
+      {!isLoading && !isError && classes.length === 0 && (
+        <View style={styles.center}>
+          <Text style={styles.emptyText}>No classes found</Text>
+        </View>
+      )}
+
       {classes.map((cls, i) => {
-        const count = students.filter((s) => s.classId === cls.id).length;
+        const { color } = deriveColorSet(cls.id);
         return (
           <Animated.View key={cls.id} entering={FadeInDown.delay(140 + i * 60).springify()}>
             <TouchableOpacity
@@ -41,7 +69,7 @@ export const AttendancePickClassScreen: React.FC = () => {
               onPress={() => navigation.navigate('AttendanceScreen', { classId: cls.id })}
               activeOpacity={0.85}
             >
-              <View style={[styles.classColor, { backgroundColor: cls.color }]}>
+              <View style={[styles.classColor, { backgroundColor: color }]}>
                 <Ionicons name="school" size={22} color={Colors.white} />
               </View>
               <View style={styles.classInfo}>
@@ -50,7 +78,7 @@ export const AttendancePickClassScreen: React.FC = () => {
                 </Text>
                 <Text style={styles.classSubject}>{cls.subject}</Text>
                 <Text style={styles.classCount}>
-                  {count} students · {cls.room}
+                  {cls.studentCount} students · {cls.room}
                 </Text>
               </View>
               <View style={styles.arrowWrap}>
@@ -131,5 +159,19 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.paper2,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  center: {
+    paddingVertical: 40,
+    alignItems: 'center',
+  },
+  errorText: {
+    fontFamily: FontFamily.regular,
+    fontSize: 14,
+    color: Colors.absent,
+  },
+  emptyText: {
+    fontFamily: FontFamily.regular,
+    fontSize: 14,
+    color: Colors.inkMuted,
   },
 });

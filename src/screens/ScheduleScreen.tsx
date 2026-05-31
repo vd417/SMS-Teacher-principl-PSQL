@@ -5,8 +5,11 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { ScreenHeader } from '../components';
-import { timetable } from '../data';
-import type { WeekDay } from '../types';
+import { useTimetable } from '@/features/timetable/hooks';
+import { deriveColorSet } from '@/theme/derive';
+import { Skeleton } from '@/ui/state/Skeleton';
+import { ErrorState } from '@/ui/state/ErrorState';
+import type { WeekDay } from '@/data/domain';
 
 const DAYS: WeekDay[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 const DAY_LABELS: Record<WeekDay, string> = {
@@ -23,6 +26,7 @@ const SLOT_WIDTH = (width - 40 - 12) / 2;
 export const ScheduleScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const [activeDay, setActiveDay] = useState<WeekDay>('Mon');
+  const { data: timetable = [], isLoading, isError, refetch } = useTimetable();
 
   const daySlots = timetable.filter((t) => t.day === activeDay);
 
@@ -58,8 +62,15 @@ export const ScheduleScreen: React.FC = () => {
         </ScrollView>
       </Animated.View>
 
-      {/* Slots */}
-      {daySlots.length === 0 ? (
+      {isLoading ? (
+        <View style={styles.slotsGrid}>
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} height={140} width={SLOT_WIDTH} radius={16} />
+          ))}
+        </View>
+      ) : isError ? (
+        <ErrorState onRetry={refetch} />
+      ) : daySlots.length === 0 ? (
         <Animated.View entering={FadeInDown.delay(160).springify()} style={styles.emptyState}>
           <Text style={styles.emptyEmoji}>🎉</Text>
           <Text style={styles.emptyTitle}>Free Day!</Text>
@@ -67,25 +78,28 @@ export const ScheduleScreen: React.FC = () => {
         </Animated.View>
       ) : (
         <View style={styles.slotsGrid}>
-          {daySlots.map((slot, i) => (
-            <Animated.View
-              key={slot.id}
-              entering={FadeInDown.delay(160 + i * 60).springify()}
-              style={[styles.slotCard, { backgroundColor: slot.color, width: SLOT_WIDTH }]}
-            >
-              <View style={styles.slotPeriod}>
-                <Text style={styles.slotPeriodText}>P{slot.period}</Text>
-              </View>
-              <Text style={styles.slotTime}>
-                {slot.startTime} – {slot.endTime}
-              </Text>
-              <Text style={styles.slotSubject}>{slot.subject}</Text>
-              <Text style={styles.slotClass}>{slot.className}</Text>
-              <View style={styles.slotRoomBadge}>
-                <Text style={[styles.slotRoomText, { color: slot.color }]}>{slot.room}</Text>
-              </View>
-            </Animated.View>
-          ))}
+          {daySlots.map((slot, i) => {
+            const cs = deriveColorSet(slot.classId);
+            return (
+              <Animated.View
+                key={slot.id}
+                entering={FadeInDown.delay(160 + i * 60).springify()}
+                style={[styles.slotCard, { backgroundColor: cs.color, width: SLOT_WIDTH }]}
+              >
+                <View style={styles.slotPeriod}>
+                  <Text style={styles.slotPeriodText}>P{slot.period}</Text>
+                </View>
+                <Text style={styles.slotTime}>
+                  {slot.startTime} – {slot.endTime}
+                </Text>
+                <Text style={styles.slotSubject}>{slot.subject}</Text>
+                <Text style={styles.slotClass}>{slot.className}</Text>
+                <View style={styles.slotRoomBadge}>
+                  <Text style={[styles.slotRoomText, { color: cs.color }]}>{slot.room}</Text>
+                </View>
+              </Animated.View>
+            );
+          })}
         </View>
       )}
     </ScrollView>
