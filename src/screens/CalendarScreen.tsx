@@ -8,7 +8,10 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { ScreenHeader, Pill } from '../components';
-import { calendarEvents } from '../data';
+import { useCalendar } from '@/features/calendar/hooks';
+import { Skeleton } from '@/ui/state/Skeleton';
+import { ErrorState } from '@/ui/state/ErrorState';
+import { EmptyState } from '@/ui/state/EmptyState';
 import type { CalendarStackParamList } from '../navigation/types';
 import type { EventType } from '../types';
 
@@ -34,6 +37,7 @@ const TYPE_SOFT: Record<EventType, string> = {
 export const CalendarScreen: React.FC = () => {
   const navigation = useNavigation<CalendarNav>();
   const insets = useSafeAreaInsets();
+  const { data: calendarEvents = [], isLoading, isError, refetch } = useCalendar();
 
   const [selectedMonth, setSelectedMonth] = useState(4); // May (0-indexed)
   const [selectedYear] = useState(2026);
@@ -96,65 +100,86 @@ export const CalendarScreen: React.FC = () => {
         </ScrollView>
       </Animated.View>
 
-      {/* Mini Calendar */}
-      <Animated.View entering={FadeInDown.delay(150).springify()} style={styles.calendarCard}>
-        <View style={styles.dayHeaders}>
-          {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-            <Text key={i} style={styles.dayHeader}>
-              {d}
-            </Text>
-          ))}
-        </View>
-        <View style={styles.grid}>
-          {cells.map((day, i) => (
-            <View key={i} style={styles.cell}>
-              {day ? (
-                <View style={[styles.dayCell, eventDays.has(day) && styles.dayCellEvent]}>
-                  <Text style={[styles.dayNum, eventDays.has(day) && styles.dayNumEvent]}>
-                    {day}
-                  </Text>
-                  {eventDays.has(day) && <View style={styles.eventDot} />}
+      {isLoading ? (
+        <>
+          <Skeleton height={220} radius={16} />
+          <Skeleton height={60} radius={12} />
+          <Skeleton height={60} radius={12} />
+        </>
+      ) : isError ? (
+        <ErrorState onRetry={refetch} />
+      ) : (
+        <>
+          {/* Mini Calendar */}
+          <Animated.View entering={FadeInDown.delay(150).springify()} style={styles.calendarCard}>
+            <View style={styles.dayHeaders}>
+              {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
+                <Text key={i} style={styles.dayHeader}>
+                  {d}
+                </Text>
+              ))}
+            </View>
+            <View style={styles.grid}>
+              {cells.map((day, i) => (
+                <View key={i} style={styles.cell}>
+                  {day ? (
+                    <View style={[styles.dayCell, eventDays.has(day) && styles.dayCellEvent]}>
+                      <Text style={[styles.dayNum, eventDays.has(day) && styles.dayNumEvent]}>
+                        {day}
+                      </Text>
+                      {eventDays.has(day) && <View style={styles.eventDot} />}
+                    </View>
+                  ) : null}
                 </View>
-              ) : null}
+              ))}
             </View>
-          ))}
-        </View>
-      </Animated.View>
+          </Animated.View>
 
-      {/* Events */}
-      <Animated.View entering={FadeInDown.delay(200).springify()}>
-        <Text style={styles.sectionTitle}>
-          {monthEvents.length} events in {MONTHS[selectedMonth]}
-        </Text>
-      </Animated.View>
+          {/* Events */}
+          <Animated.View entering={FadeInDown.delay(200).springify()}>
+            <Text style={styles.sectionTitle}>
+              {monthEvents.length} events in {MONTHS[selectedMonth]}
+            </Text>
+          </Animated.View>
 
-      {monthEvents.map((event, i) => (
-        <Animated.View key={event.id} entering={FadeInDown.delay(240 + i * 50).springify()}>
-          <View style={styles.eventCard}>
-            <View style={[styles.eventColorBar, { backgroundColor: event.color }]} />
-            <View style={styles.eventInfo}>
-              <Text style={styles.eventTitle}>{event.title}</Text>
-              <View style={styles.eventMeta}>
-                <Ionicons name="calendar-outline" size={13} color={Colors.inkMuted} />
-                <Text style={styles.eventMetaText}>{event.date}</Text>
-                {event.time && (
-                  <>
-                    <Ionicons name="time-outline" size={13} color={Colors.inkMuted} />
-                    <Text style={styles.eventMetaText}>{event.time}</Text>
-                  </>
-                )}
-              </View>
-              {event.description && <Text style={styles.eventDesc}>{event.description}</Text>}
-            </View>
-            <Pill
-              label={event.type}
-              color={TYPE_COLORS[event.type]}
-              backgroundColor={TYPE_SOFT[event.type]}
-              size="sm"
-            />
-          </View>
-        </Animated.View>
-      ))}
+          {monthEvents.length === 0 ? (
+            <EmptyState label={`No events in ${MONTHS[selectedMonth]}`} />
+          ) : (
+            monthEvents.map((event, i) => {
+              const color = TYPE_COLORS[event.type];
+              return (
+                <Animated.View key={event.id} entering={FadeInDown.delay(240 + i * 50).springify()}>
+                  <View style={styles.eventCard}>
+                    <View style={[styles.eventColorBar, { backgroundColor: color }]} />
+                    <View style={styles.eventInfo}>
+                      <Text style={styles.eventTitle}>{event.title}</Text>
+                      <View style={styles.eventMeta}>
+                        <Ionicons name="calendar-outline" size={13} color={Colors.inkMuted} />
+                        <Text style={styles.eventMetaText}>{event.date}</Text>
+                        {event.time && (
+                          <>
+                            <Ionicons name="time-outline" size={13} color={Colors.inkMuted} />
+                            <Text style={styles.eventMetaText}>{event.time}</Text>
+                          </>
+                        )}
+                      </View>
+                      {event.description && (
+                        <Text style={styles.eventDesc}>{event.description}</Text>
+                      )}
+                    </View>
+                    <Pill
+                      label={event.type}
+                      color={TYPE_COLORS[event.type]}
+                      backgroundColor={TYPE_SOFT[event.type]}
+                      size="sm"
+                    />
+                  </View>
+                </Animated.View>
+              );
+            })
+          )}
+        </>
+      )}
     </ScrollView>
   );
 };
