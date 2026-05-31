@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import type { Session } from '@/data/domain';
 import { tokenStore } from '@/lib/tokenStore';
 import { readJson, writeJson } from '@/lib/asyncStore';
+import { authSnapshot } from '@/lib/authSnapshot';
 import { useRepositories } from '@/data/repositories/RepositoryContext';
 
 // User + tenant are persisted here; tokens live in SecureStore (tokenStore).
@@ -34,7 +35,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         // me() confirms the stored token is still valid and refreshes user data.
         const user = await repos.auth.me();
-        setSession({ ...stored, ...tokens, user });
+        const rehydrated: Session = { ...stored, ...tokens, user };
+        authSnapshot.set({ accessToken: rehydrated.accessToken, tenantId: rehydrated.tenant.id });
+        setSession(rehydrated);
         setStatus('authenticated');
       } catch {
         await tokenStore.clear();
@@ -49,6 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const s = await repos.auth.login(email, password);
       await tokenStore.save({ accessToken: s.accessToken, refreshToken: s.refreshToken });
       await writeJson<Session>(SESSION_KEY, s);
+      authSnapshot.set({ accessToken: s.accessToken, tenantId: s.tenant.id });
       setSession(s);
       setStatus('authenticated');
     },
@@ -61,6 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       await tokenStore.clear();
       await writeJson<Session | null>(SESSION_KEY, null);
+      authSnapshot.clear();
       setSession(null);
       setStatus('unauthenticated');
     }
