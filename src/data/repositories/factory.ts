@@ -32,16 +32,6 @@ import { httpChat } from '@/data/http/chat.repo';
 import { mockLeave } from '@/data/mock/leave.repo';
 import { httpLeave } from '@/data/http/leave.repo';
 
-const notImplemented = (name: string) =>
-  new Proxy(
-    {},
-    {
-      get() {
-        throw new Error(`Repository "${name}" not implemented yet`);
-      },
-    }
-  );
-
 export function createMockRepositories(store: Store): Repositories {
   return {
     auth: mockAuth(store),

@@ -1,5 +1,4 @@
 import type { AttendanceRepository } from '@/data/repositories/types';
-import type { AttendanceRecord } from '@/data/domain';
 import type { Store } from './store';
 import { simulateLatency } from '@/lib/latency';
 

@@ -3,6 +3,7 @@ import type { Session } from '@/data/domain';
 import { tokenStore } from '@/lib/tokenStore';
 import { readJson, writeJson } from '@/lib/asyncStore';
 import { authSnapshot } from '@/lib/authSnapshot';
+import { queryClient } from '@/lib/queryClient';
 import { useRepositories } from '@/data/repositories/RepositoryContext';
 
 // User + tenant are persisted here; tokens live in SecureStore (tokenStore).
@@ -66,6 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await tokenStore.clear();
       await writeJson<Session | null>(SESSION_KEY, null);
       authSnapshot.clear();
+      queryClient.clear();
       setSession(null);
       setStatus('unauthenticated');
     }
