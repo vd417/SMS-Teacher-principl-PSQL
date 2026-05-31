@@ -20,8 +20,8 @@ const FIXTURE: ClassDTO[] = [
     room: 'Room 214',
   },
 ];
-const fetchImpl = jest.fn(async (url: string) => {
-  const isList = url.endsWith('/classes');
+const fetchImpl = jest.fn(async (url: RequestInfo | URL) => {
+  const isList = String(url).endsWith('/classes');
   const body = isList ? FIXTURE : FIXTURE[0];
   return {
     ok: true,
@@ -29,7 +29,7 @@ const fetchImpl = jest.fn(async (url: string) => {
     json: async () => body,
     text: async () => JSON.stringify(body),
   } as Response;
-});
+}) as unknown as typeof fetch;
 
 classesContract('mock', async () => mockClasses(await createStore()));
 classesContract('http', async () =>
