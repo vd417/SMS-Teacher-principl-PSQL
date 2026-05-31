@@ -21,21 +21,57 @@ jest.mock('expo-secure-store', () => ({
 }));
 
 const Probe = () => {
-  const { status } = useAuth();
-  return <Text>{status}</Text>;
+  const { status, session, signIn } = useAuth();
+  React.useEffect(() => {
+    if (status === 'unauthenticated') void signIn('aanya.k@westbrook.edu', 'pw');
+  }, [status, signIn]);
+  return <Text>{`${status}:${session?.tenant.id ?? 'none'}`}</Text>;
+};
+
+const StatusOnly = () => {
+  const { status, session } = useAuth();
+  return <Text>{`${status}:${session?.tenant.id ?? 'none'}`}</Text>;
 };
 
 describe('AuthProvider', () => {
   it('boots to unauthenticated when no token stored', async () => {
+    for (const k of Object.keys(mem)) delete mem[k];
     const store = await createStore();
     const repos = createMockRepositories(store);
     render(
+      <RepositoryProvider repositories={repos}>
+        <AuthProvider>
+          <StatusOnly />
+        </AuthProvider>
+      </RepositoryProvider>
+    );
+    await waitFor(() => expect(screen.getByText('unauthenticated:none')).toBeTruthy());
+  });
+
+  it('rehydrates the full session (incl. tenant) across a remount', async () => {
+    for (const k of Object.keys(mem)) delete mem[k];
+    const store = await createStore();
+    const repos = createMockRepositories(store);
+
+    // First mount: sign in, which persists tokens + session.
+    const first = render(
       <RepositoryProvider repositories={repos}>
         <AuthProvider>
           <Probe />
         </AuthProvider>
       </RepositoryProvider>
     );
-    await waitFor(() => expect(screen.getByText('unauthenticated')).toBeTruthy());
+    await waitFor(() => expect(screen.getByText('authenticated:school_westbrook')).toBeTruthy());
+    first.unmount();
+
+    // Second mount (simulated app restart): session is rehydrated from storage.
+    render(
+      <RepositoryProvider repositories={repos}>
+        <AuthProvider>
+          <StatusOnly />
+        </AuthProvider>
+      </RepositoryProvider>
+    );
+    await waitFor(() => expect(screen.getByText('authenticated:school_westbrook')).toBeTruthy());
   });
 });

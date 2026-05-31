@@ -1,7 +1,12 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import type { Session } from '@/data/domain';
 import { tokenStore } from '@/lib/tokenStore';
+import { readJson, writeJson } from '@/lib/asyncStore';
 import { useRepositories } from '@/data/repositories/RepositoryContext';
+
+// User + tenant are persisted here; tokens live in SecureStore (tokenStore).
+// Together they rehydrate a full Session across app restarts.
+const SESSION_KEY = 'sd.session';
 
 type Status = 'loading' | 'authenticated' | 'unauthenticated';
 interface AuthValue {
@@ -20,19 +25,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     (async () => {
       const tokens = await tokenStore.read();
-      if (!tokens) {
+      const stored = await readJson<Session | null>(SESSION_KEY, null);
+      if (!tokens || !stored) {
+        if (tokens) await tokenStore.clear();
         setStatus('unauthenticated');
         return;
       }
       try {
+        // me() confirms the stored token is still valid and refreshes user data.
         const user = await repos.auth.me();
-        // me() confirms token validity; session was set by signIn
-        setSession((s) => s ?? null);
+        setSession({ ...stored, ...tokens, user });
         setStatus('authenticated');
-        // user kept in session via signIn; me() confirms validity
-        void user;
       } catch {
         await tokenStore.clear();
+        await writeJson<Session | null>(SESSION_KEY, null);
         setStatus('unauthenticated');
       }
     })();
@@ -42,6 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     async (email: string, password: string) => {
       const s = await repos.auth.login(email, password);
       await tokenStore.save({ accessToken: s.accessToken, refreshToken: s.refreshToken });
+      await writeJson<Session>(SESSION_KEY, s);
       setSession(s);
       setStatus('authenticated');
     },
@@ -53,6 +60,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await repos.auth.logout();
     } finally {
       await tokenStore.clear();
+      await writeJson<Session | null>(SESSION_KEY, null);
       setSession(null);
       setStatus('unauthenticated');
     }
