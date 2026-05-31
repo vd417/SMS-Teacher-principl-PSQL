@@ -6,12 +6,36 @@ describe('seed', () => {
     expect(seed.students).toHaveLength(20);
     expect(seed.exams).toHaveLength(5);
   });
-  it('classes carry no presentation fields', () => {
-    expect(seed.classes[0]).not.toHaveProperty('color');
-    expect(seed.classes[0].studentCount).toBeGreaterThan(0);
+  it('has the expected counts for every domain', () => {
+    expect(seed.timetable).toHaveLength(13);
+    expect(seed.assignments).toHaveLength(5);
+    expect(seed.chatContacts).toHaveLength(6);
+    expect(seed.announcements).toHaveLength(6);
+    expect(seed.calendar).toHaveLength(8);
+    expect(seed.library).toHaveLength(6);
+    expect(seed.payslips).toHaveLength(6);
+    expect(seed.leave).toHaveLength(4);
+    expect(seed.grades).toHaveLength(9);
+    expect(seed.attendance).toHaveLength(10);
   });
-  it('session is a teacher with a tenant', () => {
+  it('strips presentation fields from every domain that carried them', () => {
+    for (const c of seed.classes) {
+      expect(c).not.toHaveProperty('color');
+      expect(c.studentCount).toBeGreaterThan(0);
+    }
+    expect(seed.timetable[0]).not.toHaveProperty('color');
+    expect(seed.exams[0]).not.toHaveProperty('color');
+    expect(seed.assignments[0]).not.toHaveProperty('color');
+    expect(seed.calendar[0]).not.toHaveProperty('color');
+    expect(seed.library[0]).not.toHaveProperty('color');
+    expect(seed.chatContacts[0]).not.toHaveProperty('avatarColor');
+  });
+  it('injects an id into every payslip', () => {
+    for (const p of seed.payslips) expect(p.id).toBeTruthy();
+  });
+  it('session is a teacher in the Westbrook tenant', () => {
     expect(seed.session.user.role).toBe('teacher');
-    expect(seed.session.tenant.id).toBeTruthy();
+    expect(seed.session.tenant.id).toBe('school_westbrook');
+    expect(seed.session.accessToken).toBeTruthy();
   });
 });
