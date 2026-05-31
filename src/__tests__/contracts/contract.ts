@@ -1,4 +1,4 @@
-import type { ClassesRepository } from '@/data/repositories/types';
+import type { ClassesRepository, StudentsRepository } from '@/data/repositories/types';
 
 export function classesContract(name: string, make: () => Promise<ClassesRepository>) {
   describe(`ClassesRepository contract [${name}]`, () => {
@@ -16,6 +16,32 @@ export function classesContract(name: string, make: () => Promise<ClassesReposit
     it('get returns the requested class', async () => {
       const repo = await make();
       const first = (await repo.list())[0];
+      expect((await repo.get(first.id)).id).toBe(first.id);
+    });
+  });
+}
+
+export function studentsContract(
+  name: string,
+  classId: string,
+  make: () => Promise<StudentsRepository>
+) {
+  describe(`StudentsRepository contract [${name}]`, () => {
+    it('listByClass returns an array of students with required fields', async () => {
+      const repo = await make();
+      const list = await repo.listByClass(classId);
+      expect(Array.isArray(list)).toBe(true);
+      expect(list.length).toBeGreaterThan(0);
+      for (const s of list) {
+        expect(typeof s.id).toBe('string');
+        expect(typeof s.name).toBe('string');
+        expect(typeof s.classId).toBe('string');
+        expect(s).not.toHaveProperty('avatarColor');
+      }
+    });
+    it('get returns the requested student', async () => {
+      const repo = await make();
+      const first = (await repo.listByClass(classId))[0];
       expect((await repo.get(first.id)).id).toBe(first.id);
     });
   });
