@@ -13,6 +13,7 @@ import {
   PlusJakartaSans_800ExtraBold,
 } from '@expo-google-fonts/plus-jakarta-sans';
 import { RootNavigator } from './src/navigation/RootNavigator';
+import { AppProviders } from './src/providers/AppProviders';
 import { Colors } from './src/theme';
 
 export default function App() {
@@ -35,10 +36,12 @@ export default function App() {
   return (
     <GestureHandlerRootView style={styles.flex}>
       <SafeAreaProvider>
-        <NavigationContainer>
-          <StatusBar style="auto" />
-          <RootNavigator />
-        </NavigationContainer>
+        <AppProviders>
+          <NavigationContainer>
+            <StatusBar style="auto" />
+            <RootNavigator />
+          </NavigationContainer>
+        </AppProviders>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
