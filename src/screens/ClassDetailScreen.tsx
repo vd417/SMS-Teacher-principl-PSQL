@@ -90,7 +90,7 @@ export const ClassDetailScreen: React.FC = () => {
         <View style={styles.heroMeta}>
           <View style={styles.heroMetaItem}>
             <Ionicons name="people" size={14} color="rgba(255,255,255,0.8)" />
-            <Text style={styles.heroMetaText}>{cls.studentCount} students</Text>
+            <Text style={styles.heroMetaText}>{classStudents.length} students</Text>
           </View>
           <View style={styles.heroMetaItem}>
             <Ionicons name="location" size={14} color="rgba(255,255,255,0.8)" />
