@@ -9,7 +9,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { Avatar, Card } from '../components';
-import { teacher, quickStats } from '../data';
+import { useAuth } from '@/features/auth/AuthProvider';
+import { useDashboardStats } from '@/features/dashboard/hooks';
 import type { ProfileStackParamList } from '../navigation/types';
 
 type ProfileNav = NativeStackNavigationProp<ProfileStackParamList, 'ProfileScreen'>;
@@ -41,6 +42,10 @@ const MENU_ITEMS = [
 export const ProfileScreen: React.FC = () => {
   const navigation = useNavigation<ProfileNav>();
   const insets = useSafeAreaInsets();
+  const { session } = useAuth();
+  const user = session?.user;
+  const tenantName = session?.tenant.name ?? 'School';
+  const { data: stats } = useDashboardStats();
 
   const handleMenuPress = (screen: string | null) => {
     if (!screen) return;
@@ -61,18 +66,22 @@ export const ProfileScreen: React.FC = () => {
         end={{ x: 0.5, y: 1 }}
       >
         <Animated.View entering={FadeInDown.delay(50).springify()} style={styles.heroContent}>
-          <Avatar initials={teacher.initials} size={80} backgroundColor="rgba(255,255,255,0.2)" />
-          <Text style={styles.heroName}>{teacher.name}</Text>
-          <Text style={styles.heroTitle}>{teacher.title}</Text>
-          <Text style={styles.heroSchool}>{teacher.school}</Text>
+          <Avatar
+            initials={user?.initials ?? '?'}
+            size={80}
+            backgroundColor="rgba(255,255,255,0.2)"
+          />
+          <Text style={styles.heroName}>{user?.name ?? ''}</Text>
+          <Text style={styles.heroTitle}>{user?.title ?? ''}</Text>
+          <Text style={styles.heroSchool}>{tenantName}</Text>
         </Animated.View>
 
         {/* Stats row */}
         <Animated.View entering={FadeInDown.delay(150).springify()} style={styles.heroStats}>
           {[
-            { label: 'Classes', value: String(quickStats.totalClasses) },
-            { label: 'Students', value: String(quickStats.totalStudents) },
-            { label: 'Since', value: teacher.joined },
+            { label: 'Classes', value: String(stats?.totalClasses ?? '–') },
+            { label: 'Students', value: String(stats?.totalStudents ?? '–') },
+            { label: 'Since', value: user?.joined ?? '–' },
           ].map((s, i) => (
             <View key={s.label} style={[styles.heroStat, i < 2 && styles.heroStatBorder]}>
               <Text style={styles.heroStatVal}>{s.value}</Text>
@@ -87,10 +96,10 @@ export const ProfileScreen: React.FC = () => {
         <Text style={styles.sectionTitle}>Contact Info</Text>
         <Card style={styles.infoCard}>
           {[
-            { icon: 'mail-outline', label: 'Email', value: teacher.email },
-            { icon: 'call-outline', label: 'Phone', value: teacher.phone },
-            { icon: 'location-outline', label: 'Classroom', value: teacher.classroom },
-            { icon: 'card-outline', label: 'Employee ID', value: teacher.employee },
+            { icon: 'mail-outline', label: 'Email', value: user?.email ?? '' },
+            { icon: 'call-outline', label: 'Phone', value: user?.phone ?? '' },
+            { icon: 'location-outline', label: 'Classroom', value: user?.classroom ?? '' },
+            { icon: 'card-outline', label: 'Employee ID', value: user?.employee ?? '' },
           ].map((item) => (
             <View key={item.label} style={styles.infoRow}>
               <View style={styles.infoIconWrap}>

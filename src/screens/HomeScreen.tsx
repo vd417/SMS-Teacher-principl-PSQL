@@ -1,13 +1,5 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Dimensions,
-  Image,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
@@ -16,7 +8,12 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { Avatar, Card, Donut, SectionHeader } from '../components';
-import { teacher, classes, quickStats, announcements } from '../data';
+import { useAuth } from '@/features/auth/AuthProvider';
+import { useClasses } from '@/features/classes/hooks';
+import { useDashboardStats } from '@/features/dashboard/hooks';
+import { useAnnouncements } from '@/features/announcements/hooks';
+import { deriveColorSet } from '@/theme/derive';
+import { Skeleton } from '@/ui/state/Skeleton';
 import type { HomeStackParamList } from '../navigation/types';
 
 type HomeNav = NativeStackNavigationProp<HomeStackParamList>;
@@ -57,7 +54,15 @@ const QUICK_ACTIONS = [
 export const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeNav>();
   const insets = useSafeAreaInsets();
-  const [search, setSearch] = useState('');
+  const [_search, setSearch] = useState('');
+
+  const { session } = useAuth();
+  const user = session?.user;
+  const tenantName = session?.tenant.name ?? 'School';
+
+  const { data: classes = [], isLoading: classesLoading } = useClasses();
+  const { data: stats, isLoading: statsLoading } = useDashboardStats();
+  const { data: announcements = [] } = useAnnouncements();
 
   const upcomingExam = 'Mid-Term Math · May 10';
 
@@ -71,11 +76,11 @@ export const HomeScreen: React.FC = () => {
       <Animated.View entering={FadeInDown.delay(50).springify()} style={styles.header}>
         <View style={styles.headerLeft}>
           <Text style={styles.greeting}>Good morning,</Text>
-          <Text style={styles.teacherName}>{teacher.name.split(' ')[0]} 👋</Text>
-          <Text style={styles.subtitle}>{teacher.school}</Text>
+          <Text style={styles.teacherName}>{(user?.name ?? 'Teacher').split(' ')[0]} 👋</Text>
+          <Text style={styles.subtitle}>{tenantName}</Text>
         </View>
         <TouchableOpacity onPress={() => navigation.navigate('MoreScreen' as never)}>
-          <Avatar initials={teacher.initials} size={50} />
+          <Avatar initials={user?.initials ?? '?'} size={50} />
         </TouchableOpacity>
       </Animated.View>
 
@@ -97,13 +102,17 @@ export const HomeScreen: React.FC = () => {
               <Text style={styles.attendanceTitle}>{"Today's Attendance"}</Text>
               <Text style={styles.attendanceDate}>Monday, 27 Apr 2026</Text>
             </View>
-            <Donut
-              percentage={quickStats.attendanceToday}
-              size={80}
-              strokeWidth={8}
-              color={Colors.primary}
-              backgroundColor={Colors.primarySoft2}
-            />
+            {statsLoading ? (
+              <Skeleton height={80} width={80} radius={40} />
+            ) : (
+              <Donut
+                percentage={stats?.attendanceToday ?? 94}
+                size={80}
+                strokeWidth={8}
+                color={Colors.primary}
+                backgroundColor={Colors.primarySoft2}
+              />
+            )}
           </View>
           <View style={styles.attStats}>
             {[
@@ -135,38 +144,51 @@ export const HomeScreen: React.FC = () => {
           actionLabel="View All"
           onAction={() => navigation.navigate('ClassesScreen' as never)}
         />
-        <View style={styles.classGrid}>
-          {classes.map((cls, i) => (
-            <Animated.View
-              key={cls.id}
-              entering={FadeInRight.delay(280 + i * 60).springify()}
-              style={[styles.classCard, { backgroundColor: cls.color, width: CARD_WIDTH }]}
-            >
-              <TouchableOpacity
-                onPress={() => navigation.navigate('ClassesScreen' as never)}
-                style={styles.classCardInner}
-                activeOpacity={0.85}
-              >
-                <View style={[styles.classIconWrap, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
-                  <Ionicons name="school-outline" size={20} color={Colors.white} />
-                </View>
-                <Text style={styles.classCardName}>
-                  {cls.name}-{cls.section}
-                </Text>
-                <Text style={styles.classCardSubject}>{cls.subject}</Text>
-                <View style={styles.classCardFooter}>
-                  <View style={styles.classCardBadge}>
-                    <Ionicons name="people" size={11} color={cls.color} />
-                    <Text style={[styles.classCardBadgeText, { color: cls.color }]}>
-                      {cls.students}
+        {classesLoading ? (
+          <View style={styles.classGrid}>
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} height={120} width={CARD_WIDTH} radius={16} />
+            ))}
+          </View>
+        ) : (
+          <View style={styles.classGrid}>
+            {classes.map((cls, i) => {
+              const cs = deriveColorSet(cls.id);
+              return (
+                <Animated.View
+                  key={cls.id}
+                  entering={FadeInRight.delay(280 + i * 60).springify()}
+                  style={[styles.classCard, { backgroundColor: cs.color, width: CARD_WIDTH }]}
+                >
+                  <TouchableOpacity
+                    onPress={() => navigation.navigate('ClassesScreen' as never)}
+                    style={styles.classCardInner}
+                    activeOpacity={0.85}
+                  >
+                    <View
+                      style={[styles.classIconWrap, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
+                    >
+                      <Ionicons name="school-outline" size={20} color={Colors.white} />
+                    </View>
+                    <Text style={styles.classCardName}>
+                      {cls.name}-{cls.section}
                     </Text>
-                  </View>
-                  <Text style={styles.classCardRoom}>{cls.room.replace('Room ', 'R-')}</Text>
-                </View>
-              </TouchableOpacity>
-            </Animated.View>
-          ))}
-        </View>
+                    <Text style={styles.classCardSubject}>{cls.subject}</Text>
+                    <View style={styles.classCardFooter}>
+                      <View style={styles.classCardBadge}>
+                        <Ionicons name="people" size={11} color={cs.color} />
+                        <Text style={[styles.classCardBadgeText, { color: cs.color }]}>
+                          {cls.studentCount}
+                        </Text>
+                      </View>
+                      <Text style={styles.classCardRoom}>{cls.room.replace('Room ', 'R-')}</Text>
+                    </View>
+                  </TouchableOpacity>
+                </Animated.View>
+              );
+            })}
+          </View>
+        )}
       </Animated.View>
 
       {/* Quick Actions */}
@@ -235,28 +257,40 @@ export const HomeScreen: React.FC = () => {
       {/* Stats Row */}
       <Animated.View entering={FadeInDown.delay(500).springify()} style={styles.section}>
         <SectionHeader title="Overview" />
-        <View style={styles.statsRow}>
-          {[
-            { label: 'Students', value: String(quickStats.totalStudents), icon: 'people-outline' },
-            { label: 'Classes', value: String(quickStats.totalClasses), icon: 'school-outline' },
-            {
-              label: 'Upcoming Exams',
-              value: String(quickStats.upcomingExams),
-              icon: 'document-text-outline',
-            },
-            {
-              label: 'Active Tasks',
-              value: String(quickStats.pendingAssignments),
-              icon: 'clipboard-outline',
-            },
-          ].map((s) => (
-            <Card key={s.label} style={styles.statCard} padding={12}>
-              <Ionicons name={s.icon as never} size={20} color={Colors.primary} />
-              <Text style={styles.statCardVal}>{s.value}</Text>
-              <Text style={styles.statCardLbl}>{s.label}</Text>
-            </Card>
-          ))}
-        </View>
+        {statsLoading ? (
+          <View style={styles.statsRow}>
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} height={80} width={(width - 48 - 30) / 4} radius={12} />
+            ))}
+          </View>
+        ) : (
+          <View style={styles.statsRow}>
+            {[
+              {
+                label: 'Students',
+                value: String(stats?.totalStudents ?? 0),
+                icon: 'people-outline',
+              },
+              { label: 'Classes', value: String(stats?.totalClasses ?? 0), icon: 'school-outline' },
+              {
+                label: 'Upcoming Exams',
+                value: String(stats?.upcomingExams ?? 0),
+                icon: 'document-text-outline',
+              },
+              {
+                label: 'Active Tasks',
+                value: String(stats?.pendingAssignments ?? 0),
+                icon: 'clipboard-outline',
+              },
+            ].map((s) => (
+              <Card key={s.label} style={styles.statCard} padding={12}>
+                <Ionicons name={s.icon as never} size={20} color={Colors.primary} />
+                <Text style={styles.statCardVal}>{s.value}</Text>
+                <Text style={styles.statCardLbl}>{s.label}</Text>
+              </Card>
+            ))}
+          </View>
+        )}
       </Animated.View>
     </ScrollView>
   );
