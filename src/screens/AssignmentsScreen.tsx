@@ -11,7 +11,7 @@ import { deriveColorSet } from '@/theme/derive';
 import { Skeleton } from '@/ui/state/Skeleton';
 import { ErrorState } from '@/ui/state/ErrorState';
 import { EmptyState } from '@/ui/state/EmptyState';
-import type { AssignmentStatus } from '../types';
+import type { AssignmentStatus } from '@/data/domain';
 
 const STATUS_LABELS: Record<AssignmentStatus, string> = {
   active: 'Active',

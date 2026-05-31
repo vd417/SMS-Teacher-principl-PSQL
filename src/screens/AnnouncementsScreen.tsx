@@ -10,7 +10,7 @@ import { useAnnouncements } from '@/features/announcements/hooks';
 import { Skeleton } from '@/ui/state/Skeleton';
 import { ErrorState } from '@/ui/state/ErrorState';
 import { EmptyState } from '@/ui/state/EmptyState';
-import type { AnnouncementType } from '../types';
+import type { AnnouncementType } from '@/data/domain';
 
 const TYPE_CONFIG: Record<AnnouncementType, { color: string; soft: string; icon: string }> = {
   info: { color: Colors.blue, soft: Colors.blueSoft, icon: 'information-circle' },

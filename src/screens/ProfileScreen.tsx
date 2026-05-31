@@ -10,6 +10,7 @@ import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { Avatar, Card } from '../components';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { useLogout } from '@/features/auth/hooks';
 import { useDashboardStats } from '@/features/dashboard/hooks';
 import type { ProfileStackParamList } from '../navigation/types';
 
@@ -46,8 +47,13 @@ export const ProfileScreen: React.FC = () => {
   const user = session?.user;
   const tenantName = session?.tenant.name ?? 'School';
   const { data: stats } = useDashboardStats();
+  const logout = useLogout();
 
-  const handleMenuPress = (screen: string | null) => {
+  const handleMenuPress = (label: string, screen: string | null) => {
+    if (label === 'Sign Out') {
+      logout.mutate();
+      return;
+    }
     if (!screen) return;
     navigation.navigate(screen as keyof ProfileStackParamList);
   };
@@ -122,7 +128,7 @@ export const ProfileScreen: React.FC = () => {
             <TouchableOpacity
               key={item.label}
               style={[styles.menuRow, i < MENU_ITEMS.length - 1 && styles.menuRowBorder]}
-              onPress={() => handleMenuPress(item.screen)}
+              onPress={() => handleMenuPress(item.label, item.screen)}
               activeOpacity={0.7}
             >
               <View style={[styles.menuIconWrap, { backgroundColor: item.color + '20' }]}>

@@ -13,7 +13,7 @@ import { Skeleton } from '@/ui/state/Skeleton';
 import { ErrorState } from '@/ui/state/ErrorState';
 import { EmptyState } from '@/ui/state/EmptyState';
 import type { CalendarStackParamList } from '../navigation/types';
-import type { EventType } from '../types';
+import type { EventType } from '@/data/domain';
 
 type CalendarNav = NativeStackNavigationProp<CalendarStackParamList, 'CalendarScreen'>;
 

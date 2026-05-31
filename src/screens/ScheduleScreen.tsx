@@ -9,7 +9,7 @@ import { useTimetable } from '@/features/timetable/hooks';
 import { deriveColorSet } from '@/theme/derive';
 import { Skeleton } from '@/ui/state/Skeleton';
 import { ErrorState } from '@/ui/state/ErrorState';
-import type { WeekDay } from '../types';
+import type { WeekDay } from '@/data/domain';
 
 const DAYS: WeekDay[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 const DAY_LABELS: Record<WeekDay, string> = {
