@@ -6,7 +6,11 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { ScreenHeader, Pill } from '../components';
-import { assignments } from '../data';
+import { useAssignments } from '@/features/assignments/hooks';
+import { deriveColorSet } from '@/theme/derive';
+import { Skeleton } from '@/ui/state/Skeleton';
+import { ErrorState } from '@/ui/state/ErrorState';
+import { EmptyState } from '@/ui/state/EmptyState';
 import type { AssignmentStatus } from '../types';
 
 const STATUS_LABELS: Record<AssignmentStatus, string> = {
@@ -31,6 +35,7 @@ const STATUS_SOFT: Record<AssignmentStatus, string> = {
 export const AssignmentsScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const [filter, setFilter] = useState<AssignmentStatus | 'all'>('all');
+  const { data: assignments = [], isLoading, isError, refetch } = useAssignments();
 
   const filtered = filter === 'all' ? assignments : assignments.filter((a) => a.status === filter);
 
@@ -74,60 +79,73 @@ export const AssignmentsScreen: React.FC = () => {
         </ScrollView>
       </Animated.View>
 
-      {filtered.map((asgn, i) => {
-        const submittedPct = Math.round((asgn.submissionsCount / asgn.totalStudents) * 100);
-        return (
-          <Animated.View key={asgn.id} entering={FadeInDown.delay(140 + i * 60).springify()}>
-            <View style={styles.asgnCard}>
-              <View style={[styles.colorBar, { backgroundColor: asgn.color }]} />
-              <View style={styles.cardContent}>
-                <View style={styles.cardHeader}>
-                  <Text style={styles.asgnTitle} numberOfLines={1}>
-                    {asgn.title}
-                  </Text>
-                  <Pill
-                    label={STATUS_LABELS[asgn.status]}
-                    color={STATUS_COLORS[asgn.status]}
-                    backgroundColor={STATUS_SOFT[asgn.status]}
-                    size="sm"
-                  />
-                </View>
-                <Text style={styles.asgnClass}>
-                  {asgn.className} · {asgn.subject}
-                </Text>
-                <View style={styles.cardMeta}>
-                  <View style={styles.metaItem}>
-                    <Ionicons name="calendar-outline" size={13} color={Colors.inkMuted} />
-                    <Text style={styles.metaText}>Due: {asgn.dueDate}</Text>
-                  </View>
-                  <View style={styles.metaItem}>
-                    <Ionicons name="document-text-outline" size={13} color={Colors.inkMuted} />
-                    <Text style={styles.metaText}>
-                      {asgn.submissionsCount}/{asgn.totalStudents} submitted
+      {isLoading ? (
+        <>
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} height={110} radius={12} />
+          ))}
+        </>
+      ) : isError ? (
+        <ErrorState onRetry={refetch} />
+      ) : filtered.length === 0 ? (
+        <EmptyState label="No assignments found" />
+      ) : (
+        filtered.map((asgn, i) => {
+          const cs = deriveColorSet(asgn.id);
+          const submittedPct = Math.round((asgn.submissionsCount / asgn.totalStudents) * 100);
+          return (
+            <Animated.View key={asgn.id} entering={FadeInDown.delay(140 + i * 60).springify()}>
+              <View style={styles.asgnCard}>
+                <View style={[styles.colorBar, { backgroundColor: cs.color }]} />
+                <View style={styles.cardContent}>
+                  <View style={styles.cardHeader}>
+                    <Text style={styles.asgnTitle} numberOfLines={1}>
+                      {asgn.title}
                     </Text>
+                    <Pill
+                      label={STATUS_LABELS[asgn.status]}
+                      color={STATUS_COLORS[asgn.status]}
+                      backgroundColor={STATUS_SOFT[asgn.status]}
+                      size="sm"
+                    />
                   </View>
-                </View>
+                  <Text style={styles.asgnClass}>
+                    {asgn.className} · {asgn.subject}
+                  </Text>
+                  <View style={styles.cardMeta}>
+                    <View style={styles.metaItem}>
+                      <Ionicons name="calendar-outline" size={13} color={Colors.inkMuted} />
+                      <Text style={styles.metaText}>Due: {asgn.dueDate}</Text>
+                    </View>
+                    <View style={styles.metaItem}>
+                      <Ionicons name="document-text-outline" size={13} color={Colors.inkMuted} />
+                      <Text style={styles.metaText}>
+                        {asgn.submissionsCount}/{asgn.totalStudents} submitted
+                      </Text>
+                    </View>
+                  </View>
 
-                {/* Progress bar */}
-                <View style={styles.progressBar}>
-                  <View
-                    style={[
-                      styles.progressFill,
-                      {
-                        width: `${submittedPct}%` as any,
-                        backgroundColor: asgn.color,
-                      },
-                    ]}
-                  />
+                  {/* Progress bar */}
+                  <View style={styles.progressBar}>
+                    <View
+                      style={[
+                        styles.progressFill,
+                        {
+                          width: `${submittedPct}%` as any,
+                          backgroundColor: cs.color,
+                        },
+                      ]}
+                    />
+                  </View>
+                  <Text style={[styles.progressLabel, { color: cs.color }]}>
+                    {submittedPct}% submitted
+                  </Text>
                 </View>
-                <Text style={[styles.progressLabel, { color: asgn.color }]}>
-                  {submittedPct}% submitted
-                </Text>
               </View>
-            </View>
-          </Animated.View>
-        );
-      })}
+            </Animated.View>
+          );
+        })
+      )}
     </ScrollView>
   );
 };
