@@ -10,6 +10,9 @@ import type {
   DashboardRepository,
   ExamsRepository,
   GradesRepository,
+  AttendanceRepository,
+  ChatRepository,
+  LeaveRepository,
 } from '@/data/repositories/types';
 
 export function classesContract(name: string, make: () => Promise<ClassesRepository>) {
@@ -227,6 +230,117 @@ export function examsContract(name: string, make: () => Promise<ExamsRepository>
       expect(created.title).toBe(input.title);
       expect(created.maxMarks).toBe(input.maxMarks);
       expect(created.classId).toBe(input.classId);
+    });
+  });
+}
+
+export function attendanceContract(
+  name: string,
+  classId: string,
+  date: string,
+  make: () => Promise<AttendanceRepository>
+) {
+  describe(`AttendanceRepository contract [${name}]`, () => {
+    it('forClass returns records with required fields (existing or default)', async () => {
+      const repo = await make();
+      const records = await repo.forClass(classId, date);
+      expect(Array.isArray(records)).toBe(true);
+      expect(records.length).toBeGreaterThan(0);
+      for (const r of records) {
+        expect(typeof r.studentId).toBe('string');
+        expect(typeof r.status).toBe('string');
+        expect(typeof r.date).toBe('string');
+      }
+    });
+
+    it('save then forClass reflects the new records', async () => {
+      const repo = await make();
+      // First get the existing records to know studentIds
+      const existing = await repo.forClass(classId, date);
+      const updated = existing.map((r) => ({ ...r, status: 'A' as const }));
+      await repo.save(classId, date, updated);
+      const after = await repo.forClass(classId, date);
+      for (const r of after) {
+        expect(r.status).toBe('A');
+      }
+    });
+  });
+}
+
+export function chatContract(name: string, make: () => Promise<ChatRepository>) {
+  describe(`ChatRepository contract [${name}]`, () => {
+    it('contacts returns an array of chat contacts with required fields', async () => {
+      const repo = await make();
+      const contacts = await repo.contacts();
+      expect(Array.isArray(contacts)).toBe(true);
+      expect(contacts.length).toBeGreaterThan(0);
+      for (const c of contacts) {
+        expect(typeof c.id).toBe('string');
+        expect(typeof c.name).toBe('string');
+        expect(typeof c.role).toBe('string');
+        expect(typeof c.lastMessage).toBe('string');
+        expect(typeof c.unread).toBe('number');
+        expect(typeof c.online).toBe('boolean');
+        expect(c).not.toHaveProperty('avatarColor');
+      }
+    });
+
+    it('messages returns an array for a known contactId', async () => {
+      const repo = await make();
+      const messages = await repo.messages('ch1');
+      expect(Array.isArray(messages)).toBe(true);
+      expect(messages.length).toBeGreaterThan(0);
+      for (const m of messages) {
+        expect(typeof m.id).toBe('string');
+        expect(typeof m.senderId).toBe('string');
+        expect(typeof m.text).toBe('string');
+        expect(typeof m.isMe).toBe('boolean');
+      }
+    });
+
+    it('send returns a message with isMe:true and a string id', async () => {
+      const repo = await make();
+      const sent = await repo.send('ch1', 'Hello contract test');
+      expect(typeof sent.id).toBe('string');
+      expect(sent.isMe).toBe(true);
+      expect(sent.text).toBe('Hello contract test');
+    });
+  });
+}
+
+export function leaveContract(name: string, make: () => Promise<LeaveRepository>) {
+  describe(`LeaveRepository contract [${name}]`, () => {
+    it('list returns an array of leave requests with required fields', async () => {
+      const repo = await make();
+      const list = await repo.list();
+      expect(Array.isArray(list)).toBe(true);
+      expect(list.length).toBeGreaterThan(0);
+      for (const req of list) {
+        expect(typeof req.id).toBe('string');
+        expect(typeof req.type).toBe('string');
+        expect(typeof req.from).toBe('string');
+        expect(typeof req.to).toBe('string');
+        expect(typeof req.reason).toBe('string');
+        expect(typeof req.status).toBe('string');
+        expect(typeof req.appliedOn).toBe('string');
+      }
+    });
+
+    it('create returns a leave request with status pending and a string id', async () => {
+      const repo = await make();
+      const input = {
+        type: 'casual' as const,
+        from: '2026-07-01',
+        to: '2026-07-02',
+        reason: 'Contract test leave',
+      };
+      const created = await repo.create(input);
+      expect(typeof created.id).toBe('string');
+      expect(created.status).toBe('pending');
+      expect(created.type).toBe(input.type);
+      expect(created.from).toBe(input.from);
+      expect(created.to).toBe(input.to);
+      expect(created.reason).toBe(input.reason);
     });
   });
 }

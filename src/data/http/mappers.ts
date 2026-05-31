@@ -14,6 +14,13 @@ import type {
   Exam,
   GradeEntry,
   ExamStatus,
+  AttendanceRecord,
+  AttendanceStatus,
+  ChatContact,
+  ChatMessage,
+  LeaveRequest,
+  LeaveType,
+  LeaveStatus,
 } from '@/data/domain';
 
 export interface SessionDTO {
@@ -270,6 +277,77 @@ export const toGrade = (d: GradeDTO): GradeEntry => ({
   marks: d.marks,
   maxMarks: d.max_marks,
   grade: d.grade,
+});
+
+// ─── Attendance ──────────────────────────────────────────────────────────────
+export interface AttendanceRecordDTO {
+  student_id: string;
+  status: AttendanceStatus;
+  date: string;
+}
+export const toAttendanceRecord = (d: AttendanceRecordDTO): AttendanceRecord => ({
+  studentId: d.student_id,
+  status: d.status,
+  date: d.date,
+});
+
+// ─── Chat ─────────────────────────────────────────────────────────────────────
+export interface ChatContactDTO {
+  id: string;
+  name: string;
+  role: string;
+  initials: string;
+  last_message: string;
+  time: string;
+  unread: number;
+  online: boolean;
+}
+export const toChatContact = (d: ChatContactDTO): ChatContact => ({
+  id: d.id,
+  name: d.name,
+  role: d.role,
+  initials: d.initials,
+  lastMessage: d.last_message,
+  time: d.time,
+  unread: d.unread,
+  online: d.online,
+});
+
+export interface ChatMessageDTO {
+  id: string;
+  sender_id: string;
+  text: string;
+  time: string;
+  is_me: boolean;
+}
+export const toChatMessage = (d: ChatMessageDTO): ChatMessage => ({
+  id: d.id,
+  senderId: d.sender_id,
+  text: d.text,
+  time: d.time,
+  isMe: d.is_me,
+});
+
+// ─── Leave ───────────────────────────────────────────────────────────────────
+export interface LeaveRequestDTO {
+  id: string;
+  type: LeaveType;
+  from: string;
+  to: string;
+  reason: string;
+  substitute?: string;
+  status: LeaveStatus;
+  applied_on: string;
+}
+export const toLeaveRequest = (d: LeaveRequestDTO): LeaveRequest => ({
+  id: d.id,
+  type: d.type,
+  from: d.from,
+  to: d.to,
+  reason: d.reason,
+  substitute: d.substitute,
+  status: d.status,
+  appliedOn: d.applied_on,
 });
 
 // ─── Dashboard ───────────────────────────────────────────────────────────────

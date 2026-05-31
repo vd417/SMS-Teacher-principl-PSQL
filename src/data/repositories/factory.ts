@@ -25,6 +25,12 @@ import { mockExams } from '@/data/mock/exams.repo';
 import { httpExams } from '@/data/http/exams.repo';
 import { mockGrades } from '@/data/mock/grades.repo';
 import { httpGrades } from '@/data/http/grades.repo';
+import { mockAttendance } from '@/data/mock/attendance.repo';
+import { httpAttendance } from '@/data/http/attendance.repo';
+import { mockChat } from '@/data/mock/chat.repo';
+import { httpChat } from '@/data/http/chat.repo';
+import { mockLeave } from '@/data/mock/leave.repo';
+import { httpLeave } from '@/data/http/leave.repo';
 
 const notImplemented = (name: string) =>
   new Proxy(
@@ -41,17 +47,17 @@ export function createMockRepositories(store: Store): Repositories {
     auth: mockAuth(store),
     classes: mockClasses(store),
     students: mockStudents(store),
-    attendance: notImplemented('attendance') as Repositories['attendance'],
+    attendance: mockAttendance(store),
     timetable: mockTimetable(store),
     exams: mockExams(store),
     grades: mockGrades(store),
     assignments: mockAssignments(store),
-    chat: notImplemented('chat') as Repositories['chat'],
+    chat: mockChat(store),
     announcements: mockAnnouncements(store),
     calendar: mockCalendar(store),
     library: mockLibrary(store),
     payroll: mockPayroll(store),
-    leave: notImplemented('leave') as Repositories['leave'],
+    leave: mockLeave(store),
     dashboard: mockDashboard(store),
   };
 }
@@ -61,17 +67,17 @@ export function createHttpRepositories(http: HttpClient): Repositories {
     auth: httpAuth(http),
     classes: httpClasses(http),
     students: httpStudents(http),
-    attendance: notImplemented('attendance') as Repositories['attendance'],
+    attendance: httpAttendance(http),
     timetable: httpTimetable(http),
     exams: httpExams(http),
     grades: httpGrades(http),
     assignments: httpAssignments(http),
-    chat: notImplemented('chat') as Repositories['chat'],
+    chat: httpChat(http),
     announcements: httpAnnouncements(http),
     calendar: httpCalendar(http),
     library: httpLibrary(http),
     payroll: httpPayroll(http),
-    leave: notImplemented('leave') as Repositories['leave'],
+    leave: httpLeave(http),
     dashboard: httpDashboard(http),
   };
 }
