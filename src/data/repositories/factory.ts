@@ -3,6 +3,8 @@ import type { Store } from '@/data/mock/store';
 import type { HttpClient } from '@/lib/httpClient';
 import { mockAuth } from '@/data/mock/auth.repo';
 import { httpAuth } from '@/data/http/auth.repo';
+import { mockClasses } from '@/data/mock/classes.repo';
+import { httpClasses } from '@/data/http/classes.repo';
 
 const notImplemented = (name: string) =>
   new Proxy(
@@ -18,7 +20,7 @@ export function createMockRepositories(store: Store): Repositories {
   return {
     auth: mockAuth(store),
     // domains below are filled in by their tasks; until then they throw on use:
-    classes: notImplemented('classes') as Repositories['classes'],
+    classes: mockClasses(store),
     students: notImplemented('students') as Repositories['students'],
     attendance: notImplemented('attendance') as Repositories['attendance'],
     timetable: notImplemented('timetable') as Repositories['timetable'],
@@ -38,7 +40,7 @@ export function createMockRepositories(store: Store): Repositories {
 export function createHttpRepositories(http: HttpClient): Repositories {
   return {
     auth: httpAuth(http),
-    classes: notImplemented('classes') as Repositories['classes'],
+    classes: httpClasses(http),
     students: notImplemented('students') as Repositories['students'],
     attendance: notImplemented('attendance') as Repositories['attendance'],
     timetable: notImplemented('timetable') as Repositories['timetable'],

@@ -1,4 +1,4 @@
-import type { Session, User, Tenant } from '@/data/domain';
+import type { Session, User, Tenant, Class } from '@/data/domain';
 
 export interface SessionDTO {
   access_token: string;
@@ -25,4 +25,23 @@ export const toSession = (d: SessionDTO): Session => ({
   refreshToken: d.refresh_token,
   user: toUser(d.user),
   tenant: toTenant(d.tenant),
+});
+
+export interface ClassDTO {
+  id: string;
+  name: string;
+  section: string;
+  subject: string;
+  student_count: number;
+  room: string;
+  next_period?: string;
+}
+export const toClass = (d: ClassDTO): Class => ({
+  id: d.id,
+  name: d.name,
+  section: d.section,
+  subject: d.subject,
+  studentCount: d.student_count,
+  room: d.room,
+  nextPeriod: d.next_period,
 });
