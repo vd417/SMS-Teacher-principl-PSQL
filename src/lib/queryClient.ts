@@ -1,0 +1,36 @@
+import { QueryClient } from '@tanstack/react-query';
+import { isAppError } from './errors';
+
+export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 30_000,
+      retry: (count, error) => {
+        if (isAppError(error) && error.status === 401) return false;
+        return count < 2;
+      },
+    },
+  },
+});
+
+export const queryKeys = {
+  classes: (tenantId: string) => ['classes', tenantId] as const,
+  class: (tenantId: string, id: string) => ['classes', tenantId, id] as const,
+  studentsByClass: (tenantId: string, classId: string) => ['students', tenantId, classId] as const,
+  student: (tenantId: string, id: string) => ['student', tenantId, id] as const,
+  attendance: (tenantId: string, classId: string, date: string) =>
+    ['attendance', tenantId, classId, date] as const,
+  timetable: (tenantId: string) => ['timetable', tenantId] as const,
+  exams: (tenantId: string) => ['exams', tenantId] as const,
+  exam: (tenantId: string, id: string) => ['exams', tenantId, id] as const,
+  gradesByExam: (tenantId: string, examId: string) => ['grades', tenantId, examId] as const,
+  assignments: (tenantId: string) => ['assignments', tenantId] as const,
+  chatContacts: (tenantId: string) => ['chat', tenantId] as const,
+  chatMessages: (tenantId: string, contactId: string) => ['chat', tenantId, contactId] as const,
+  announcements: (tenantId: string) => ['announcements', tenantId] as const,
+  calendar: (tenantId: string) => ['calendar', tenantId] as const,
+  library: (tenantId: string) => ['library', tenantId] as const,
+  payroll: (tenantId: string) => ['payroll', tenantId] as const,
+  leave: (tenantId: string) => ['leave', tenantId] as const,
+  dashboard: (tenantId: string) => ['dashboard', tenantId] as const,
+};
