@@ -1,15 +1,24 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  ActivityIndicator,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
-import { ScreenHeader, Pill, Card, Toast } from '../components';
-import { leaveRequests } from '../data';
+import { ScreenHeader, Pill, Toast } from '../components';
+import { useLeave, useApplyLeave } from '@/features/leave/hooks';
 import { leaveSchema, LeaveSchemaType } from '../validation/schemas';
-import type { LeaveType, LeaveStatus } from '../types';
+import type { NewLeaveInput } from '@/data/repositories/types';
+import type { LeaveType, LeaveStatus } from '@/data/domain';
 
 const TYPE_LABELS: Record<LeaveType, string> = {
   casual: 'Casual Leave',
@@ -36,6 +45,9 @@ export const LeaveScreen: React.FC = () => {
   const [tab, setTab] = useState<'apply' | 'history'>('apply');
   const [toastVisible, setToastVisible] = useState(false);
 
+  const { data: leaveRequests = [], isLoading, isError } = useLeave();
+  const applyMutation = useApplyLeave();
+
   const {
     control,
     handleSubmit,
@@ -54,11 +66,23 @@ export const LeaveScreen: React.FC = () => {
   });
 
   const selectedType = watch('type');
+  // suppress unused warning — selectedType used implicitly by the typeChipActive style
+  void selectedType;
 
   const onSubmit = (data: LeaveSchemaType) => {
-    console.log('Leave data:', data);
-    setToastVisible(true);
-    reset();
+    const input: NewLeaveInput = {
+      type: data.type,
+      from: data.from,
+      to: data.to,
+      reason: data.reason,
+      substitute: data.substitute || undefined,
+    };
+    applyMutation.mutate(input, {
+      onSuccess: () => {
+        setToastVisible(true);
+        reset();
+      },
+    });
   };
 
   return (
@@ -199,13 +223,39 @@ export const LeaveScreen: React.FC = () => {
 
             {/* Submit */}
             <Animated.View entering={FadeInDown.delay(310).springify()}>
-              <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit(onSubmit)}>
-                <Text style={styles.submitBtnText}>Submit Application</Text>
+              <TouchableOpacity
+                style={styles.submitBtn}
+                onPress={handleSubmit(onSubmit)}
+                disabled={applyMutation.isPending}
+              >
+                {applyMutation.isPending ? (
+                  <ActivityIndicator color={Colors.white} />
+                ) : (
+                  <Text style={styles.submitBtnText}>Submit Application</Text>
+                )}
               </TouchableOpacity>
             </Animated.View>
           </>
         ) : (
           <>
+            {isLoading && (
+              <View style={styles.center}>
+                <ActivityIndicator color={Colors.primary} />
+              </View>
+            )}
+
+            {isError && (
+              <View style={styles.center}>
+                <Text style={styles.loadErrorText}>Failed to load leave history</Text>
+              </View>
+            )}
+
+            {!isLoading && !isError && leaveRequests.length === 0 && (
+              <View style={styles.center}>
+                <Text style={styles.emptyText}>No leave requests yet</Text>
+              </View>
+            )}
+
             {leaveRequests.map((req, i) => (
               <Animated.View key={req.id} entering={FadeInDown.delay(150 + i * 60).springify()}>
                 <View style={styles.historyCard}>
@@ -252,6 +302,9 @@ const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: Colors.paper },
   screen: { flex: 1 },
   scroll: { paddingHorizontal: 20, gap: 8 },
+  center: { paddingVertical: 40, alignItems: 'center' },
+  loadErrorText: { fontFamily: FontFamily.regular, fontSize: 14, color: Colors.absent },
+  emptyText: { fontFamily: FontFamily.regular, fontSize: 14, color: Colors.inkMuted },
   tabs: {
     flexDirection: 'row',
     backgroundColor: Colors.card,

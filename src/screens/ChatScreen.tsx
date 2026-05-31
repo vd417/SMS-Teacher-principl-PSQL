@@ -1,5 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useNavigation } from '@react-navigation/native';
@@ -7,7 +14,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { Avatar, SearchField, ScreenHeader } from '../components';
-import { chatContacts } from '../data';
+import { useChatContacts } from '@/features/chat/hooks';
+import { deriveColorSet } from '@/theme/derive';
 import type { InboxStackParamList } from '../navigation/types';
 
 type ChatNav = NativeStackNavigationProp<InboxStackParamList, 'ChatScreen'>;
@@ -16,6 +24,8 @@ export const ChatScreen: React.FC = () => {
   const navigation = useNavigation<ChatNav>();
   const insets = useSafeAreaInsets();
   const [search, setSearch] = useState('');
+
+  const { data: chatContacts = [], isLoading, isError } = useChatContacts();
 
   const filtered = chatContacts.filter(
     (c) =>
@@ -43,44 +53,67 @@ export const ChatScreen: React.FC = () => {
         </Animated.View>
       </View>
 
-      <FlatList
-        data={filtered}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        showsVerticalScrollIndicator={false}
-        renderItem={({ item, index }) => (
-          <Animated.View entering={FadeInDown.delay(140 + index * 50).springify()}>
-            <TouchableOpacity
-              style={styles.contactRow}
-              onPress={() => navigation.navigate('ChatThreadScreen', { contactId: item.id })}
-              activeOpacity={0.8}
-            >
-              <View style={styles.avatarWrap}>
-                <Avatar initials={item.initials} size={50} backgroundColor={item.avatarColor} />
-                {item.online && <View style={styles.onlineDot} />}
-              </View>
-              <View style={styles.contactInfo}>
-                <View style={styles.contactTop}>
-                  <Text style={[styles.contactName, item.unread > 0 && styles.contactNameBold]}>
-                    {item.name}
-                  </Text>
-                  <Text style={styles.contactTime}>{item.time}</Text>
-                </View>
-                <Text style={styles.contactRole}>{item.role}</Text>
-                <Text style={styles.lastMessage} numberOfLines={1}>
-                  {item.lastMessage}
-                </Text>
-              </View>
-              {item.unread > 0 && (
-                <View style={styles.unreadBadge}>
-                  <Text style={styles.unreadText}>{item.unread}</Text>
-                </View>
-              )}
-            </TouchableOpacity>
-          </Animated.View>
-        )}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-      />
+      {isLoading && (
+        <View style={styles.center}>
+          <ActivityIndicator color={Colors.primary} />
+        </View>
+      )}
+
+      {isError && (
+        <View style={styles.center}>
+          <Text style={styles.errorText}>Failed to load conversations</Text>
+        </View>
+      )}
+
+      {!isLoading && !isError && chatContacts.length === 0 && (
+        <View style={styles.center}>
+          <Text style={styles.emptyText}>No conversations yet</Text>
+        </View>
+      )}
+
+      {!isLoading && !isError && (
+        <FlatList
+          data={filtered}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.list}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item, index }) => {
+            const { color } = deriveColorSet(item.id);
+            return (
+              <Animated.View entering={FadeInDown.delay(140 + index * 50).springify()}>
+                <TouchableOpacity
+                  style={styles.contactRow}
+                  onPress={() => navigation.navigate('ChatThreadScreen', { contactId: item.id })}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.avatarWrap}>
+                    <Avatar initials={item.initials} size={50} backgroundColor={color} />
+                    {item.online && <View style={styles.onlineDot} />}
+                  </View>
+                  <View style={styles.contactInfo}>
+                    <View style={styles.contactTop}>
+                      <Text style={[styles.contactName, item.unread > 0 && styles.contactNameBold]}>
+                        {item.name}
+                      </Text>
+                      <Text style={styles.contactTime}>{item.time}</Text>
+                    </View>
+                    <Text style={styles.contactRole}>{item.role}</Text>
+                    <Text style={styles.lastMessage} numberOfLines={1}>
+                      {item.lastMessage}
+                    </Text>
+                  </View>
+                  {item.unread > 0 && (
+                    <View style={styles.unreadBadge}>
+                      <Text style={styles.unreadText}>{item.unread}</Text>
+                    </View>
+                  )}
+                </TouchableOpacity>
+              </Animated.View>
+            );
+          }}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+        />
+      )}
     </View>
   );
 };
@@ -90,6 +123,9 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingBottom: 12 },
   searchWrap: { marginTop: 12 },
   list: { paddingHorizontal: 20, paddingBottom: 24 },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 },
+  errorText: { fontFamily: FontFamily.regular, fontSize: 14, color: Colors.absent },
+  emptyText: { fontFamily: FontFamily.regular, fontSize: 14, color: Colors.inkMuted },
   contactRow: {
     flexDirection: 'row',
     alignItems: 'center',

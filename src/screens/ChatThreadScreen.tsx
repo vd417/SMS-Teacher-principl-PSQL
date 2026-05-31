@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -18,9 +19,10 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { Avatar } from '../components';
-import { chatContacts, chatMessages } from '../data';
+import { useChatContacts, useChatMessages, useSendMessage } from '@/features/chat/hooks';
+import { deriveColorSet } from '@/theme/derive';
 import { chatMessageSchema, ChatMessageSchemaType } from '../validation/schemas';
-import type { ChatMessage } from '../types';
+import type { ChatMessage } from '@/data/domain';
 import type { InboxStackParamList } from '../navigation/types';
 
 type ChatThreadRoute = RouteProp<InboxStackParamList, 'ChatThreadScreen'>;
@@ -31,40 +33,44 @@ export const ChatThreadScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { contactId } = route.params;
 
-  const contact = chatContacts.find((c) => c.id === contactId)!;
-  const [messages, setMessages] = useState<ChatMessage[]>(chatMessages[contactId] ?? []);
-  const listRef = useRef<FlatList>(null);
+  const { data: contacts = [] } = useChatContacts();
+  const contact = contacts.find((c) => c.id === contactId);
 
   const {
-    control,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<ChatMessageSchemaType>({
+    data: messages = [],
+    isLoading: messagesLoading,
+    isError: messagesError,
+  } = useChatMessages(contactId);
+
+  const sendMutation = useSendMessage(contactId);
+
+  const listRef = useRef<FlatList>(null);
+
+  const { control, handleSubmit, reset } = useForm<ChatMessageSchemaType>({
     resolver: zodResolver(chatMessageSchema),
     defaultValues: { message: '' },
   });
 
   const onSend = (data: ChatMessageSchemaType) => {
-    const newMsg: ChatMessage = {
-      id: `m${Date.now()}`,
-      senderId: 'me',
-      text: data.message,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      isMe: true,
-    };
-    setMessages((prev) => [...prev, newMsg]);
+    sendMutation.mutate(data.message, {
+      onSuccess: () => {
+        reset();
+        setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
+      },
+    });
     reset();
     setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
   };
+
+  const { color: avatarColor } = contact ? deriveColorSet(contact.id) : { color: Colors.primary };
 
   const renderMessage = ({ item, index }: { item: ChatMessage; index: number }) => (
     <Animated.View
       entering={FadeInRight.delay(index * 20).springify()}
       style={[styles.msgWrap, item.isMe ? styles.msgWrapMe : styles.msgWrapOther]}
     >
-      {!item.isMe && (
-        <Avatar initials={contact.initials} size={32} backgroundColor={contact.avatarColor} />
+      {!item.isMe && contact && (
+        <Avatar initials={contact.initials} size={32} backgroundColor={avatarColor} />
       )}
       <View style={[styles.bubble, item.isMe ? styles.bubbleMe : styles.bubbleOther]}>
         <Text style={[styles.bubbleText, item.isMe && styles.bubbleTextMe]}>{item.text}</Text>
@@ -84,24 +90,42 @@ export const ChatThreadScreen: React.FC = () => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={Colors.ink} />
         </TouchableOpacity>
-        <Avatar initials={contact.initials} size={40} backgroundColor={contact.avatarColor} />
+        {contact ? (
+          <Avatar initials={contact.initials} size={40} backgroundColor={avatarColor} />
+        ) : (
+          <View style={[styles.avatarPlaceholder]} />
+        )}
         <View style={styles.headerInfo}>
-          <Text style={styles.headerName}>{contact.name}</Text>
-          <Text style={styles.headerRole}>{contact.role}</Text>
+          <Text style={styles.headerName}>{contact?.name ?? '...'}</Text>
+          <Text style={styles.headerRole}>{contact?.role ?? ''}</Text>
         </View>
-        {contact.online && <View style={styles.onlineBadge} />}
+        {contact?.online && <View style={styles.onlineBadge} />}
       </View>
 
       {/* Messages */}
-      <FlatList
-        ref={listRef}
-        data={messages}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.messageList}
-        renderItem={renderMessage}
-        onLayout={() => listRef.current?.scrollToEnd({ animated: false })}
-        showsVerticalScrollIndicator={false}
-      />
+      {messagesLoading && (
+        <View style={styles.center}>
+          <ActivityIndicator color={Colors.primary} />
+        </View>
+      )}
+
+      {messagesError && (
+        <View style={styles.center}>
+          <Text style={styles.errorText}>Failed to load messages</Text>
+        </View>
+      )}
+
+      {!messagesLoading && !messagesError && (
+        <FlatList
+          ref={listRef}
+          data={messages}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.messageList}
+          renderItem={renderMessage}
+          onLayout={() => listRef.current?.scrollToEnd({ animated: false })}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
 
       {/* Input */}
       <View style={[styles.inputBar, { paddingBottom: insets.bottom + 12 }]}>
@@ -120,8 +144,16 @@ export const ChatThreadScreen: React.FC = () => {
             />
           )}
         />
-        <TouchableOpacity style={styles.sendBtn} onPress={handleSubmit(onSend)}>
-          <Ionicons name="send" size={18} color={Colors.white} />
+        <TouchableOpacity
+          style={styles.sendBtn}
+          onPress={handleSubmit(onSend)}
+          disabled={sendMutation.isPending}
+        >
+          {sendMutation.isPending ? (
+            <ActivityIndicator color={Colors.white} size="small" />
+          ) : (
+            <Ionicons name="send" size={18} color={Colors.white} />
+          )}
         </TouchableOpacity>
       </View>
     </KeyboardAvoidingView>
@@ -130,6 +162,8 @@ export const ChatThreadScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: Colors.paper },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  errorText: { fontFamily: FontFamily.regular, fontSize: 14, color: Colors.absent },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -148,6 +182,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 10,
+  },
+  avatarPlaceholder: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.paper2,
   },
   headerInfo: { flex: 1, marginLeft: 10 },
   headerName: { fontFamily: FontFamily.bold, fontSize: 16, color: Colors.ink },
