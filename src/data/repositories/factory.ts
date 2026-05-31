@@ -21,6 +21,10 @@ import { mockPayroll } from '@/data/mock/payroll.repo';
 import { httpPayroll } from '@/data/http/payroll.repo';
 import { mockDashboard } from '@/data/mock/dashboard.repo';
 import { httpDashboard } from '@/data/http/dashboard.repo';
+import { mockExams } from '@/data/mock/exams.repo';
+import { httpExams } from '@/data/http/exams.repo';
+import { mockGrades } from '@/data/mock/grades.repo';
+import { httpGrades } from '@/data/http/grades.repo';
 
 const notImplemented = (name: string) =>
   new Proxy(
@@ -39,8 +43,8 @@ export function createMockRepositories(store: Store): Repositories {
     students: mockStudents(store),
     attendance: notImplemented('attendance') as Repositories['attendance'],
     timetable: mockTimetable(store),
-    exams: notImplemented('exams') as Repositories['exams'],
-    grades: notImplemented('grades') as Repositories['grades'],
+    exams: mockExams(store),
+    grades: mockGrades(store),
     assignments: mockAssignments(store),
     chat: notImplemented('chat') as Repositories['chat'],
     announcements: mockAnnouncements(store),
@@ -59,8 +63,8 @@ export function createHttpRepositories(http: HttpClient): Repositories {
     students: httpStudents(http),
     attendance: notImplemented('attendance') as Repositories['attendance'],
     timetable: httpTimetable(http),
-    exams: notImplemented('exams') as Repositories['exams'],
-    grades: notImplemented('grades') as Repositories['grades'],
+    exams: httpExams(http),
+    grades: httpGrades(http),
     assignments: httpAssignments(http),
     chat: notImplemented('chat') as Repositories['chat'],
     announcements: httpAnnouncements(http),

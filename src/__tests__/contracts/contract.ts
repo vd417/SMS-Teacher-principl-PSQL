@@ -8,6 +8,8 @@ import type {
   LibraryRepository,
   PayrollRepository,
   DashboardRepository,
+  ExamsRepository,
+  GradesRepository,
 } from '@/data/repositories/types';
 
 export function classesContract(name: string, make: () => Promise<ClassesRepository>) {
@@ -177,6 +179,88 @@ export function dashboardContract(name: string, make: () => Promise<DashboardRep
       expect(typeof stats.attendanceToday).toBe('number');
       expect(typeof stats.pendingAssignments).toBe('number');
       expect(typeof stats.upcomingExams).toBe('number');
+    });
+  });
+}
+
+export function examsContract(name: string, make: () => Promise<ExamsRepository>) {
+  describe(`ExamsRepository contract [${name}]`, () => {
+    it('list returns an array of exams with required fields', async () => {
+      const repo = await make();
+      const list = await repo.list();
+      expect(Array.isArray(list)).toBe(true);
+      expect(list.length).toBeGreaterThan(0);
+      for (const e of list) {
+        expect(typeof e.id).toBe('string');
+        expect(typeof e.title).toBe('string');
+        expect(typeof e.classId).toBe('string');
+        expect(typeof e.className).toBe('string');
+        expect(typeof e.subject).toBe('string');
+        expect(typeof e.maxMarks).toBe('number');
+        expect(typeof e.status).toBe('string');
+        expect(e).not.toHaveProperty('color');
+        expect(e).not.toHaveProperty('colorSoft');
+      }
+    });
+
+    it('get returns the requested exam', async () => {
+      const repo = await make();
+      const first = (await repo.list())[0];
+      const found = await repo.get(first.id);
+      expect(found.id).toBe(first.id);
+    });
+
+    it('create returns an exam with a string id echoing input title and maxMarks', async () => {
+      const repo = await make();
+      const input = {
+        title: 'Contract Test Exam',
+        classId: 'c1',
+        date: '2026-06-15',
+        time: '10:00 AM',
+        duration: 60,
+        maxMarks: 50,
+        topics: ['Algebra'],
+        status: 'upcoming' as const,
+      };
+      const created = await repo.create(input);
+      expect(typeof created.id).toBe('string');
+      expect(created.title).toBe(input.title);
+      expect(created.maxMarks).toBe(input.maxMarks);
+      expect(created.classId).toBe(input.classId);
+    });
+  });
+}
+
+export function gradesContract(
+  name: string,
+  examId: string,
+  make: () => Promise<GradesRepository>
+) {
+  describe(`GradesRepository contract [${name}]`, () => {
+    it('listByExam returns an array of grade entries with required fields', async () => {
+      const repo = await make();
+      const list = await repo.listByExam(examId);
+      expect(Array.isArray(list)).toBe(true);
+      expect(list.length).toBeGreaterThan(0);
+      for (const g of list) {
+        expect(typeof g.studentId).toBe('string');
+        expect(typeof g.studentName).toBe('string');
+        expect(typeof g.examId).toBe('string');
+        expect(typeof g.marks).toBe('number');
+        expect(typeof g.maxMarks).toBe('number');
+        expect(typeof g.grade).toBe('string');
+        expect(g).not.toHaveProperty('color');
+      }
+    });
+
+    it('upsert returns an entry with the right studentId/examId/marks', async () => {
+      const repo = await make();
+      const input = { studentId: 's1', examId, marks: 75 };
+      const entry = await repo.upsert(input);
+      expect(entry.studentId).toBe(input.studentId);
+      expect(entry.examId).toBe(input.examId);
+      expect(entry.marks).toBe(input.marks);
+      expect(typeof entry.grade).toBe('string');
     });
   });
 }

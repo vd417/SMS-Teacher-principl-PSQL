@@ -16,6 +16,7 @@ export interface RequestOptions {
 export interface HttpClient {
   get<T>(path: string, opts?: RequestOptions): Promise<T>;
   post<T>(path: string, body?: unknown): Promise<T>;
+  put<T>(path: string, body?: unknown): Promise<T>;
   patch<T>(path: string, body?: unknown): Promise<T>;
   delete<T>(path: string): Promise<T>;
 }
@@ -70,6 +71,7 @@ export function createHttpClient(config: HttpClientConfig): HttpClient {
   return {
     get: (p, o) => request('GET', p, undefined, o),
     post: (p, b) => request('POST', p, b),
+    put: (p, b) => request('PUT', p, b),
     patch: (p, b) => request('PATCH', p, b),
     delete: (p) => request('DELETE', p),
   };

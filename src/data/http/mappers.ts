@@ -11,6 +11,9 @@ import type {
   LibraryBook,
   PayslipEntry,
   DashboardStats,
+  Exam,
+  GradeEntry,
+  ExamStatus,
 } from '@/data/domain';
 
 export interface SessionDTO {
@@ -206,6 +209,67 @@ export const toPayslip = (d: PayslipDTO): PayslipEntry => ({
   deductions: d.deductions,
   net: d.net,
   status: d.status,
+});
+
+// ─── Exams ───────────────────────────────────────────────────────────────────
+export interface ExamDTO {
+  id: string;
+  title: string;
+  class_id: string;
+  class_name: string;
+  subject: string;
+  date: string;
+  time: string;
+  duration: number;
+  max_marks: number;
+  topics: string[];
+  status: ExamStatus;
+}
+export const toExam = (d: ExamDTO): Exam => ({
+  id: d.id,
+  title: d.title,
+  classId: d.class_id,
+  className: d.class_name,
+  subject: d.subject,
+  date: d.date,
+  time: d.time,
+  duration: d.duration,
+  maxMarks: d.max_marks,
+  topics: d.topics,
+  status: d.status,
+});
+export const toExamDTO = (
+  e: Partial<Exam> & { classId?: string; maxMarks?: number }
+): Partial<ExamDTO> => ({
+  ...(e.id !== undefined && { id: e.id }),
+  ...(e.title !== undefined && { title: e.title }),
+  ...(e.classId !== undefined && { class_id: e.classId }),
+  ...(e.className !== undefined && { class_name: e.className }),
+  ...(e.subject !== undefined && { subject: e.subject }),
+  ...(e.date !== undefined && { date: e.date }),
+  ...(e.time !== undefined && { time: e.time }),
+  ...(e.duration !== undefined && { duration: e.duration }),
+  ...(e.maxMarks !== undefined && { max_marks: e.maxMarks }),
+  ...(e.topics !== undefined && { topics: e.topics }),
+  ...(e.status !== undefined && { status: e.status }),
+});
+
+// ─── Grades ──────────────────────────────────────────────────────────────────
+export interface GradeDTO {
+  student_id: string;
+  student_name: string;
+  exam_id: string;
+  marks: number;
+  max_marks: number;
+  grade: string;
+}
+export const toGrade = (d: GradeDTO): GradeEntry => ({
+  studentId: d.student_id,
+  studentName: d.student_name,
+  examId: d.exam_id,
+  marks: d.marks,
+  maxMarks: d.max_marks,
+  grade: d.grade,
 });
 
 // ─── Dashboard ───────────────────────────────────────────────────────────────

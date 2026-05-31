@@ -1,20 +1,38 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { ScreenHeader } from '../components';
-import { grades, exams, classes } from '../data';
+import { useExams } from '../features/exams/hooks';
+import { useGradesByExam } from '../features/grades/hooks';
+import { deriveColorSet } from '../theme/derive';
 
 export const GradesScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
-  const [selectedExam, setSelectedExam] = useState(exams[0].id);
 
+  const { data: exams = [], isLoading: examsLoading } = useExams();
   const completedExams = exams.filter((e) => e.status === 'completed');
-  const examGrades = grades.filter((g) => g.examId === selectedExam);
-  const exam = exams.find((e) => e.id === selectedExam)!;
-  const cls = classes.find((c) => c.id === exam?.classId);
+
+  const [selectedExam, setSelectedExam] = useState<string>('');
+
+  // Default to first completed exam once data loads
+  const effectiveExamId = selectedExam || completedExams[0]?.id || '';
+
+  const { data: examGrades = [], isLoading: gradesLoading } = useGradesByExam(effectiveExamId);
+
+  const exam = exams.find((e) => e.id === effectiveExamId);
+  const { color, colorSoft } = exam
+    ? deriveColorSet(exam.id)
+    : { color: Colors.primary, colorSoft: Colors.primarySoft };
 
   const avg =
     examGrades.length > 0
@@ -22,6 +40,8 @@ export const GradesScreen: React.FC = () => {
           examGrades.reduce((sum, g) => sum + (g.marks / g.maxMarks) * 100, 0) / examGrades.length
         )
       : 0;
+
+  const isLoading = examsLoading || gradesLoading;
 
   return (
     <ScrollView
@@ -41,33 +61,49 @@ export const GradesScreen: React.FC = () => {
           style={styles.examPicker}
           contentContainerStyle={styles.examPickerContent}
         >
-          {completedExams.map((e) => (
-            <TouchableOpacity
-              key={e.id}
-              style={[
-                styles.examChip,
-                selectedExam === e.id && { backgroundColor: e.color, borderColor: e.color },
-              ]}
-              onPress={() => setSelectedExam(e.id)}
-            >
-              <Text
-                style={[styles.examChipText, selectedExam === e.id && { color: Colors.white }]}
-                numberOfLines={1}
+          {completedExams.map((e) => {
+            const { color: eColor } = deriveColorSet(e.id);
+            const isSelected = effectiveExamId === e.id;
+            return (
+              <TouchableOpacity
+                key={e.id}
+                style={[
+                  styles.examChip,
+                  isSelected && { backgroundColor: eColor, borderColor: eColor },
+                ]}
+                onPress={() => setSelectedExam(e.id)}
               >
-                {e.title}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Text
+                  style={[styles.examChipText, isSelected && { color: Colors.white }]}
+                  numberOfLines={1}
+                >
+                  {e.title}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
       </Animated.View>
 
-      {exam && (
+      {isLoading && (
+        <View style={styles.centered}>
+          <ActivityIndicator color={Colors.primary} />
+        </View>
+      )}
+
+      {!isLoading && !exam && completedExams.length === 0 && (
+        <View style={styles.centered}>
+          <Text style={styles.emptyText}>No completed exams yet.</Text>
+        </View>
+      )}
+
+      {!isLoading && exam && (
         <>
           {/* Summary */}
           <Animated.View entering={FadeInDown.delay(160).springify()} style={styles.summaryCard}>
-            <View style={[styles.summaryLeft, { backgroundColor: exam.colorSoft }]}>
-              <Text style={[styles.summaryAvg, { color: exam.color }]}>{avg}%</Text>
-              <Text style={[styles.summaryLabel, { color: exam.color }]}>Class Average</Text>
+            <View style={[styles.summaryLeft, { backgroundColor: colorSoft }]}>
+              <Text style={[styles.summaryAvg, { color }]}>{avg}%</Text>
+              <Text style={[styles.summaryLabel, { color }]}>Class Average</Text>
             </View>
             <View style={styles.summaryRight}>
               <Text style={styles.summaryTitle}>{exam.title}</Text>
@@ -95,8 +131,8 @@ export const GradesScreen: React.FC = () => {
                       {g.marks}/{g.maxMarks} marks
                     </Text>
                   </View>
-                  <View style={[styles.gradePill, { backgroundColor: exam.colorSoft }]}>
-                    <Text style={[styles.gradePillText, { color: exam.color }]}>{g.grade}</Text>
+                  <View style={[styles.gradePill, { backgroundColor: colorSoft }]}>
+                    <Text style={[styles.gradePillText, { color }]}>{g.grade}</Text>
                   </View>
                   <Text style={styles.gradePct}>{Math.round((g.marks / g.maxMarks) * 100)}%</Text>
                 </View>
@@ -116,6 +152,7 @@ export const GradesScreen: React.FC = () => {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.paper },
   scroll: { paddingHorizontal: 20, gap: 12 },
+  centered: { paddingVertical: 40, alignItems: 'center' },
   examPicker: { marginBottom: 4 },
   examPickerContent: { gap: 8, paddingRight: 8 },
   examChip: {
