@@ -64,8 +64,8 @@ export function usePunch() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.myAttendanceToday(tenantId) });
-      qc.invalidateQueries({ queryKey: ['myAttendance', tenantId, 'history'] });
-      qc.invalidateQueries({ queryKey: ['myAttendance', tenantId, 'summary'] });
+      qc.invalidateQueries({ queryKey: queryKeys.myAttendanceHistoryPrefix(tenantId) });
+      qc.invalidateQueries({ queryKey: queryKeys.myAttendanceSummaryPrefix(tenantId) });
     },
   });
 }

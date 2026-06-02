@@ -42,4 +42,7 @@ export const queryKeys = {
     ['myAttendance', tenantId, 'history', limit] as const,
   myAttendanceSummary: (tenantId: string, month: string) =>
     ['myAttendance', tenantId, 'summary', month] as const,
+  // Prefixes for invalidating every limit/month variant at once (react-query prefix match).
+  myAttendanceHistoryPrefix: (tenantId: string) => ['myAttendance', tenantId, 'history'] as const,
+  myAttendanceSummaryPrefix: (tenantId: string) => ['myAttendance', tenantId, 'summary'] as const,
 };
