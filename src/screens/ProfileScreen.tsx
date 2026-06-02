@@ -37,7 +37,6 @@ const MENU_ITEMS = [
     screen: 'SettingsScreen',
     color: Colors.late,
   },
-  { icon: 'log-out-outline', label: 'Sign Out', screen: null, color: Colors.absent },
 ] as const;
 
 export const ProfileScreen: React.FC = () => {
@@ -49,11 +48,7 @@ export const ProfileScreen: React.FC = () => {
   const { data: stats } = useDashboardStats();
   const logout = useLogout();
 
-  const handleMenuPress = (label: string, screen: string | null) => {
-    if (label === 'Sign Out') {
-      logout.mutate();
-      return;
-    }
+  const handleMenuPress = (screen: string | null) => {
     if (!screen) return;
     navigation.navigate(screen as keyof ProfileStackParamList);
   };
@@ -128,21 +123,30 @@ export const ProfileScreen: React.FC = () => {
             <TouchableOpacity
               key={item.label}
               style={[styles.menuRow, i < MENU_ITEMS.length - 1 && styles.menuRowBorder]}
-              onPress={() => handleMenuPress(item.label, item.screen)}
+              onPress={() => handleMenuPress(item.screen)}
               activeOpacity={0.7}
             >
               <View style={[styles.menuIconWrap, { backgroundColor: item.color + '20' }]}>
                 <Ionicons name={item.icon as never} size={20} color={item.color} />
               </View>
-              <Text
-                style={[styles.menuLabel, item.label === 'Sign Out' && { color: Colors.absent }]}
-              >
-                {item.label}
-              </Text>
+              <Text style={styles.menuLabel}>{item.label}</Text>
               <Ionicons name="chevron-forward" size={18} color={Colors.inkSoft} />
             </TouchableOpacity>
           ))}
         </Card>
+      </Animated.View>
+
+      {/* Log Out */}
+      <Animated.View entering={FadeInDown.delay(340).springify()} style={styles.logoutSection}>
+        <TouchableOpacity
+          style={styles.logoutButton}
+          onPress={() => logout.mutate()}
+          disabled={logout.isPending}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="log-out-outline" size={20} color={Colors.absent} />
+          <Text style={styles.logoutLabel}>{logout.isPending ? 'Signing Out…' : 'Log Out'}</Text>
+        </TouchableOpacity>
       </Animated.View>
     </ScrollView>
   );
@@ -279,5 +283,23 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.ink,
     flex: 1,
+  },
+  logoutSection: {
+    paddingHorizontal: 20,
+    paddingTop: 24,
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: Colors.absentSoft,
+    borderRadius: Radii.lg,
+    paddingVertical: 16,
+  },
+  logoutLabel: {
+    fontFamily: FontFamily.bold,
+    fontSize: 15,
+    color: Colors.absent,
   },
 });
