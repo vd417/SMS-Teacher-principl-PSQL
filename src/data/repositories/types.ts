@@ -17,6 +17,9 @@ import type {
   LeaveRequest,
   DashboardStats,
   ExamStatus,
+  Bus,
+  BusPosition,
+  BoardingRecord,
 } from '@/data/domain';
 
 export interface NewExamInput {
@@ -100,6 +103,12 @@ export interface LeaveRepository {
 }
 export interface DashboardRepository {
   stats(): Promise<DashboardStats>;
+}
+export interface BusRepository {
+  assignedBus(): Promise<Bus>;
+  position(busId: string): Promise<BusPosition>;
+  roster(busId: string): Promise<BoardingRecord[]>;
+  saveBoarding(busId: string, records: BoardingRecord[]): Promise<void>;
 }
 
 export interface Repositories {
