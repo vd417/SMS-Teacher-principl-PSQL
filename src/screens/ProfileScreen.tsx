@@ -18,6 +18,12 @@ type ProfileNav = NativeStackNavigationProp<ProfileStackParamList, 'ProfileScree
 
 const MENU_ITEMS = [
   {
+    icon: 'time-outline',
+    label: 'My Attendance',
+    screen: 'MyAttendanceScreen',
+    color: Colors.primary,
+  },
+  {
     icon: 'document-text-outline',
     label: 'My Payslip',
     screen: 'PayslipScreen',

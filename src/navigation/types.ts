@@ -51,6 +51,7 @@ export type InboxStackParamList = {
 // Profile stack params
 export type ProfileStackParamList = {
   ProfileScreen: undefined;
+  MyAttendanceScreen: undefined;
   SettingsScreen: undefined;
   PayslipScreen: undefined;
   LeaveScreen: undefined;
