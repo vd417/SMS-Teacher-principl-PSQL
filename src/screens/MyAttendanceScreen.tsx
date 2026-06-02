@@ -42,6 +42,7 @@ export const MyAttendanceScreen: React.FC = () => {
 
   const canCheckIn = !today?.checkIn;
   const canCheckOut = !!today?.checkIn && !today?.checkOut;
+  const latestPunch = today?.checkOut ?? today?.checkIn;
 
   const doPunch = (kind: 'in' | 'out') => {
     punch.mutate(kind, {
@@ -90,10 +91,13 @@ export const MyAttendanceScreen: React.FC = () => {
                   <Text style={styles.timeValue}>{timeOf(today?.checkOut)}</Text>
                 </View>
               </View>
-              {(today?.checkOut ?? today?.checkIn) && (
-                <Text style={styles.distanceHint}>
-                  📍 {Math.round((today?.checkOut ?? today?.checkIn)!.distanceMeters)} m from school
-                </Text>
+              {latestPunch && (
+                <View style={styles.distanceHint}>
+                  <Ionicons name="location" size={12} color={Colors.inkMuted} />
+                  <Text style={styles.distanceText}>
+                    {Math.round(latestPunch.distanceMeters)} m from school
+                  </Text>
+                </View>
               )}
               {today && dayFlagged(today) && (
                 <View style={styles.flagBadge}>
@@ -103,20 +107,34 @@ export const MyAttendanceScreen: React.FC = () => {
               )}
               <View style={styles.actions}>
                 <TouchableOpacity
-                  style={[styles.actionBtn, !canCheckIn && styles.actionBtnDisabled]}
+                  style={[
+                    styles.actionBtn,
+                    (!canCheckIn || punch.isPending) && styles.actionBtnDisabled,
+                  ]}
                   disabled={!canCheckIn || punch.isPending}
                   onPress={() => doPunch('in')}
                   activeOpacity={0.85}
                 >
-                  <Text style={styles.actionText}>Check In</Text>
+                  {punch.isPending && punch.variables === 'in' ? (
+                    <ActivityIndicator color={Colors.white} />
+                  ) : (
+                    <Text style={styles.actionText}>Check In</Text>
+                  )}
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.actionBtn, !canCheckOut && styles.actionBtnDisabled]}
+                  style={[
+                    styles.actionBtn,
+                    (!canCheckOut || punch.isPending) && styles.actionBtnDisabled,
+                  ]}
                   disabled={!canCheckOut || punch.isPending}
                   onPress={() => doPunch('out')}
                   activeOpacity={0.85}
                 >
-                  <Text style={styles.actionText}>Check Out</Text>
+                  {punch.isPending && punch.variables === 'out' ? (
+                    <ActivityIndicator color={Colors.white} />
+                  ) : (
+                    <Text style={styles.actionText}>Check Out</Text>
+                  )}
                 </TouchableOpacity>
               </View>
             </>
@@ -189,12 +207,8 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     marginTop: 2,
   },
-  distanceHint: {
-    fontFamily: FontFamily.medium,
-    fontSize: 12,
-    color: Colors.inkMuted,
-    marginTop: 12,
-  },
+  distanceHint: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 12 },
+  distanceText: { fontFamily: FontFamily.medium, fontSize: 12, color: Colors.inkMuted },
   flagBadge: {
     flexDirection: 'row',
     alignItems: 'center',
