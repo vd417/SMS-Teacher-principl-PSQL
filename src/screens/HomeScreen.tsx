@@ -76,12 +76,14 @@ export const HomeScreen: React.FC = () => {
 
   const { data: myToday, isLoading: myTodayLoading } = useMyAttendanceToday();
   const punch = usePunch();
-  const [punchToast, setPunchToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(
-    null
-  );
+  const [punchToast, setPunchToast] = useState<{
+    msg: string;
+    type: 'success' | 'warning' | 'error';
+  } | null>(null);
 
   const canCheckIn = !myTodayLoading && !myToday?.checkIn;
   const canCheckOut = !myTodayLoading && !!myToday?.checkIn && !myToday?.checkOut;
+  const myLatestPunch = myToday?.checkOut ?? myToday?.checkIn;
 
   const handlePunch = (kind: 'in' | 'out') => {
     punch.mutate(kind, {
@@ -92,7 +94,7 @@ export const HomeScreen: React.FC = () => {
           msg: ev?.verified
             ? `Checked ${kind} — ${meters} m from school ✓`
             : `Checked ${kind} — ${meters} m away, flagged`,
-          type: ev?.verified ? 'success' : 'error',
+          type: ev?.verified ? 'success' : 'warning',
         });
       },
       onError: (e) =>
@@ -146,6 +148,19 @@ export const HomeScreen: React.FC = () => {
                 </Text>
               )}
             </View>
+            {myLatestPunch && (
+              <View style={styles.myAttHint}>
+                <Ionicons
+                  name={myLatestPunch.verified ? 'location' : 'warning'}
+                  size={12}
+                  color={myLatestPunch.verified ? Colors.inkMuted : Colors.late}
+                />
+                <Text style={styles.myAttHintText}>
+                  {Math.round(myLatestPunch.distanceMeters)} m from school
+                  {myLatestPunch.verified ? '' : ' · unverified'}
+                </Text>
+              </View>
+            )}
             <View style={styles.myAttActions}>
               <TouchableOpacity
                 style={[
@@ -645,6 +660,8 @@ const styles = StyleSheet.create({
   myAttHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 },
   myAttTitle: { fontFamily: FontFamily.bold, fontSize: 15, color: Colors.ink, flex: 1 },
   myAttStatus: { fontFamily: FontFamily.semiBold, fontSize: 12, color: Colors.present },
+  myAttHint: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 12 },
+  myAttHintText: { fontFamily: FontFamily.medium, fontSize: 12, color: Colors.inkMuted },
   myAttActions: { flexDirection: 'row', gap: 12 },
   myAttBtn: {
     flex: 1,

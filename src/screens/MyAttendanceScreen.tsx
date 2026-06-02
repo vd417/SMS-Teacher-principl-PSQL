@@ -38,7 +38,10 @@ export const MyAttendanceScreen: React.FC = () => {
   const { data: summary } = useMyAttendanceSummary(month);
   const punch = usePunch();
 
-  const [toast, setToast] = React.useState<{ msg: string; type: 'success' | 'error' } | null>(null);
+  const [toast, setToast] = React.useState<{
+    msg: string;
+    type: 'success' | 'warning' | 'error';
+  } | null>(null);
 
   const canCheckIn = !today?.checkIn;
   const canCheckOut = !!today?.checkIn && !today?.checkOut;
@@ -53,7 +56,7 @@ export const MyAttendanceScreen: React.FC = () => {
           msg: ev?.verified
             ? `Checked ${kind} — ${meters} m from school ✓`
             : `Checked ${kind} — ${meters} m away, location flagged`,
-          type: ev?.verified ? 'success' : 'error',
+          type: ev?.verified ? 'success' : 'warning',
         });
       },
       onError: (e) => {
