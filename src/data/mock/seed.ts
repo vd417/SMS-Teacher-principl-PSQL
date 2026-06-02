@@ -16,6 +16,7 @@ import type {
   LeaveRequest,
   Bus,
   BoardingRecord,
+  TeacherAttendanceDay,
 } from '@/data/domain';
 
 export interface SeedShape {
@@ -36,6 +37,7 @@ export interface SeedShape {
   leave: LeaveRequest[];
   buses: Bus[];
   busBoarding: BoardingRecord[];
+  myAttendance: TeacherAttendanceDay[];
 }
 
 export const seed: SeedShape = {
@@ -1263,6 +1265,51 @@ export const seed: SeedShape = {
       initials: 'CK',
       stopId: 'stop_5',
       status: 'pending',
+    },
+  ],
+
+  myAttendance: [
+    {
+      date: '2026-05-28',
+      checkIn: {
+        kind: 'in',
+        at: '2026-05-28T08:02:00.000Z',
+        lat: 40.0,
+        lng: -75.0,
+        accuracyMeters: 6,
+        distanceMeters: 4,
+        verified: true,
+      },
+      checkOut: {
+        kind: 'out',
+        at: '2026-05-28T15:31:00.000Z',
+        lat: 40.0,
+        lng: -75.0,
+        accuracyMeters: 6,
+        distanceMeters: 5,
+        verified: true,
+      },
+    },
+    {
+      date: '2026-05-29',
+      checkIn: {
+        kind: 'in',
+        at: '2026-05-29T08:20:00.000Z',
+        lat: 40.0009,
+        lng: -75.0,
+        accuracyMeters: 5,
+        distanceMeters: 100,
+        verified: false,
+      },
+      checkOut: {
+        kind: 'out',
+        at: '2026-05-29T15:10:00.000Z',
+        lat: 40.0,
+        lng: -75.0,
+        accuracyMeters: 6,
+        distanceMeters: 5,
+        verified: true,
+      },
     },
   ],
 };

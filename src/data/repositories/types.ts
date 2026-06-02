@@ -20,6 +20,10 @@ import type {
   Bus,
   BusPosition,
   BoardingRecord,
+  SchoolLocation,
+  CheckEvent,
+  TeacherAttendanceDay,
+  TeacherAttendanceSummary,
 } from '@/data/domain';
 
 export interface NewExamInput {
@@ -62,6 +66,13 @@ export interface StudentsRepository {
 export interface AttendanceRepository {
   forClass(classId: string, date: string): Promise<AttendanceRecord[]>;
   save(classId: string, date: string, records: AttendanceRecord[]): Promise<void>;
+}
+export interface MyAttendanceRepository {
+  schoolLocation(): Promise<SchoolLocation>;
+  today(): Promise<TeacherAttendanceDay>;
+  history(limit: number): Promise<TeacherAttendanceDay[]>;
+  summary(month: string): Promise<TeacherAttendanceSummary>; // 'YYYY-MM'
+  punch(event: CheckEvent): Promise<TeacherAttendanceDay>;
 }
 export interface TimetableRepository {
   list(): Promise<TimetableSlot[]>;
@@ -128,4 +139,5 @@ export interface Repositories {
   leave: LeaveRepository;
   dashboard: DashboardRepository;
   bus: BusRepository;
+  myAttendance: MyAttendanceRepository;
 }
