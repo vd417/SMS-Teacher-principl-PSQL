@@ -14,6 +14,7 @@ import type {
   ChatRepository,
   LeaveRepository,
   BusRepository,
+  MyAttendanceRepository,
 } from '@/data/repositories/types';
 
 export function classesContract(name: string, make: () => Promise<ClassesRepository>) {
@@ -427,6 +428,59 @@ export function busContract(name: string, make: () => Promise<BusRepository>) {
       await repo.saveBoarding(bus.id, updated);
       const after = await repo.roster(bus.id);
       for (const r of after) expect(r.status).toBe('boarded');
+    });
+  });
+}
+
+export function myAttendanceContract(name: string, make: () => Promise<MyAttendanceRepository>) {
+  describe(`MyAttendanceRepository contract [${name}]`, () => {
+    it('schoolLocation returns coordinates and a radius', async () => {
+      const repo = await make();
+      const loc = await repo.schoolLocation();
+      expect(typeof loc.lat).toBe('number');
+      expect(typeof loc.lng).toBe('number');
+      expect(typeof loc.radiusMeters).toBe('number');
+      expect(typeof loc.name).toBe('string');
+    });
+
+    it('today returns a day object with a date string', async () => {
+      const repo = await make();
+      const day = await repo.today();
+      expect(typeof day.date).toBe('string');
+    });
+
+    it('history returns an array no longer than the limit', async () => {
+      const repo = await make();
+      const list = await repo.history(5);
+      expect(Array.isArray(list)).toBe(true);
+      expect(list.length).toBeLessThanOrEqual(5);
+      for (const d of list) expect(typeof d.date).toBe('string');
+    });
+
+    it('summary returns numeric fields', async () => {
+      const repo = await make();
+      const s = await repo.summary('2026-05');
+      expect(typeof s.daysPresent).toBe('number');
+      expect(typeof s.daysFlagged).toBe('number');
+      expect(typeof s.totalHours).toBe('number');
+    });
+
+    it('punch in then today reflects the check-in', async () => {
+      const repo = await make();
+      const now = new Date().toISOString();
+      const ev = {
+        kind: 'in' as const,
+        at: now,
+        lat: 40.0,
+        lng: -75.0,
+        accuracyMeters: 5,
+        distanceMeters: 3,
+        verified: true,
+      };
+      const day = await repo.punch(ev);
+      expect(day.checkIn?.kind).toBe('in');
+      const today = await repo.today();
+      expect(today.checkIn?.at).toBe(now);
     });
   });
 }
