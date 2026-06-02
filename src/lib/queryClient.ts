@@ -33,4 +33,7 @@ export const queryKeys = {
   payroll: (tenantId: string) => ['payroll', tenantId] as const,
   leave: (tenantId: string) => ['leave', tenantId] as const,
   dashboard: (tenantId: string) => ['dashboard', tenantId] as const,
+  bus: (tenantId: string) => ['bus', tenantId] as const,
+  busPosition: (tenantId: string, busId: string) => ['bus', tenantId, busId, 'position'] as const,
+  busRoster: (tenantId: string, busId: string) => ['bus', tenantId, busId, 'roster'] as const,
 };
