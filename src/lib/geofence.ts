@@ -56,9 +56,12 @@ export function buildCheckEvent(
   };
 }
 
-/** Today's date as YYYY-MM-DD (local). */
+/** Today's date as YYYY-MM-DD in the device's local timezone. */
 export function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
+  const d = new Date();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${month}-${day}`;
 }
 
 /**
@@ -90,6 +93,9 @@ export async function getCurrentPosition(): Promise<Position> {
     return {
       lat: loc.coords.latitude,
       lng: loc.coords.longitude,
+      // When the platform reports no accuracy (null), fall back to ACCURACY_CAP.
+      // This grants the maximum allowed buffer rather than flagging an honest
+      // teacher whose device simply didn't report accuracy.
       accuracyMeters: loc.coords.accuracy ?? ACCURACY_CAP,
     };
   } catch {

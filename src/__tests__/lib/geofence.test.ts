@@ -1,4 +1,4 @@
-import { haversineMeters, evaluate, buildCheckEvent, ACCURACY_CAP } from '@/lib/geofence';
+import { haversineMeters, evaluate, buildCheckEvent, todayISO, ACCURACY_CAP } from '@/lib/geofence';
 import type { SchoolLocation } from '@/data/domain';
 
 const SCHOOL: SchoolLocation = { lat: 40.0, lng: -75.0, radiusMeters: 10, name: 'Test School' };
@@ -41,6 +41,12 @@ describe('evaluate', () => {
     const r = evaluate({ lat: 40.001, lng: -75.0, accuracyMeters: 9999 }, SCHOOL);
     expect(ACCURACY_CAP).toBe(50);
     expect(r.verified).toBe(false);
+  });
+});
+
+describe('todayISO', () => {
+  it('returns a YYYY-MM-DD string', () => {
+    expect(todayISO()).toMatch(/^\d{4}-\d{2}-\d{2}$/);
   });
 });
 
