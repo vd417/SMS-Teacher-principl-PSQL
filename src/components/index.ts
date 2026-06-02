@@ -9,3 +9,4 @@ export * from './ui/IconButton';
 export * from './ui/Toast';
 export * from './ui/Donut';
 export * from './ui/TabBar';
+export * from './ui/PunchButton';

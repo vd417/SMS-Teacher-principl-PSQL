@@ -1,13 +1,5 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Dimensions,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
@@ -15,7 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
-import { Avatar, Card, Donut, SectionHeader, Toast } from '../components';
+import { Avatar, Card, Donut, SectionHeader, Toast, PunchButton } from '../components';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useClasses } from '@/features/classes/hooks';
 import { useDashboardStats } from '@/features/dashboard/hooks';
@@ -157,20 +149,12 @@ export const HomeScreen: React.FC = () => {
             )}
             {/* Home offers check-in only; check-out lives on the My Attendance screen. */}
             {canCheckIn ? (
-              <View style={styles.myAttActions}>
-                <TouchableOpacity
-                  style={[styles.myAttBtn, punch.isPending && styles.myAttBtnDisabled]}
-                  disabled={punch.isPending}
-                  onPress={() => handlePunch('in')}
-                  activeOpacity={0.85}
-                >
-                  {punch.isPending ? (
-                    <ActivityIndicator color={Colors.white} />
-                  ) : (
-                    <Text style={styles.myAttBtnText}>Check In</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
+              <PunchButton
+                label="Check In"
+                icon="enter-outline"
+                onPress={() => handlePunch('in')}
+                loading={punch.isPending}
+              />
             ) : (
               myToday?.checkIn && (
                 <View style={styles.myAttDone}>
@@ -655,14 +639,4 @@ const styles = StyleSheet.create({
   myAttHintText: { fontFamily: FontFamily.medium, fontSize: 12, color: Colors.inkMuted },
   myAttDone: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   myAttDoneText: { fontFamily: FontFamily.semiBold, fontSize: 13, color: Colors.present },
-  myAttActions: { flexDirection: 'row', gap: 12 },
-  myAttBtn: {
-    flex: 1,
-    backgroundColor: Colors.primary,
-    borderRadius: Radii.full,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  myAttBtnDisabled: { backgroundColor: Colors.primarySoft2 },
-  myAttBtnText: { fontFamily: FontFamily.bold, fontSize: 14, color: Colors.white },
 });

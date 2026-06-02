@@ -1,18 +1,11 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
-import { ScreenHeader, Toast } from '../components';
+import { ScreenHeader, Toast, PunchButton } from '../components';
 import { todayISO } from '@/lib/geofence';
 import { isAppError } from '@/lib/errors';
 import {
@@ -109,36 +102,22 @@ export const MyAttendanceScreen: React.FC = () => {
                 </View>
               )}
               <View style={styles.actions}>
-                <TouchableOpacity
-                  style={[
-                    styles.actionBtn,
-                    (!canCheckIn || punch.isPending) && styles.actionBtnDisabled,
-                  ]}
-                  disabled={!canCheckIn || punch.isPending}
+                <PunchButton
+                  label="Check In"
+                  icon="enter-outline"
                   onPress={() => doPunch('in')}
-                  activeOpacity={0.85}
-                >
-                  {punch.isPending && punch.variables === 'in' ? (
-                    <ActivityIndicator color={Colors.white} />
-                  ) : (
-                    <Text style={styles.actionText}>Check In</Text>
-                  )}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.actionBtn,
-                    (!canCheckOut || punch.isPending) && styles.actionBtnDisabled,
-                  ]}
-                  disabled={!canCheckOut || punch.isPending}
+                  disabled={!canCheckIn || punch.isPending}
+                  loading={punch.isPending && punch.variables === 'in'}
+                  style={styles.actionBtn}
+                />
+                <PunchButton
+                  label="Check Out"
+                  icon="exit-outline"
                   onPress={() => doPunch('out')}
-                  activeOpacity={0.85}
-                >
-                  {punch.isPending && punch.variables === 'out' ? (
-                    <ActivityIndicator color={Colors.white} />
-                  ) : (
-                    <Text style={styles.actionText}>Check Out</Text>
-                  )}
-                </TouchableOpacity>
+                  disabled={!canCheckOut || punch.isPending}
+                  loading={punch.isPending && punch.variables === 'out'}
+                  style={styles.actionBtn}
+                />
               </View>
             </>
           )}
@@ -225,15 +204,7 @@ const styles = StyleSheet.create({
   },
   flagText: { fontFamily: FontFamily.semiBold, fontSize: 12, color: Colors.absent },
   actions: { flexDirection: 'row', gap: 12, marginTop: 16 },
-  actionBtn: {
-    flex: 1,
-    backgroundColor: Colors.primary,
-    borderRadius: Radii.full,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  actionBtnDisabled: { backgroundColor: Colors.primarySoft2 },
-  actionText: { fontFamily: FontFamily.bold, fontSize: 15, color: Colors.white },
+  actionBtn: { flex: 1 },
   summaryRow: { flexDirection: 'row', gap: 10 },
   summaryItem: {
     flex: 1,
