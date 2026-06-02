@@ -27,7 +27,16 @@
     "web": {
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-font", "expo-secure-store"],
+    "plugins": [
+      "expo-font",
+      "expo-secure-store",
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow School Desk to use your location to verify you are at school when you check in."
+        }
+      ]
+    ],
     "extra": {
       "eas": {
         "projectId": "64431794-8eea-4172-b4d4-d7ce4a5a813f"
