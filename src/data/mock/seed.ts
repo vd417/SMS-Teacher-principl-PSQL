@@ -14,6 +14,8 @@ import type {
   LibraryBook,
   PayslipEntry,
   LeaveRequest,
+  Bus,
+  BoardingRecord,
 } from '@/data/domain';
 
 export interface SeedShape {
@@ -32,6 +34,8 @@ export interface SeedShape {
   library: LibraryBook[];
   payslips: PayslipEntry[];
   leave: LeaveRequest[];
+  buses: Bus[];
+  busBoarding: BoardingRecord[];
 }
 
 export const seed: SeedShape = {
@@ -1125,6 +1129,140 @@ export const seed: SeedShape = {
       substitute: 'Mr. David Lee',
       status: 'pending',
       appliedOn: '2026-04-27',
+    },
+  ],
+
+  // ─── Buses ───────────────────────────────────────────────────────────────────
+  buses: [
+    {
+      id: 'bus_north',
+      number: 'WBA-07',
+      routeName: 'North Loop',
+      driver: 'Marcus Bell',
+      driverPhone: '+1 (415) 555-0142',
+      stops: [
+        {
+          id: 'stop_1',
+          name: 'Westbrook Campus',
+          time: '07:30',
+          order: 0,
+          lat: 37.7849,
+          lng: -122.4094,
+        },
+        { id: 'stop_2', name: 'Oak Street', time: '07:42', order: 1, lat: 37.7799, lng: -122.4156 },
+        {
+          id: 'stop_3',
+          name: 'Maple & 5th',
+          time: '07:51',
+          order: 2,
+          lat: 37.7749,
+          lng: -122.4194,
+        },
+        {
+          id: 'stop_4',
+          name: 'Riverside Park',
+          time: '08:03',
+          order: 3,
+          lat: 37.7699,
+          lng: -122.4244,
+        },
+        {
+          id: 'stop_5',
+          name: 'Hillcrest Gate',
+          time: '08:14',
+          order: 4,
+          lat: 37.7649,
+          lng: -122.4294,
+        },
+      ],
+    },
+  ],
+
+  // ─── Bus boarding ──────────────────────────────────────────────────────────────
+  busBoarding: [
+    {
+      studentId: 's1',
+      studentName: 'Liam Carter',
+      initials: 'LC',
+      stopId: 'stop_2',
+      status: 'pending',
+    },
+    {
+      studentId: 's2',
+      studentName: 'Sophia Nguyen',
+      initials: 'SN',
+      stopId: 'stop_2',
+      status: 'pending',
+    },
+    {
+      studentId: 's3',
+      studentName: 'Noah Patel',
+      initials: 'NP',
+      stopId: 'stop_2',
+      status: 'pending',
+    },
+    {
+      studentId: 's4',
+      studentName: 'Emma Davis',
+      initials: 'ED',
+      stopId: 'stop_3',
+      status: 'pending',
+    },
+    {
+      studentId: 's5',
+      studentName: 'Olivia Brooks',
+      initials: 'OB',
+      stopId: 'stop_3',
+      status: 'pending',
+    },
+    {
+      studentId: 's6',
+      studentName: 'Ava Mitchell',
+      initials: 'AM',
+      stopId: 'stop_3',
+      status: 'pending',
+    },
+    {
+      studentId: 's7',
+      studentName: 'Ethan Reed',
+      initials: 'ER',
+      stopId: 'stop_4',
+      status: 'pending',
+    },
+    {
+      studentId: 's8',
+      studentName: 'Mia Foster',
+      initials: 'MF',
+      stopId: 'stop_4',
+      status: 'pending',
+    },
+    {
+      studentId: 's9',
+      studentName: 'Lucas Gray',
+      initials: 'LG',
+      stopId: 'stop_4',
+      status: 'pending',
+    },
+    {
+      studentId: 's10',
+      studentName: 'Isabella Cruz',
+      initials: 'IC',
+      stopId: 'stop_5',
+      status: 'pending',
+    },
+    {
+      studentId: 's11',
+      studentName: 'Mason Hughes',
+      initials: 'MH',
+      stopId: 'stop_5',
+      status: 'pending',
+    },
+    {
+      studentId: 's12',
+      studentName: 'Charlotte Kim',
+      initials: 'CK',
+      stopId: 'stop_5',
+      status: 'pending',
     },
   ],
 };
