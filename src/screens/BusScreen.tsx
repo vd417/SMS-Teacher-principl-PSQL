@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Colors, Radii } from '../theme';
 import { FontFamily } from '../theme/typography';
-import { ScreenHeader, Card, Avatar } from '../components';
+import { ScreenHeader, Card, Avatar, Toast } from '../components';
 import { BusMap } from './bus/BusMap';
 import {
   useAssignedBus,
@@ -40,6 +40,7 @@ export const BusScreen: React.FC = () => {
   const save = useSaveBoarding(busId);
 
   const [draft, setDraft] = useState<BoardingRecord[]>([]);
+  const [toastVisible, setToastVisible] = useState(false);
   useEffect(() => {
     if (roster) setDraft(roster);
   }, [roster]);
@@ -73,7 +74,14 @@ export const BusScreen: React.FC = () => {
                   <Text style={styles.busNumber}>
                     {bus.number} · {bus.routeName}
                   </Text>
-                  <Text style={styles.busDriver}>Driver: {bus.driver}</Text>
+                  <TouchableOpacity
+                    style={styles.driverRow}
+                    onPress={() => Linking.openURL(`tel:${bus.driverPhone}`)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.busDriver}>Driver: {bus.driver}</Text>
+                    <Ionicons name="call-outline" size={14} color={Colors.primary} />
+                  </TouchableOpacity>
                 </View>
               </View>
               <View style={styles.statusRow}>
@@ -121,7 +129,7 @@ export const BusScreen: React.FC = () => {
 
             <TouchableOpacity
               style={styles.saveBtn}
-              onPress={() => save.mutate(draft)}
+              onPress={() => save.mutate(draft, { onSuccess: () => setToastVisible(true) })}
               disabled={save.isPending}
               activeOpacity={0.85}
             >
@@ -130,6 +138,12 @@ export const BusScreen: React.FC = () => {
           </Animated.View>
         </>
       )}
+      <Toast
+        visible={toastVisible}
+        message="Boarding saved"
+        type="success"
+        onHide={() => setToastVisible(false)}
+      />
     </ScrollView>
   );
 };
@@ -148,7 +162,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   busNumber: { fontFamily: FontFamily.bold, fontSize: 16, color: Colors.ink },
-  busDriver: { fontFamily: FontFamily.regular, fontSize: 13, color: Colors.inkMuted, marginTop: 2 },
+  busDriver: { fontFamily: FontFamily.regular, fontSize: 13, color: Colors.inkMuted },
+  driverRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 14 },
   statusText: { fontFamily: FontFamily.medium, fontSize: 13, color: Colors.primary },
   mapWrap: { marginTop: 16 },
