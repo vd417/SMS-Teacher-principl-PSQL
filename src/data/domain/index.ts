@@ -170,3 +170,38 @@ export interface DashboardStats {
   pendingAssignments: number;
   upcomingExams: number;
 }
+
+export type BoardingStatus = 'pending' | 'boarded' | 'absent';
+
+export interface BusStop {
+  id: string;
+  name: string;
+  time: string; // scheduled time, e.g. "07:45"
+  order: number;
+  lat: number;
+  lng: number;
+}
+export interface Bus {
+  id: string;
+  number: string; // e.g. "WBA-07"
+  routeName: string; // e.g. "North Loop"
+  driver: string;
+  driverPhone: string;
+  stops: BusStop[];
+}
+export interface BusPosition {
+  busId: string;
+  currentStopIndex: number; // index into stops[]
+  progress: number; // 0..1 between currentStop and the next stop
+  lat: number;
+  lng: number;
+  nextStopName: string;
+  etaMinutes: number;
+}
+export interface BoardingRecord {
+  studentId: string;
+  studentName: string;
+  initials: string;
+  stopId: string;
+  status: BoardingStatus;
+}
