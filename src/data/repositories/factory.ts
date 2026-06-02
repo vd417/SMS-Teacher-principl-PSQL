@@ -31,6 +31,8 @@ import { mockChat } from '@/data/mock/chat.repo';
 import { httpChat } from '@/data/http/chat.repo';
 import { mockLeave } from '@/data/mock/leave.repo';
 import { httpLeave } from '@/data/http/leave.repo';
+import { mockBus } from '@/data/mock/bus.repo';
+import { httpBus } from '@/data/http/bus.repo';
 
 export function createMockRepositories(store: Store): Repositories {
   return {
@@ -49,6 +51,7 @@ export function createMockRepositories(store: Store): Repositories {
     payroll: mockPayroll(store),
     leave: mockLeave(store),
     dashboard: mockDashboard(store),
+    bus: mockBus(store),
   };
 }
 
@@ -69,5 +72,6 @@ export function createHttpRepositories(http: HttpClient): Repositories {
     payroll: httpPayroll(http),
     leave: httpLeave(http),
     dashboard: httpDashboard(http),
+    bus: httpBus(http),
   };
 }

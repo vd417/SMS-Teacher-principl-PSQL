@@ -127,4 +127,5 @@ export interface Repositories {
   payroll: PayrollRepository;
   leave: LeaveRepository;
   dashboard: DashboardRepository;
+  bus: BusRepository;
 }
