@@ -74,312 +74,332 @@ export const HomeScreen: React.FC = () => {
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const { data: announcements = [] } = useAnnouncements();
 
-  const { data: myToday } = useMyAttendanceToday();
+  const { data: myToday, isLoading: myTodayLoading } = useMyAttendanceToday();
   const punch = usePunch();
-  const [punchToast, setPunchToast] = useState<string | null>(null);
+  const [punchToast, setPunchToast] = useState<{ msg: string; type: 'success' | 'error' } | null>(
+    null
+  );
 
-  const canCheckIn = !myToday?.checkIn;
-  const canCheckOut = !!myToday?.checkIn && !myToday?.checkOut;
+  const canCheckIn = !myTodayLoading && !myToday?.checkIn;
+  const canCheckOut = !myTodayLoading && !!myToday?.checkIn && !myToday?.checkOut;
 
   const handlePunch = (kind: 'in' | 'out') => {
     punch.mutate(kind, {
       onSuccess: (day) => {
         const ev = kind === 'in' ? day.checkIn : day.checkOut;
         const meters = ev ? Math.round(ev.distanceMeters) : 0;
-        setPunchToast(
-          ev?.verified
+        setPunchToast({
+          msg: ev?.verified
             ? `Checked ${kind} — ${meters} m from school ✓`
-            : `Checked ${kind} — ${meters} m away, flagged`
-        );
+            : `Checked ${kind} — ${meters} m away, flagged`,
+          type: ev?.verified ? 'success' : 'error',
+        });
       },
-      onError: (e) => setPunchToast(isAppError(e) ? e.message : 'Could not check in. Try again.'),
+      onError: (e) =>
+        setPunchToast({
+          msg: isAppError(e) ? e.message : 'Could not record punch. Try again.',
+          type: 'error',
+        }),
     });
   };
 
   const upcomingExam = 'Mid-Term Math · May 10';
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 16, paddingBottom: 24 }]}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Header */}
-      <Animated.View entering={FadeInDown.delay(50).springify()} style={styles.header}>
-        <View style={styles.headerLeft}>
-          <Text style={styles.greeting}>Good morning,</Text>
-          <Text style={styles.teacherName}>{(user?.name ?? 'Teacher').split(' ')[0]} 👋</Text>
-          <Text style={styles.subtitle}>{tenantName}</Text>
-        </View>
-        <TouchableOpacity onPress={() => navigation.navigate('MoreScreen' as never)}>
-          <Avatar initials={user?.initials ?? '?'} size={50} />
-        </TouchableOpacity>
-      </Animated.View>
-
-      {/* Upcoming Banner */}
-      <Animated.View entering={FadeInDown.delay(120).springify()}>
-        <TouchableOpacity style={styles.banner} activeOpacity={0.85}>
-          <View style={styles.bannerDot} />
-          <Ionicons name="alarm" size={15} color={Colors.primary} />
-          <Text style={styles.bannerText}>Next exam: {upcomingExam}</Text>
-          <Ionicons name="chevron-forward" size={14} color={Colors.primaryBright} />
-        </TouchableOpacity>
-      </Animated.View>
-
-      {/* My Check-In / Check-Out */}
-      <Animated.View entering={FadeInDown.delay(150).springify()}>
-        <Card style={styles.myAttCard}>
-          <View style={styles.myAttHeader}>
-            <Ionicons name="location" size={16} color={Colors.primary} />
-            <Text style={styles.myAttTitle}>My Attendance</Text>
-            {myToday?.checkIn && (
-              <Text style={styles.myAttStatus}>
-                {myToday.checkOut ? 'Checked out' : 'Checked in'}
-              </Text>
-            )}
+    <View style={styles.root}>
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 16, paddingBottom: 24 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Header */}
+        <Animated.View entering={FadeInDown.delay(50).springify()} style={styles.header}>
+          <View style={styles.headerLeft}>
+            <Text style={styles.greeting}>Good morning,</Text>
+            <Text style={styles.teacherName}>{(user?.name ?? 'Teacher').split(' ')[0]} 👋</Text>
+            <Text style={styles.subtitle}>{tenantName}</Text>
           </View>
-          <View style={styles.myAttActions}>
-            <TouchableOpacity
-              style={[styles.myAttBtn, (!canCheckIn || punch.isPending) && styles.myAttBtnDisabled]}
-              disabled={!canCheckIn || punch.isPending}
-              onPress={() => handlePunch('in')}
-              activeOpacity={0.85}
-            >
-              {punch.isPending && punch.variables === 'in' ? (
-                <ActivityIndicator color={Colors.white} />
-              ) : (
-                <Text style={styles.myAttBtnText}>Check In</Text>
-              )}
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[
-                styles.myAttBtn,
-                (!canCheckOut || punch.isPending) && styles.myAttBtnDisabled,
-              ]}
-              disabled={!canCheckOut || punch.isPending}
-              onPress={() => handlePunch('out')}
-              activeOpacity={0.85}
-            >
-              {punch.isPending && punch.variables === 'out' ? (
-                <ActivityIndicator color={Colors.white} />
-              ) : (
-                <Text style={styles.myAttBtnText}>Check Out</Text>
-              )}
-            </TouchableOpacity>
-          </View>
-        </Card>
-      </Animated.View>
-
-      {/* Attendance Card */}
-      <Animated.View entering={FadeInDown.delay(180).springify()}>
-        <Card style={styles.attendanceCard}>
-          <View style={styles.attendanceTop}>
-            <View>
-              <Text style={styles.attendanceTitle}>{"Today's Attendance"}</Text>
-              <Text style={styles.attendanceDate}>Monday, 27 Apr 2026</Text>
-            </View>
-            {statsLoading ? (
-              <Skeleton height={80} width={80} radius={40} />
-            ) : (
-              <Donut
-                percentage={stats?.attendanceToday ?? 94}
-                size={80}
-                strokeWidth={8}
-                color={Colors.primary}
-                backgroundColor={Colors.primarySoft2}
-              />
-            )}
-          </View>
-          <View style={styles.attStats}>
-            {[
-              { label: 'Present', value: '28', color: Colors.present, soft: Colors.presentSoft },
-              { label: 'Absent', value: '2', color: Colors.absent, soft: Colors.absentSoft },
-              { label: 'Late', value: '1', color: Colors.late, soft: Colors.lateSoft },
-              { label: 'Leave', value: '1', color: Colors.leave, soft: Colors.leaveSoft },
-            ].map((s) => (
-              <View key={s.label} style={[styles.statPill, { backgroundColor: s.soft }]}>
-                <Text style={[styles.statVal, { color: s.color }]}>{s.value}</Text>
-                <Text style={[styles.statLbl, { color: s.color }]}>{s.label}</Text>
-              </View>
-            ))}
-          </View>
-          <TouchableOpacity
-            style={styles.markAttBtn}
-            onPress={() => navigation.navigate('AttendancePickClass')}
-          >
-            <Ionicons name="checkmark-circle-outline" size={16} color={Colors.primary} />
-            <Text style={styles.markAttText}>Mark Attendance</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('MoreScreen' as never)}>
+            <Avatar initials={user?.initials ?? '?'} size={50} />
           </TouchableOpacity>
-        </Card>
-      </Animated.View>
+        </Animated.View>
 
-      {/* My Classes */}
-      <Animated.View entering={FadeInDown.delay(250).springify()} style={styles.section}>
-        <SectionHeader
-          title="My Classes"
-          actionLabel="View All"
-          onAction={() => navigation.navigate('ClassesScreen' as never)}
-        />
-        {classesLoading ? (
-          <View style={styles.classGrid}>
-            {[0, 1, 2, 3].map((i) => (
-              <Skeleton key={i} height={120} width={CARD_WIDTH} radius={16} />
+        {/* Upcoming Banner */}
+        <Animated.View entering={FadeInDown.delay(120).springify()}>
+          <TouchableOpacity style={styles.banner} activeOpacity={0.85}>
+            <View style={styles.bannerDot} />
+            <Ionicons name="alarm" size={15} color={Colors.primary} />
+            <Text style={styles.bannerText}>Next exam: {upcomingExam}</Text>
+            <Ionicons name="chevron-forward" size={14} color={Colors.primaryBright} />
+          </TouchableOpacity>
+        </Animated.View>
+
+        {/* My Check-In / Check-Out */}
+        <Animated.View entering={FadeInDown.delay(150).springify()}>
+          <Card style={styles.myAttCard}>
+            <View style={styles.myAttHeader}>
+              <Ionicons name="location" size={16} color={Colors.primary} />
+              <Text style={styles.myAttTitle}>My Attendance</Text>
+              {myToday?.checkIn && (
+                <Text style={styles.myAttStatus}>
+                  {myToday.checkOut ? 'Checked out' : 'Checked in'}
+                </Text>
+              )}
+            </View>
+            <View style={styles.myAttActions}>
+              <TouchableOpacity
+                style={[
+                  styles.myAttBtn,
+                  (!canCheckIn || punch.isPending) && styles.myAttBtnDisabled,
+                ]}
+                disabled={!canCheckIn || punch.isPending}
+                onPress={() => handlePunch('in')}
+                activeOpacity={0.85}
+              >
+                {punch.isPending && punch.variables === 'in' ? (
+                  <ActivityIndicator color={Colors.white} />
+                ) : (
+                  <Text style={styles.myAttBtnText}>Check In</Text>
+                )}
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.myAttBtn,
+                  (!canCheckOut || punch.isPending) && styles.myAttBtnDisabled,
+                ]}
+                disabled={!canCheckOut || punch.isPending}
+                onPress={() => handlePunch('out')}
+                activeOpacity={0.85}
+              >
+                {punch.isPending && punch.variables === 'out' ? (
+                  <ActivityIndicator color={Colors.white} />
+                ) : (
+                  <Text style={styles.myAttBtnText}>Check Out</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </Card>
+        </Animated.View>
+
+        {/* Attendance Card */}
+        <Animated.View entering={FadeInDown.delay(180).springify()}>
+          <Card style={styles.attendanceCard}>
+            <View style={styles.attendanceTop}>
+              <View>
+                <Text style={styles.attendanceTitle}>{"Today's Attendance"}</Text>
+                <Text style={styles.attendanceDate}>Monday, 27 Apr 2026</Text>
+              </View>
+              {statsLoading ? (
+                <Skeleton height={80} width={80} radius={40} />
+              ) : (
+                <Donut
+                  percentage={stats?.attendanceToday ?? 94}
+                  size={80}
+                  strokeWidth={8}
+                  color={Colors.primary}
+                  backgroundColor={Colors.primarySoft2}
+                />
+              )}
+            </View>
+            <View style={styles.attStats}>
+              {[
+                { label: 'Present', value: '28', color: Colors.present, soft: Colors.presentSoft },
+                { label: 'Absent', value: '2', color: Colors.absent, soft: Colors.absentSoft },
+                { label: 'Late', value: '1', color: Colors.late, soft: Colors.lateSoft },
+                { label: 'Leave', value: '1', color: Colors.leave, soft: Colors.leaveSoft },
+              ].map((s) => (
+                <View key={s.label} style={[styles.statPill, { backgroundColor: s.soft }]}>
+                  <Text style={[styles.statVal, { color: s.color }]}>{s.value}</Text>
+                  <Text style={[styles.statLbl, { color: s.color }]}>{s.label}</Text>
+                </View>
+              ))}
+            </View>
+            <TouchableOpacity
+              style={styles.markAttBtn}
+              onPress={() => navigation.navigate('AttendancePickClass')}
+            >
+              <Ionicons name="checkmark-circle-outline" size={16} color={Colors.primary} />
+              <Text style={styles.markAttText}>Mark Attendance</Text>
+            </TouchableOpacity>
+          </Card>
+        </Animated.View>
+
+        {/* My Classes */}
+        <Animated.View entering={FadeInDown.delay(250).springify()} style={styles.section}>
+          <SectionHeader
+            title="My Classes"
+            actionLabel="View All"
+            onAction={() => navigation.navigate('ClassesScreen' as never)}
+          />
+          {classesLoading ? (
+            <View style={styles.classGrid}>
+              {[0, 1, 2, 3].map((i) => (
+                <Skeleton key={i} height={120} width={CARD_WIDTH} radius={16} />
+              ))}
+            </View>
+          ) : (
+            <View style={styles.classGrid}>
+              {classes.map((cls, i) => {
+                const cs = deriveColorSet(cls.id);
+                return (
+                  <Animated.View
+                    key={cls.id}
+                    entering={FadeInRight.delay(280 + i * 60).springify()}
+                    style={[styles.classCard, { backgroundColor: cs.color, width: CARD_WIDTH }]}
+                  >
+                    <TouchableOpacity
+                      onPress={() => navigation.navigate('ClassesScreen' as never)}
+                      style={styles.classCardInner}
+                      activeOpacity={0.85}
+                    >
+                      <View
+                        style={[styles.classIconWrap, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
+                      >
+                        <Ionicons name="school-outline" size={20} color={Colors.white} />
+                      </View>
+                      <Text style={styles.classCardName}>
+                        {cls.name}-{cls.section}
+                      </Text>
+                      <Text style={styles.classCardSubject}>{cls.subject}</Text>
+                      <View style={styles.classCardFooter}>
+                        <View style={styles.classCardBadge}>
+                          <Ionicons name="people" size={11} color={cs.color} />
+                          <Text style={[styles.classCardBadgeText, { color: cs.color }]}>
+                            {cls.studentCount}
+                          </Text>
+                        </View>
+                        <Text style={styles.classCardRoom}>{cls.room.replace('Room ', 'R-')}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </Animated.View>
+                );
+              })}
+            </View>
+          )}
+        </Animated.View>
+
+        {/* Quick Actions */}
+        <Animated.View entering={FadeInDown.delay(380).springify()} style={styles.section}>
+          <SectionHeader title="Quick Actions" />
+          <View style={styles.qaGrid}>
+            {QUICK_ACTIONS.map((qa) => (
+              <TouchableOpacity
+                key={qa.label}
+                style={[styles.qaCard, { backgroundColor: qa.soft }]}
+                onPress={() => navigation.navigate(qa.screen as never)}
+                activeOpacity={0.8}
+              >
+                <View style={[styles.qaIconWrap, { backgroundColor: qa.color }]}>
+                  <Ionicons name={qa.icon} size={20} color={Colors.white} />
+                </View>
+                <Text style={[styles.qaLabel, { color: qa.color }]}>{qa.label}</Text>
+              </TouchableOpacity>
             ))}
           </View>
-        ) : (
-          <View style={styles.classGrid}>
-            {classes.map((cls, i) => {
-              const cs = deriveColorSet(cls.id);
-              return (
-                <Animated.View
-                  key={cls.id}
-                  entering={FadeInRight.delay(280 + i * 60).springify()}
-                  style={[styles.classCard, { backgroundColor: cs.color, width: CARD_WIDTH }]}
-                >
-                  <TouchableOpacity
-                    onPress={() => navigation.navigate('ClassesScreen' as never)}
-                    style={styles.classCardInner}
-                    activeOpacity={0.85}
-                  >
-                    <View
-                      style={[styles.classIconWrap, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
-                    >
-                      <Ionicons name="school-outline" size={20} color={Colors.white} />
-                    </View>
-                    <Text style={styles.classCardName}>
-                      {cls.name}-{cls.section}
-                    </Text>
-                    <Text style={styles.classCardSubject}>{cls.subject}</Text>
-                    <View style={styles.classCardFooter}>
-                      <View style={styles.classCardBadge}>
-                        <Ionicons name="people" size={11} color={cs.color} />
-                        <Text style={[styles.classCardBadgeText, { color: cs.color }]}>
-                          {cls.studentCount}
-                        </Text>
-                      </View>
-                      <Text style={styles.classCardRoom}>{cls.room.replace('Room ', 'R-')}</Text>
-                    </View>
-                  </TouchableOpacity>
-                </Animated.View>
-              );
-            })}
-          </View>
-        )}
-      </Animated.View>
+        </Animated.View>
 
-      {/* Quick Actions */}
-      <Animated.View entering={FadeInDown.delay(380).springify()} style={styles.section}>
-        <SectionHeader title="Quick Actions" />
-        <View style={styles.qaGrid}>
-          {QUICK_ACTIONS.map((qa) => (
+        {/* Announcements */}
+        <Animated.View entering={FadeInDown.delay(450).springify()} style={styles.section}>
+          <SectionHeader
+            title="Announcements"
+            actionLabel="All"
+            onAction={() => navigation.navigate('AnnouncementsScreen')}
+          />
+          {announcements.slice(0, 3).map((ann) => (
             <TouchableOpacity
-              key={qa.label}
-              style={[styles.qaCard, { backgroundColor: qa.soft }]}
-              onPress={() => navigation.navigate(qa.screen as never)}
+              key={ann.id}
+              style={styles.annItem}
+              onPress={() => navigation.navigate('AnnouncementsScreen')}
               activeOpacity={0.8}
             >
-              <View style={[styles.qaIconWrap, { backgroundColor: qa.color }]}>
-                <Ionicons name={qa.icon} size={20} color={Colors.white} />
+              <View
+                style={[
+                  styles.annDot,
+                  {
+                    backgroundColor:
+                      ann.type === 'urgent'
+                        ? Colors.absent
+                        : ann.type === 'warning'
+                          ? Colors.late
+                          : ann.type === 'event'
+                            ? Colors.blue
+                            : Colors.present,
+                  },
+                ]}
+              />
+              <View style={styles.annContent}>
+                <Text style={styles.annTitle} numberOfLines={1}>
+                  {ann.pinned ? '📌 ' : ''}
+                  {ann.title}
+                </Text>
+                <Text style={styles.annFrom}>
+                  {ann.from} · {ann.date}
+                </Text>
               </View>
-              <Text style={[styles.qaLabel, { color: qa.color }]}>{qa.label}</Text>
+              <Ionicons name="chevron-forward" size={16} color={Colors.inkSoft} />
             </TouchableOpacity>
           ))}
-        </View>
-      </Animated.View>
+        </Animated.View>
 
-      {/* Announcements */}
-      <Animated.View entering={FadeInDown.delay(450).springify()} style={styles.section}>
-        <SectionHeader
-          title="Announcements"
-          actionLabel="All"
-          onAction={() => navigation.navigate('AnnouncementsScreen')}
-        />
-        {announcements.slice(0, 3).map((ann) => (
-          <TouchableOpacity
-            key={ann.id}
-            style={styles.annItem}
-            onPress={() => navigation.navigate('AnnouncementsScreen')}
-            activeOpacity={0.8}
-          >
-            <View
-              style={[
-                styles.annDot,
-                {
-                  backgroundColor:
-                    ann.type === 'urgent'
-                      ? Colors.absent
-                      : ann.type === 'warning'
-                        ? Colors.late
-                        : ann.type === 'event'
-                          ? Colors.blue
-                          : Colors.present,
-                },
-              ]}
-            />
-            <View style={styles.annContent}>
-              <Text style={styles.annTitle} numberOfLines={1}>
-                {ann.pinned ? '📌 ' : ''}
-                {ann.title}
-              </Text>
-              <Text style={styles.annFrom}>
-                {ann.from} · {ann.date}
-              </Text>
+        {/* Stats Row */}
+        <Animated.View entering={FadeInDown.delay(500).springify()} style={styles.section}>
+          <SectionHeader title="Overview" />
+          {statsLoading ? (
+            <View style={styles.statsRow}>
+              {[0, 1, 2, 3].map((i) => (
+                <Skeleton key={i} height={80} width={(width - 48 - 30) / 4} radius={12} />
+              ))}
             </View>
-            <Ionicons name="chevron-forward" size={16} color={Colors.inkSoft} />
-          </TouchableOpacity>
-        ))}
-      </Animated.View>
-
-      {/* Stats Row */}
-      <Animated.View entering={FadeInDown.delay(500).springify()} style={styles.section}>
-        <SectionHeader title="Overview" />
-        {statsLoading ? (
-          <View style={styles.statsRow}>
-            {[0, 1, 2, 3].map((i) => (
-              <Skeleton key={i} height={80} width={(width - 48 - 30) / 4} radius={12} />
-            ))}
-          </View>
-        ) : (
-          <View style={styles.statsRow}>
-            {[
-              {
-                label: 'Students',
-                value: String(stats?.totalStudents ?? 0),
-                icon: 'people-outline',
-              },
-              { label: 'Classes', value: String(stats?.totalClasses ?? 0), icon: 'school-outline' },
-              {
-                label: 'Upcoming Exams',
-                value: String(stats?.upcomingExams ?? 0),
-                icon: 'document-text-outline',
-              },
-              {
-                label: 'Active Tasks',
-                value: String(stats?.pendingAssignments ?? 0),
-                icon: 'clipboard-outline',
-              },
-            ].map((s) => (
-              <Card key={s.label} style={styles.statCard} padding={12}>
-                <Ionicons name={s.icon as never} size={20} color={Colors.primary} />
-                <Text style={styles.statCardVal}>{s.value}</Text>
-                <Text style={styles.statCardLbl}>{s.label}</Text>
-              </Card>
-            ))}
-          </View>
-        )}
-      </Animated.View>
+          ) : (
+            <View style={styles.statsRow}>
+              {[
+                {
+                  label: 'Students',
+                  value: String(stats?.totalStudents ?? 0),
+                  icon: 'people-outline',
+                },
+                {
+                  label: 'Classes',
+                  value: String(stats?.totalClasses ?? 0),
+                  icon: 'school-outline',
+                },
+                {
+                  label: 'Upcoming Exams',
+                  value: String(stats?.upcomingExams ?? 0),
+                  icon: 'document-text-outline',
+                },
+                {
+                  label: 'Active Tasks',
+                  value: String(stats?.pendingAssignments ?? 0),
+                  icon: 'clipboard-outline',
+                },
+              ].map((s) => (
+                <Card key={s.label} style={styles.statCard} padding={12}>
+                  <Ionicons name={s.icon as never} size={20} color={Colors.primary} />
+                  <Text style={styles.statCardVal}>{s.value}</Text>
+                  <Text style={styles.statCardLbl}>{s.label}</Text>
+                </Card>
+              ))}
+            </View>
+          )}
+        </Animated.View>
+      </ScrollView>
 
       <Toast
         visible={!!punchToast}
-        message={punchToast ?? ''}
-        type="success"
+        message={punchToast?.msg ?? ''}
+        type={punchToast?.type ?? 'success'}
         onHide={() => setPunchToast(null)}
       />
-    </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+    backgroundColor: Colors.paper,
+  },
   screen: {
     flex: 1,
     backgroundColor: Colors.paper,
