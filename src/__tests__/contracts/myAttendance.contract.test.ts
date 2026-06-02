@@ -49,6 +49,13 @@ const fetchImpl = jest.fn(async (url: RequestInfo | URL, init?: RequestInit) => 
   return { ok: false, status: 404, json: async () => ({}), text: async () => '' } as Response;
 }) as unknown as typeof fetch;
 
+// Keep each test hermetic: reset the shared fixture + mock so test order
+// (e.g. under jest --randomize) can never leak state between cases.
+beforeEach(() => {
+  todayDay = { date: new Date().toISOString().slice(0, 10) };
+  fetchImpl.mockClear();
+});
+
 myAttendanceContract('mock', async () => mockMyAttendance(await createStore()));
 myAttendanceContract('http', async () =>
   httpMyAttendance(
