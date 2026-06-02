@@ -443,18 +443,22 @@ export function myAttendanceContract(name: string, make: () => Promise<MyAttenda
       expect(typeof loc.name).toBe('string');
     });
 
-    it('today returns a day object with a date string', async () => {
+    it('today returns a day object with a YYYY-MM-DD date', async () => {
       const repo = await make();
       const day = await repo.today();
-      expect(typeof day.date).toBe('string');
+      expect(day.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     });
 
-    it('history returns an array no longer than the limit', async () => {
+    it('history returns an array no longer than the limit, newest first', async () => {
       const repo = await make();
       const list = await repo.history(5);
       expect(Array.isArray(list)).toBe(true);
       expect(list.length).toBeLessThanOrEqual(5);
       for (const d of list) expect(typeof d.date).toBe('string');
+      // newest-first ordering
+      for (let i = 1; i < list.length; i++) {
+        expect(list[i - 1].date >= list[i].date).toBe(true);
+      }
     });
 
     it('summary returns numeric fields', async () => {
@@ -481,6 +485,24 @@ export function myAttendanceContract(name: string, make: () => Promise<MyAttenda
       expect(day.checkIn?.kind).toBe('in');
       const today = await repo.today();
       expect(today.checkIn?.at).toBe(now);
+    });
+
+    it('punch out then today reflects the check-out', async () => {
+      const repo = await make();
+      const now = new Date().toISOString();
+      const ev = {
+        kind: 'out' as const,
+        at: now,
+        lat: 40.0,
+        lng: -75.0,
+        accuracyMeters: 5,
+        distanceMeters: 3,
+        verified: true,
+      };
+      const day = await repo.punch(ev);
+      expect(day.checkOut?.kind).toBe('out');
+      const today = await repo.today();
+      expect(today.checkOut?.at).toBe(now);
     });
   });
 }
