@@ -33,6 +33,8 @@ import { mockLeave } from '@/data/mock/leave.repo';
 import { httpLeave } from '@/data/http/leave.repo';
 import { mockBus } from '@/data/mock/bus.repo';
 import { httpBus } from '@/data/http/bus.repo';
+import { mockMyAttendance } from '@/data/mock/myAttendance.repo';
+import { httpMyAttendance } from '@/data/http/myAttendance.repo';
 
 export function createMockRepositories(store: Store): Repositories {
   return {
@@ -52,6 +54,7 @@ export function createMockRepositories(store: Store): Repositories {
     leave: mockLeave(store),
     dashboard: mockDashboard(store),
     bus: mockBus(store),
+    myAttendance: mockMyAttendance(store),
   };
 }
 
@@ -73,5 +76,6 @@ export function createHttpRepositories(http: HttpClient): Repositories {
     leave: httpLeave(http),
     dashboard: httpDashboard(http),
     bus: httpBus(http),
+    myAttendance: httpMyAttendance(http),
   };
 }
