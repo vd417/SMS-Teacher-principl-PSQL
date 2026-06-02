@@ -82,7 +82,6 @@ export const HomeScreen: React.FC = () => {
   } | null>(null);
 
   const canCheckIn = !myTodayLoading && !myToday?.checkIn;
-  const canCheckOut = !myTodayLoading && !!myToday?.checkIn && !myToday?.checkOut;
   const myLatestPunch = myToday?.checkOut ?? myToday?.checkIn;
 
   const handlePunch = (kind: 'in' | 'out') => {
@@ -142,11 +141,6 @@ export const HomeScreen: React.FC = () => {
             <View style={styles.myAttHeader}>
               <Ionicons name="location" size={16} color={Colors.primary} />
               <Text style={styles.myAttTitle}>My Attendance</Text>
-              {myToday?.checkIn && (
-                <Text style={styles.myAttStatus}>
-                  {myToday.checkOut ? 'Checked out' : 'Checked in'}
-                </Text>
-              )}
             </View>
             {myLatestPunch && (
               <View style={styles.myAttHint}>
@@ -161,38 +155,36 @@ export const HomeScreen: React.FC = () => {
                 </Text>
               </View>
             )}
-            <View style={styles.myAttActions}>
-              <TouchableOpacity
-                style={[
-                  styles.myAttBtn,
-                  (!canCheckIn || punch.isPending) && styles.myAttBtnDisabled,
-                ]}
-                disabled={!canCheckIn || punch.isPending}
-                onPress={() => handlePunch('in')}
-                activeOpacity={0.85}
-              >
-                {punch.isPending && punch.variables === 'in' ? (
-                  <ActivityIndicator color={Colors.white} />
-                ) : (
-                  <Text style={styles.myAttBtnText}>Check In</Text>
-                )}
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[
-                  styles.myAttBtn,
-                  (!canCheckOut || punch.isPending) && styles.myAttBtnDisabled,
-                ]}
-                disabled={!canCheckOut || punch.isPending}
-                onPress={() => handlePunch('out')}
-                activeOpacity={0.85}
-              >
-                {punch.isPending && punch.variables === 'out' ? (
-                  <ActivityIndicator color={Colors.white} />
-                ) : (
-                  <Text style={styles.myAttBtnText}>Check Out</Text>
-                )}
-              </TouchableOpacity>
-            </View>
+            {/* Home offers check-in only; check-out lives on the My Attendance screen. */}
+            {canCheckIn ? (
+              <View style={styles.myAttActions}>
+                <TouchableOpacity
+                  style={[styles.myAttBtn, punch.isPending && styles.myAttBtnDisabled]}
+                  disabled={punch.isPending}
+                  onPress={() => handlePunch('in')}
+                  activeOpacity={0.85}
+                >
+                  {punch.isPending ? (
+                    <ActivityIndicator color={Colors.white} />
+                  ) : (
+                    <Text style={styles.myAttBtnText}>Check In</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            ) : (
+              myToday?.checkIn && (
+                <View style={styles.myAttDone}>
+                  <Ionicons name="checkmark-circle" size={16} color={Colors.present} />
+                  <Text style={styles.myAttDoneText}>
+                    {myToday.checkOut ? 'Checked out' : 'Checked in'} at{' '}
+                    {new Date((myToday.checkOut ?? myToday.checkIn).at).toLocaleTimeString([], {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </Text>
+                </View>
+              )
+            )}
           </Card>
         </Animated.View>
 
@@ -659,9 +651,10 @@ const styles = StyleSheet.create({
   myAttCard: { marginTop: 12, padding: 16 },
   myAttHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 },
   myAttTitle: { fontFamily: FontFamily.bold, fontSize: 15, color: Colors.ink, flex: 1 },
-  myAttStatus: { fontFamily: FontFamily.semiBold, fontSize: 12, color: Colors.present },
   myAttHint: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 12 },
   myAttHintText: { fontFamily: FontFamily.medium, fontSize: 12, color: Colors.inkMuted },
+  myAttDone: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  myAttDoneText: { fontFamily: FontFamily.semiBold, fontSize: 13, color: Colors.present },
   myAttActions: { flexDirection: 'row', gap: 12 },
   myAttBtn: {
     flex: 1,
