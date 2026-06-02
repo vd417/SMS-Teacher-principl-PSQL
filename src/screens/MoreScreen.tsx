@@ -69,6 +69,13 @@ const MORE_ITEMS = [
     color: Colors.present,
     soft: Colors.presentSoft,
   },
+  {
+    icon: 'bus-outline',
+    label: 'Bus Duty',
+    screen: 'BusScreen',
+    color: Colors.blue,
+    soft: Colors.blueSoft,
+  },
 ] as const;
 
 export const MoreScreen: React.FC = () => {

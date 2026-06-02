@@ -22,6 +22,7 @@ export type HomeStackParamList = {
   AssignmentsScreen: undefined;
   AnnouncementsScreen: undefined;
   MoreScreen: undefined;
+  BusScreen: undefined;
   LibraryScreen: undefined;
   PayslipScreen: undefined;
   LeaveScreen: undefined;

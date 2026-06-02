@@ -24,6 +24,7 @@ import { AssignmentsScreen } from '../screens/AssignmentsScreen';
 import { AnnouncementsScreen } from '../screens/AnnouncementsScreen';
 import { LibraryScreen } from '../screens/LibraryScreen';
 import { MoreScreen } from '../screens/MoreScreen';
+import { BusScreen } from '../screens/BusScreen';
 import type {
   MainTabParamList,
   HomeStackParamList,
@@ -50,6 +51,7 @@ const HomeStackNavigator = () => (
     <HomeStack.Screen name="AssignmentsScreen" component={AssignmentsScreen} />
     <HomeStack.Screen name="AnnouncementsScreen" component={AnnouncementsScreen} />
     <HomeStack.Screen name="MoreScreen" component={MoreScreen} />
+    <HomeStack.Screen name="BusScreen" component={BusScreen} />
     <HomeStack.Screen name="LibraryScreen" component={LibraryScreen} />
     <HomeStack.Screen name="PayslipScreen" component={PayslipScreen} />
     <HomeStack.Screen name="LeaveScreen" component={LeaveScreen} />
