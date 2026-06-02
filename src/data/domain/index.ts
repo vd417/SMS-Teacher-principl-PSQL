@@ -205,3 +205,35 @@ export interface BoardingRecord {
   stopId: string;
   status: BoardingStatus;
 }
+
+// ─── Teacher self check-in (geofenced) ───────────────────────────────────────
+export interface SchoolLocation {
+  lat: number;
+  lng: number;
+  radiusMeters: number; // mock defaults to 10
+  name: string;
+}
+
+export type CheckEventKind = 'in' | 'out';
+
+export interface CheckEvent {
+  kind: CheckEventKind;
+  at: string; // ISO timestamp
+  lat: number;
+  lng: number;
+  accuracyMeters: number; // GPS-reported accuracy
+  distanceMeters: number; // computed distance to the school
+  verified: boolean; // distance <= radius + min(accuracy, ACCURACY_CAP)
+}
+
+export interface TeacherAttendanceDay {
+  date: string; // YYYY-MM-DD
+  checkIn?: CheckEvent;
+  checkOut?: CheckEvent;
+}
+
+export interface TeacherAttendanceSummary {
+  daysPresent: number;
+  daysFlagged: number; // days with any unverified punch
+  totalHours: number; // sum of (checkOut - checkIn)
+}
