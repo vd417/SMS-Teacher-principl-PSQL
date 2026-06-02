@@ -1,5 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Dimensions,
+  ActivityIndicator,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
@@ -7,11 +15,13 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
-import { Avatar, Card, Donut, SectionHeader } from '../components';
+import { Avatar, Card, Donut, SectionHeader, Toast } from '../components';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useClasses } from '@/features/classes/hooks';
 import { useDashboardStats } from '@/features/dashboard/hooks';
 import { useAnnouncements } from '@/features/announcements/hooks';
+import { useMyAttendanceToday, usePunch } from '@/features/teacherAttendance/hooks';
+import { isAppError } from '@/lib/errors';
 import { deriveColorSet } from '@/theme/derive';
 import { Skeleton } from '@/ui/state/Skeleton';
 import type { HomeStackParamList } from '../navigation/types';
@@ -64,6 +74,28 @@ export const HomeScreen: React.FC = () => {
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const { data: announcements = [] } = useAnnouncements();
 
+  const { data: myToday } = useMyAttendanceToday();
+  const punch = usePunch();
+  const [punchToast, setPunchToast] = useState<string | null>(null);
+
+  const canCheckIn = !myToday?.checkIn;
+  const canCheckOut = !!myToday?.checkIn && !myToday?.checkOut;
+
+  const handlePunch = (kind: 'in' | 'out') => {
+    punch.mutate(kind, {
+      onSuccess: (day) => {
+        const ev = kind === 'in' ? day.checkIn : day.checkOut;
+        const meters = ev ? Math.round(ev.distanceMeters) : 0;
+        setPunchToast(
+          ev?.verified
+            ? `Checked ${kind} — ${meters} m from school ✓`
+            : `Checked ${kind} — ${meters} m away, flagged`
+        );
+      },
+      onError: (e) => setPunchToast(isAppError(e) ? e.message : 'Could not check in. Try again.'),
+    });
+  };
+
   const upcomingExam = 'Mid-Term Math · May 10';
 
   return (
@@ -92,6 +124,50 @@ export const HomeScreen: React.FC = () => {
           <Text style={styles.bannerText}>Next exam: {upcomingExam}</Text>
           <Ionicons name="chevron-forward" size={14} color={Colors.primaryBright} />
         </TouchableOpacity>
+      </Animated.View>
+
+      {/* My Check-In / Check-Out */}
+      <Animated.View entering={FadeInDown.delay(150).springify()}>
+        <Card style={styles.myAttCard}>
+          <View style={styles.myAttHeader}>
+            <Ionicons name="location" size={16} color={Colors.primary} />
+            <Text style={styles.myAttTitle}>My Attendance</Text>
+            {myToday?.checkIn && (
+              <Text style={styles.myAttStatus}>
+                {myToday.checkOut ? 'Checked out' : 'Checked in'}
+              </Text>
+            )}
+          </View>
+          <View style={styles.myAttActions}>
+            <TouchableOpacity
+              style={[styles.myAttBtn, (!canCheckIn || punch.isPending) && styles.myAttBtnDisabled]}
+              disabled={!canCheckIn || punch.isPending}
+              onPress={() => handlePunch('in')}
+              activeOpacity={0.85}
+            >
+              {punch.isPending && punch.variables === 'in' ? (
+                <ActivityIndicator color={Colors.white} />
+              ) : (
+                <Text style={styles.myAttBtnText}>Check In</Text>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.myAttBtn,
+                (!canCheckOut || punch.isPending) && styles.myAttBtnDisabled,
+              ]}
+              disabled={!canCheckOut || punch.isPending}
+              onPress={() => handlePunch('out')}
+              activeOpacity={0.85}
+            >
+              {punch.isPending && punch.variables === 'out' ? (
+                <ActivityIndicator color={Colors.white} />
+              ) : (
+                <Text style={styles.myAttBtnText}>Check Out</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </Card>
       </Animated.View>
 
       {/* Attendance Card */}
@@ -292,6 +368,13 @@ export const HomeScreen: React.FC = () => {
           </View>
         )}
       </Animated.View>
+
+      <Toast
+        visible={!!punchToast}
+        message={punchToast ?? ''}
+        type="success"
+        onHide={() => setPunchToast(null)}
+      />
     </ScrollView>
   );
 };
@@ -538,4 +621,18 @@ const styles = StyleSheet.create({
     color: Colors.inkMuted,
     textAlign: 'center',
   },
+  myAttCard: { marginTop: 12, padding: 16 },
+  myAttHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 },
+  myAttTitle: { fontFamily: FontFamily.bold, fontSize: 15, color: Colors.ink, flex: 1 },
+  myAttStatus: { fontFamily: FontFamily.semiBold, fontSize: 12, color: Colors.present },
+  myAttActions: { flexDirection: 'row', gap: 12 },
+  myAttBtn: {
+    flex: 1,
+    backgroundColor: Colors.primary,
+    borderRadius: Radii.full,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  myAttBtnDisabled: { backgroundColor: Colors.primarySoft2 },
+  myAttBtnText: { fontFamily: FontFamily.bold, fontSize: 14, color: Colors.white },
 });
