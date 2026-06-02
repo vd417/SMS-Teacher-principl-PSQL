@@ -13,6 +13,7 @@ import type {
   AttendanceRepository,
   ChatRepository,
   LeaveRepository,
+  BusRepository,
 } from '@/data/repositories/types';
 
 export function classesContract(name: string, make: () => Promise<ClassesRepository>) {
@@ -375,6 +376,57 @@ export function gradesContract(
       expect(entry.examId).toBe(input.examId);
       expect(entry.marks).toBe(input.marks);
       expect(typeof entry.grade).toBe('string');
+    });
+  });
+}
+
+export function busContract(name: string, make: () => Promise<BusRepository>) {
+  describe(`BusRepository contract [${name}]`, () => {
+    it('assignedBus returns a bus with stops', async () => {
+      const repo = await make();
+      const bus = await repo.assignedBus();
+      expect(typeof bus.id).toBe('string');
+      expect(typeof bus.number).toBe('string');
+      expect(Array.isArray(bus.stops)).toBe(true);
+      expect(bus.stops.length).toBeGreaterThan(0);
+      for (const s of bus.stops) {
+        expect(typeof s.id).toBe('string');
+        expect(typeof s.lat).toBe('number');
+        expect(typeof s.lng).toBe('number');
+      }
+    });
+
+    it('position returns numeric coordinates and progress', async () => {
+      const repo = await make();
+      const bus = await repo.assignedBus();
+      const pos = await repo.position(bus.id);
+      expect(typeof pos.lat).toBe('number');
+      expect(typeof pos.lng).toBe('number');
+      expect(typeof pos.progress).toBe('number');
+      expect(typeof pos.nextStopName).toBe('string');
+    });
+
+    it('roster returns boarding records with required fields', async () => {
+      const repo = await make();
+      const bus = await repo.assignedBus();
+      const roster = await repo.roster(bus.id);
+      expect(Array.isArray(roster)).toBe(true);
+      expect(roster.length).toBeGreaterThan(0);
+      for (const r of roster) {
+        expect(typeof r.studentId).toBe('string');
+        expect(typeof r.studentName).toBe('string');
+        expect(typeof r.status).toBe('string');
+      }
+    });
+
+    it('saveBoarding then roster reflects the new statuses', async () => {
+      const repo = await make();
+      const bus = await repo.assignedBus();
+      const roster = await repo.roster(bus.id);
+      const updated = roster.map((r) => ({ ...r, status: 'boarded' as const }));
+      await repo.saveBoarding(bus.id, updated);
+      const after = await repo.roster(bus.id);
+      for (const r of after) expect(r.status).toBe('boarded');
     });
   });
 }
