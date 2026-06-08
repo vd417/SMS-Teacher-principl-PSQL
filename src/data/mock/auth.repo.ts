@@ -8,6 +8,7 @@ export function mockAuth(store: Store): AuthRepository {
     async login(email) {
       await simulateLatency();
       if (!email) throw new AppError({ code: 'invalid', status: 400, message: 'Email required' });
+      await store.setCurrentAccount(email);
       return store.session;
     },
     async refresh() {

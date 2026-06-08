@@ -21,6 +21,7 @@ import type {
   LeaveRequest,
   LeaveType,
   LeaveStatus,
+  Role,
 } from '@/data/domain';
 
 export interface SessionDTO {
@@ -36,7 +37,7 @@ export interface SessionDTO {
     employee: string;
     classroom: string;
     joined: string;
-    role: 'teacher';
+    role: Role;
   };
   tenant: { id: string; name: string };
 }
