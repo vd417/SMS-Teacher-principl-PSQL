@@ -8,7 +8,7 @@ export type LeaveType = 'casual' | 'sick' | 'emergency' | 'other';
 export type LeaveStatus = 'approved' | 'pending' | 'rejected';
 export type BookStatus = 'available' | 'issued' | 'overdue';
 export type PayslipStatus = 'paid' | 'pending';
-export type Role = 'teacher';
+export type Role = 'teacher' | 'principal';
 
 export interface Tenant {
   id: string;

@@ -1313,3 +1313,21 @@ export const seed: SeedShape = {
     },
   ],
 };
+
+export const principalSession: Session = {
+  accessToken: 'mock.access.principal',
+  refreshToken: 'mock.refresh.principal',
+  tenant: { id: 'school_westbrook', name: 'Westbrook Academy' },
+  user: {
+    id: 'u_sunita',
+    name: 'Sunita Rao',
+    initials: 'SR',
+    title: 'Principal',
+    email: 'sunita.r@westbrook.edu',
+    phone: '+1 (415) 555-0100',
+    employee: 'WBA-2009-007',
+    classroom: 'Admin Block · Office 1',
+    joined: 'Jun 2009',
+    role: 'principal',
+  },
+};

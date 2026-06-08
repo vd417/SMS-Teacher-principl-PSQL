@@ -1,4 +1,4 @@
-import { seed } from '@/data/mock/seed';
+import { seed, principalSession } from '@/data/mock/seed';
 
 describe('seed', () => {
   it('has the expected counts', () => {
@@ -37,5 +37,13 @@ describe('seed', () => {
     expect(seed.session.user.role).toBe('teacher');
     expect(seed.session.tenant.id).toBe('school_westbrook');
     expect(seed.session.accessToken).toBeTruthy();
+  });
+});
+
+describe('principal demo account', () => {
+  it('principalSession is a principal with its own identity', () => {
+    expect(principalSession.user.role).toBe('principal');
+    expect(principalSession.user.email).toBe('sunita.r@westbrook.edu');
+    expect(principalSession.tenant.id).toBe('school_westbrook');
   });
 });
