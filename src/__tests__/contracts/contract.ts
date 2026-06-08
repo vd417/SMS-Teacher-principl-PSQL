@@ -15,6 +15,7 @@ import type {
   LeaveRepository,
   BusRepository,
   MyAttendanceRepository,
+  ApprovalsRepository,
 } from '@/data/repositories/types';
 
 export function classesContract(name: string, make: () => Promise<ClassesRepository>) {
@@ -428,6 +429,34 @@ export function busContract(name: string, make: () => Promise<BusRepository>) {
       await repo.saveBoarding(bus.id, updated);
       const after = await repo.roster(bus.id);
       for (const r of after) expect(r.status).toBe('boarded');
+    });
+  });
+}
+
+export function approvalsContract(name: string, make: () => Promise<ApprovalsRepository>) {
+  describe(`ApprovalsRepository contract [${name}]`, () => {
+    it('list returns an array of approval requests with required fields', async () => {
+      const repo = await make();
+      const list = await repo.list();
+      expect(Array.isArray(list)).toBe(true);
+      expect(list.length).toBeGreaterThan(0);
+      for (const r of list) {
+        expect(typeof r.id).toBe('string');
+        expect(typeof r.type).toBe('string');
+        expect(typeof r.requesterName).toBe('string');
+        expect(typeof r.title).toBe('string');
+        expect(typeof r.status).toBe('string');
+        expect(typeof r.appliedOn).toBe('string');
+      }
+    });
+
+    it('decide approves a request and echoes the new status + note', async () => {
+      const repo = await make();
+      const first = (await repo.list())[0];
+      const decided = await repo.decide(first.id, 'approved', 'Looks fine');
+      expect(decided.id).toBe(first.id);
+      expect(decided.status).toBe('approved');
+      expect(decided.decidedNote).toBe('Looks fine');
     });
   });
 }
