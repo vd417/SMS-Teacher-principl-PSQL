@@ -57,8 +57,27 @@ export type ProfileStackParamList = {
   LeaveScreen: undefined;
 };
 
+// Principal tab navigator params
+export type PrincipalTabParamList = {
+  PHome: undefined;
+  Approvals: undefined;
+  PCalendar: undefined;
+  PInbox: undefined;
+  PProfile: undefined;
+};
+
+// Principal Home stack params
+export type PrincipalHomeStackParamList = {
+  PrincipalHomeScreen: undefined;
+  Approvals: undefined;
+  AnnouncementsScreen: undefined;
+  BusScreen: undefined;
+  TeacherDirectoryScreen: undefined;
+};
+
 // Root navigator
 export type RootStackParamList = {
   Login: undefined;
   Main: NavigatorScreenParams<MainTabParamList>;
+  Principal: NavigatorScreenParams<PrincipalTabParamList>;
 };
