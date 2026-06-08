@@ -14,6 +14,7 @@ import { Colors, Radii, Shadows } from '../../theme';
 import { FontFamily } from '../../theme/typography';
 import { Avatar } from '../../components';
 import { useApprovals, useDecideApproval } from '@/features/approvals/hooks';
+import { isAppError } from '@/lib/errors';
 import type { ApprovalRequest } from '@/data/domain';
 
 const REJECT_REASONS = ['Substitute not arranged', 'Insufficient detail', 'Not approved'];
@@ -29,13 +30,30 @@ export const ApprovalsScreen: React.FC = () => {
   const { data: approvals = [], isLoading } = useApprovals();
   const decide = useDecideApproval();
   const [rejectingId, setRejectingId] = useState<string | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const pending = approvals.filter((a) => a.status === 'pending');
 
-  const onApprove = (id: string) => decide.mutate({ id, decision: 'approved' });
+  const onApprove = (id: string) => {
+    setErrorMsg(null);
+    decide.mutate(
+      { id, decision: 'approved' },
+      {
+        onError: (e) =>
+          setErrorMsg(isAppError(e) ? e.message : 'Could not update request. Try again.'),
+      }
+    );
+  };
   const onReject = (id: string, note: string) => {
     setRejectingId(null);
-    decide.mutate({ id, decision: 'rejected', note });
+    setErrorMsg(null);
+    decide.mutate(
+      { id, decision: 'rejected', note },
+      {
+        onError: (e) =>
+          setErrorMsg(isAppError(e) ? e.message : 'Could not update request. Try again.'),
+      }
+    );
   };
 
   return (
@@ -46,6 +64,13 @@ export const ApprovalsScreen: React.FC = () => {
       >
         <Text style={styles.h1}>Approvals</Text>
         <Text style={styles.sub}>{pending.length} pending</Text>
+
+        {errorMsg ? (
+          <View style={styles.errorBanner}>
+            <Ionicons name="warning" size={14} color={Colors.absent} />
+            <Text style={styles.errorText}>{errorMsg}</Text>
+          </View>
+        ) : null}
 
         {isLoading ? (
           <ActivityIndicator color={Colors.primary} style={{ marginTop: 40 }} />
@@ -183,5 +208,20 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     textAlign: 'center',
     paddingVertical: 8,
+  },
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: Colors.absentSoft,
+    borderRadius: Radii.md,
+    padding: 10,
+    marginBottom: 12,
+  },
+  errorText: {
+    fontFamily: FontFamily.medium,
+    fontSize: 13,
+    color: Colors.absent,
+    flex: 1,
   },
 });

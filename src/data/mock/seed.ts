@@ -19,6 +19,7 @@ import type {
   TeacherAttendanceDay,
   ApprovalRequest,
   StaffAttendanceEntry,
+  ClassAttendanceSummary,
 } from '@/data/domain';
 
 export interface SeedShape {
@@ -39,6 +40,7 @@ export interface SeedShape {
   leave: LeaveRequest[];
   approvals: ApprovalRequest[];
   staff: StaffAttendanceEntry[];
+  classAttendance: ClassAttendanceSummary[];
   buses: Bus[];
   busBoarding: BoardingRecord[];
   myAttendance: TeacherAttendanceDay[];
@@ -1246,6 +1248,14 @@ export const seed: SeedShape = {
       checkedIn: true,
       checkInAt: '2026-06-08T07:58:00.000Z',
     },
+  ],
+
+  // ─── Class attendance (published by CRM) ─────────────────────────────────────
+  classAttendance: [
+    { classId: 'c1', className: 'Grade 9-A', present: 28, total: 32, pct: 88 },
+    { classId: 'c2', className: 'Grade 10-B', present: 25, total: 28, pct: 89 },
+    { classId: 'c3', className: 'Grade 11-A', present: 22, total: 24, pct: 92 },
+    { classId: 'c4', className: 'Grade 12-C', present: 18, total: 20, pct: 90 },
   ],
 
   // ─── Buses ───────────────────────────────────────────────────────────────────

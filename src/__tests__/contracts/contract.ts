@@ -563,5 +563,23 @@ export function principalContract(name: string, make: () => Promise<PrincipalRep
         expect(typeof s.checkedIn).toBe('boolean');
       }
     });
+
+    it('attendance returns school totals, per-class summaries, and staff', async () => {
+      const repo = await make();
+      const a = await repo.attendance();
+      expect(a.date).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(typeof a.overallPct).toBe('number');
+      expect(typeof a.presentTotal).toBe('number');
+      expect(typeof a.studentTotal).toBe('number');
+      expect(Array.isArray(a.classes)).toBe(true);
+      expect(a.classes.length).toBeGreaterThan(0);
+      for (const c of a.classes) {
+        expect(typeof c.classId).toBe('string');
+        expect(typeof c.className).toBe('string');
+        expect(typeof c.present).toBe('number');
+        expect(typeof c.total).toBe('number');
+      }
+      expect(Array.isArray(a.staff)).toBe(true);
+    });
   });
 }

@@ -28,7 +28,6 @@ const HomeStack = createStackNavigator<PrincipalHomeStackParamList>();
 const PrincipalHomeStackNavigator = () => (
   <HomeStack.Navigator screenOptions={{ headerShown: false }}>
     <HomeStack.Screen name="PrincipalHomeScreen" component={PrincipalHomeScreen} />
-    <HomeStack.Screen name="Approvals" component={ApprovalsScreen} />
     <HomeStack.Screen name="AnnouncementsScreen" component={AnnouncementsScreen} />
     <HomeStack.Screen name="BusScreen" component={BusScreen} />
     <HomeStack.Screen name="TeacherDirectoryScreen" component={TeacherDirectoryScreen} />

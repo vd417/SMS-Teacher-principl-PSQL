@@ -69,7 +69,6 @@ export type PrincipalTabParamList = {
 // Principal Home stack params
 export type PrincipalHomeStackParamList = {
   PrincipalHomeScreen: undefined;
-  Approvals: undefined;
   AnnouncementsScreen: undefined;
   BusScreen: undefined;
   TeacherDirectoryScreen: undefined;

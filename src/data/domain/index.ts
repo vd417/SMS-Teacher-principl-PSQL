@@ -210,6 +210,22 @@ export interface PrincipalOverview {
   staff: StaffAttendanceEntry[];
 }
 
+export interface ClassAttendanceSummary {
+  classId: string;
+  className: string;
+  present: number;
+  total: number;
+  pct: number; // 0..100
+}
+export interface SchoolAttendance {
+  date: string; // YYYY-MM-DD
+  presentTotal: number;
+  studentTotal: number;
+  overallPct: number; // 0..100
+  classes: ClassAttendanceSummary[];
+  staff: StaffAttendanceEntry[];
+}
+
 export type BoardingStatus = 'pending' | 'boarded' | 'absent';
 
 export interface BusStop {

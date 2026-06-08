@@ -34,6 +34,7 @@ export const queryKeys = {
   leave: (tenantId: string) => ['leave', tenantId] as const,
   approvals: (tenantId: string) => ['approvals', tenantId] as const,
   principalOverview: (tenantId: string) => ['principal', tenantId, 'overview'] as const,
+  principalAttendance: (tenantId: string) => ['principal', tenantId, 'attendance'] as const,
   dashboard: (tenantId: string) => ['dashboard', tenantId] as const,
   bus: (tenantId: string) => ['bus', tenantId] as const,
   busPosition: (tenantId: string, busId: string) => ['bus', tenantId, busId, 'position'] as const,
