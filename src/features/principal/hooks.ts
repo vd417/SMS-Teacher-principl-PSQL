@@ -11,3 +11,12 @@ export function usePrincipalOverview() {
     queryFn: () => repos.principal.overview(),
   });
 }
+
+export function usePrincipalAttendance() {
+  const repos = useRepositories();
+  const tenantId = useTenantId();
+  return useQuery({
+    queryKey: queryKeys.principalAttendance(tenantId),
+    queryFn: () => repos.principal.attendance(),
+  });
+}
