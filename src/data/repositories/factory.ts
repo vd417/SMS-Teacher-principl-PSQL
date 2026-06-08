@@ -37,6 +37,8 @@ import { mockMyAttendance } from '@/data/mock/myAttendance.repo';
 import { httpMyAttendance } from '@/data/http/myAttendance.repo';
 import { mockApprovals } from '@/data/mock/approvals.repo';
 import { httpApprovals } from '@/data/http/approvals.repo';
+import { mockPrincipal } from '@/data/mock/principal.repo';
+import { httpPrincipal } from '@/data/http/principal.repo';
 
 export function createMockRepositories(store: Store): Repositories {
   return {
@@ -56,7 +58,7 @@ export function createMockRepositories(store: Store): Repositories {
     leave: mockLeave(store),
     approvals: mockApprovals(store),
     dashboard: mockDashboard(store),
-    principal: { overview: () => Promise.reject(new Error('not implemented')) },
+    principal: mockPrincipal(store),
     bus: mockBus(store),
     myAttendance: mockMyAttendance(store),
   };
@@ -80,7 +82,7 @@ export function createHttpRepositories(http: HttpClient): Repositories {
     leave: httpLeave(http),
     approvals: httpApprovals(http),
     dashboard: httpDashboard(http),
-    principal: { overview: () => Promise.reject(new Error('not implemented')) },
+    principal: httpPrincipal(http),
     bus: httpBus(http),
     myAttendance: httpMyAttendance(http),
   };

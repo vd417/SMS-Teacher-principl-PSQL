@@ -16,6 +16,7 @@ import type {
   BusRepository,
   MyAttendanceRepository,
   ApprovalsRepository,
+  PrincipalRepository,
 } from '@/data/repositories/types';
 
 export function classesContract(name: string, make: () => Promise<ClassesRepository>) {
@@ -532,6 +533,25 @@ export function myAttendanceContract(name: string, make: () => Promise<MyAttenda
       expect(day.checkOut?.kind).toBe('out');
       const today = await repo.today();
       expect(today.checkOut?.at).toBe(now);
+    });
+  });
+}
+
+export function principalContract(name: string, make: () => Promise<PrincipalRepository>) {
+  describe(`PrincipalRepository contract [${name}]`, () => {
+    it('overview returns kpis and a staff array', async () => {
+      const repo = await make();
+      const o = await repo.overview();
+      expect(typeof o.kpis.studentsPresentPct).toBe('number');
+      expect(typeof o.kpis.staffPresent).toBe('number');
+      expect(typeof o.kpis.staffTotal).toBe('number');
+      expect(typeof o.kpis.pendingApprovals).toBe('number');
+      expect(Array.isArray(o.staff)).toBe(true);
+      expect(o.staff.length).toBeGreaterThan(0);
+      for (const s of o.staff) {
+        expect(typeof s.teacherId).toBe('string');
+        expect(typeof s.checkedIn).toBe('boolean');
+      }
     });
   });
 }

@@ -24,6 +24,7 @@ import type {
   Role,
   ApprovalRequest,
   ApprovalRequestType,
+  PrincipalOverview,
 } from '@/data/domain';
 
 export interface SessionDTO {
@@ -403,4 +404,41 @@ export const toApprovalRequest = (d: ApprovalRequestDTO): ApprovalRequest => ({
   status: d.status,
   appliedOn: d.applied_on,
   decidedNote: d.decided_note,
+});
+
+// ─── Principal overview ──────────────────────────────────────────────────────
+export interface StaffAttendanceEntryDTO {
+  teacher_id: string;
+  name: string;
+  initials: string;
+  subject: string;
+  phone: string;
+  checked_in: boolean;
+  check_in_at?: string;
+}
+export interface PrincipalOverviewDTO {
+  kpis: {
+    students_present_pct: number;
+    staff_present: number;
+    staff_total: number;
+    pending_approvals: number;
+  };
+  staff: StaffAttendanceEntryDTO[];
+}
+export const toPrincipalOverview = (d: PrincipalOverviewDTO): PrincipalOverview => ({
+  kpis: {
+    studentsPresentPct: d.kpis.students_present_pct,
+    staffPresent: d.kpis.staff_present,
+    staffTotal: d.kpis.staff_total,
+    pendingApprovals: d.kpis.pending_approvals,
+  },
+  staff: d.staff.map((s) => ({
+    teacherId: s.teacher_id,
+    name: s.name,
+    initials: s.initials,
+    subject: s.subject,
+    phone: s.phone,
+    checkedIn: s.checked_in,
+    checkInAt: s.check_in_at,
+  })),
 });
