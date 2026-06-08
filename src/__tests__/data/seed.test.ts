@@ -56,3 +56,16 @@ describe('approvals seed', () => {
     expect(seed.approvals.some((a) => a.type === 'attendance_correction')).toBe(true);
   });
 });
+
+describe('staff seed', () => {
+  it('seeds staff with a mix of checked-in states', () => {
+    const staff = seed.staff;
+    expect(staff.length).toBeGreaterThan(0);
+    expect(staff.some((s) => s.checkedIn)).toBe(true);
+    expect(staff.some((s) => !s.checkedIn)).toBe(true);
+    for (const s of staff) {
+      expect(typeof s.teacherId).toBe('string');
+      expect(typeof s.phone).toBe('string');
+    }
+  });
+});

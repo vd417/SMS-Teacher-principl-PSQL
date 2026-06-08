@@ -18,6 +18,7 @@ import type {
   BoardingRecord,
   TeacherAttendanceDay,
   ApprovalRequest,
+  StaffAttendanceEntry,
 } from '@/data/domain';
 
 export interface SeedShape {
@@ -37,6 +38,7 @@ export interface SeedShape {
   payslips: PayslipEntry[];
   leave: LeaveRequest[];
   approvals: ApprovalRequest[];
+  staff: StaffAttendanceEntry[];
   buses: Bus[];
   busBoarding: BoardingRecord[];
   myAttendance: TeacherAttendanceDay[];
@@ -1196,6 +1198,53 @@ export const seed: SeedShape = {
       priority: 'high',
       status: 'pending',
       appliedOn: '2026-06-06',
+    },
+  ],
+
+  // ─── Staff (principal overview) ──────────────────────────────────────────────
+  staff: [
+    {
+      teacherId: 'u_aanya',
+      name: 'Aanya Krishnan',
+      initials: 'AK',
+      subject: 'Mathematics',
+      phone: '+1 (415) 555-0118',
+      checkedIn: true,
+      checkInAt: '2026-06-08T08:02:00.000Z',
+    },
+    {
+      teacherId: 'u_rajesh',
+      name: 'Rajesh Kumar',
+      initials: 'RK',
+      subject: 'Physics',
+      phone: '+1 (415) 555-0121',
+      checkedIn: true,
+      checkInAt: '2026-06-08T08:15:00.000Z',
+    },
+    {
+      teacherId: 'u_meera',
+      name: 'Meera Krishnan',
+      initials: 'MK',
+      subject: 'English',
+      phone: '+1 (415) 555-0122',
+      checkedIn: false,
+    },
+    {
+      teacherId: 'u_vikram',
+      name: 'Vikram Desai',
+      initials: 'VD',
+      subject: 'Chemistry',
+      phone: '+1 (415) 555-0123',
+      checkedIn: false,
+    },
+    {
+      teacherId: 'u_priya',
+      name: 'Priya Mehta',
+      initials: 'PM',
+      subject: 'Biology',
+      phone: '+1 (415) 555-0124',
+      checkedIn: true,
+      checkInAt: '2026-06-08T07:58:00.000Z',
     },
   ],
 

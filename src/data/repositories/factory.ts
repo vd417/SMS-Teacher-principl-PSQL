@@ -56,6 +56,7 @@ export function createMockRepositories(store: Store): Repositories {
     leave: mockLeave(store),
     approvals: mockApprovals(store),
     dashboard: mockDashboard(store),
+    principal: { overview: () => Promise.reject(new Error('not implemented')) },
     bus: mockBus(store),
     myAttendance: mockMyAttendance(store),
   };
@@ -79,6 +80,7 @@ export function createHttpRepositories(http: HttpClient): Repositories {
     leave: httpLeave(http),
     approvals: httpApprovals(http),
     dashboard: httpDashboard(http),
+    principal: { overview: () => Promise.reject(new Error('not implemented')) },
     bus: httpBus(http),
     myAttendance: httpMyAttendance(http),
   };

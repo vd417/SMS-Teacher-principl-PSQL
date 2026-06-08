@@ -25,6 +25,7 @@ import type {
   TeacherAttendanceDay,
   TeacherAttendanceSummary,
   ApprovalRequest,
+  PrincipalOverview,
 } from '@/data/domain';
 
 export interface NewExamInput {
@@ -120,6 +121,9 @@ export interface ApprovalsRepository {
 export interface DashboardRepository {
   stats(): Promise<DashboardStats>;
 }
+export interface PrincipalRepository {
+  overview(): Promise<PrincipalOverview>;
+}
 export interface BusRepository {
   assignedBus(): Promise<Bus>;
   position(busId: string): Promise<BusPosition>;
@@ -144,6 +148,7 @@ export interface Repositories {
   leave: LeaveRepository;
   approvals: ApprovalsRepository;
   dashboard: DashboardRepository;
+  principal: PrincipalRepository;
   bus: BusRepository;
   myAttendance: MyAttendanceRepository;
 }

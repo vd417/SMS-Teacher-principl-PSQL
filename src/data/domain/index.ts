@@ -190,6 +190,26 @@ export interface ApprovalRequest {
   decidedNote?: string;
 }
 
+export interface StaffAttendanceEntry {
+  teacherId: string;
+  name: string;
+  initials: string;
+  subject: string;
+  phone: string;
+  checkedIn: boolean;
+  checkInAt?: string; // ISO timestamp
+}
+export interface PrincipalKpis {
+  studentsPresentPct: number;
+  staffPresent: number;
+  staffTotal: number;
+  pendingApprovals: number;
+}
+export interface PrincipalOverview {
+  kpis: PrincipalKpis;
+  staff: StaffAttendanceEntry[];
+}
+
 export type BoardingStatus = 'pending' | 'boarded' | 'absent';
 
 export interface BusStop {
