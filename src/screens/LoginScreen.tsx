@@ -23,6 +23,11 @@ import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { useLogin } from '@/features/auth/hooks';
 
+const DEMO_ACCOUNTS = [
+  { label: 'Teacher', email: 'aanya.k@westbrook.edu' },
+  { label: 'Principal', email: 'sunita.r@westbrook.edu' },
+] as const;
+
 export const LoginScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const [email, setEmail] = useState('aanya.k@westbrook.edu');
@@ -153,6 +158,26 @@ export const LoginScreen: React.FC = () => {
                 )}
               </TouchableOpacity>
             </Animated.View>
+
+            {/* One-tap demo accounts */}
+            <View style={styles.demoRow}>
+              {DEMO_ACCOUNTS.map((acc) => (
+                <TouchableOpacity
+                  key={acc.email}
+                  style={styles.demoChip}
+                  activeOpacity={0.85}
+                  disabled={login.isPending}
+                  onPress={() => {
+                    setEmail(acc.email);
+                    setPassword('password123');
+                    login.mutate({ email: acc.email, password: 'password123' });
+                  }}
+                >
+                  <Ionicons name="person-circle-outline" size={16} color={Colors.primary} />
+                  <Text style={styles.demoChipText}>{acc.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
 
             {/* Biometrics */}
             <TouchableOpacity style={styles.bioBtn} activeOpacity={0.8}>
@@ -289,6 +314,28 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.white,
     letterSpacing: 0.3,
+  },
+  demoRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 14,
+  },
+  demoChip: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: Radii.full,
+    borderWidth: 1.5,
+    borderColor: Colors.primarySoft2,
+    backgroundColor: Colors.primarySoft,
+  },
+  demoChipText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 13,
+    color: Colors.primary,
   },
   bioBtn: {
     flexDirection: 'row',
