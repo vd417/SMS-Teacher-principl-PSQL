@@ -47,3 +47,12 @@ describe('principal demo account', () => {
     expect(principalSession.tenant.id).toBe('school_westbrook');
   });
 });
+
+describe('approvals seed', () => {
+  it('seeds pending leave and attendance_correction requests', () => {
+    const pending = seed.approvals.filter((a) => a.status === 'pending');
+    expect(pending.length).toBeGreaterThanOrEqual(3);
+    expect(seed.approvals.some((a) => a.type === 'leave')).toBe(true);
+    expect(seed.approvals.some((a) => a.type === 'attendance_correction')).toBe(true);
+  });
+});

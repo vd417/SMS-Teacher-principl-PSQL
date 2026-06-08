@@ -17,6 +17,7 @@ import type {
   Bus,
   BoardingRecord,
   TeacherAttendanceDay,
+  ApprovalRequest,
 } from '@/data/domain';
 
 export interface SeedShape {
@@ -35,6 +36,7 @@ export interface SeedShape {
   library: LibraryBook[];
   payslips: PayslipEntry[];
   leave: LeaveRequest[];
+  approvals: ApprovalRequest[];
   buses: Bus[];
   busBoarding: BoardingRecord[];
   myAttendance: TeacherAttendanceDay[];
@@ -1131,6 +1133,69 @@ export const seed: SeedShape = {
       substitute: 'Mr. David Lee',
       status: 'pending',
       appliedOn: '2026-04-27',
+    },
+  ],
+
+  // ─── Approvals (principal inbox) ─────────────────────────────────────────────
+  approvals: [
+    {
+      id: 'ar1',
+      type: 'leave',
+      requesterId: 'u_rajesh',
+      requesterName: 'Rajesh Kumar',
+      requesterInitials: 'RK',
+      title: 'Casual leave · 3 days',
+      detail: 'Casual leave 12–14 Jun. Substitute arranged.',
+      from: '2026-06-12',
+      to: '2026-06-14',
+      reason: 'Family function out of town.',
+      substitute: 'Mr. David Lee',
+      priority: 'low',
+      status: 'pending',
+      appliedOn: '2026-06-06',
+    },
+    {
+      id: 'ar2',
+      type: 'leave',
+      requesterId: 'u_meera',
+      requesterName: 'Meera Krishnan',
+      requesterInitials: 'MK',
+      title: 'Sick leave · 1 day',
+      detail: 'Sick leave 9 Jun. Doctor advised rest.',
+      from: '2026-06-09',
+      to: '2026-06-09',
+      reason: 'Viral fever.',
+      priority: 'medium',
+      status: 'pending',
+      appliedOn: '2026-06-08',
+    },
+    {
+      id: 'ar3',
+      type: 'attendance_correction',
+      requesterId: 'u_aanya',
+      requesterName: 'Aanya Krishnan',
+      requesterInitials: 'AK',
+      title: 'Attendance correction · Grade 9-A',
+      detail: 'Mark 6 students present (late bus) for 3 Jun.',
+      from: '2026-06-03',
+      reason: 'School bus was delayed; students arrived 20 min late.',
+      priority: 'medium',
+      status: 'pending',
+      appliedOn: '2026-06-04',
+    },
+    {
+      id: 'ar4',
+      type: 'attendance_correction',
+      requesterId: 'u_vikram',
+      requesterName: 'Vikram Desai',
+      requesterInitials: 'VD',
+      title: 'Attendance correction · Grade 11-A',
+      detail: 'Change 1 student from Absent to Leave for 5 Jun.',
+      from: '2026-06-05',
+      reason: 'Approved medical leave submitted late.',
+      priority: 'high',
+      status: 'pending',
+      appliedOn: '2026-06-06',
     },
   ],
 

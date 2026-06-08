@@ -24,6 +24,7 @@ import type {
   CheckEvent,
   TeacherAttendanceDay,
   TeacherAttendanceSummary,
+  ApprovalRequest,
 } from '@/data/domain';
 
 export interface NewExamInput {
@@ -112,6 +113,10 @@ export interface LeaveRepository {
   list(): Promise<LeaveRequest[]>;
   create(input: NewLeaveInput): Promise<LeaveRequest>;
 }
+export interface ApprovalsRepository {
+  list(): Promise<ApprovalRequest[]>;
+  decide(id: string, decision: 'approved' | 'rejected', note?: string): Promise<ApprovalRequest>;
+}
 export interface DashboardRepository {
   stats(): Promise<DashboardStats>;
 }
@@ -137,6 +142,7 @@ export interface Repositories {
   library: LibraryRepository;
   payroll: PayrollRepository;
   leave: LeaveRepository;
+  approvals: ApprovalsRepository;
   dashboard: DashboardRepository;
   bus: BusRepository;
   myAttendance: MyAttendanceRepository;

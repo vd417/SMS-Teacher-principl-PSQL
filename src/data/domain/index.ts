@@ -171,6 +171,25 @@ export interface DashboardStats {
   upcomingExams: number;
 }
 
+export type ApprovalRequestType = 'leave' | 'attendance_correction';
+export interface ApprovalRequest {
+  id: string;
+  type: ApprovalRequestType;
+  requesterId: string;
+  requesterName: string;
+  requesterInitials: string;
+  title: string; // e.g. "Casual leave · 2 days"
+  detail: string; // human-readable summary
+  from?: string; // YYYY-MM-DD (leave range / correction date)
+  to?: string; // YYYY-MM-DD
+  reason?: string;
+  substitute?: string;
+  priority: 'high' | 'medium' | 'low';
+  status: LeaveStatus; // 'pending' | 'approved' | 'rejected'
+  appliedOn: string; // YYYY-MM-DD
+  decidedNote?: string;
+}
+
 export type BoardingStatus = 'pending' | 'boarded' | 'absent';
 
 export interface BusStop {

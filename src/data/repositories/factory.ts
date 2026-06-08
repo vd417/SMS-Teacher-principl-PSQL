@@ -52,6 +52,10 @@ export function createMockRepositories(store: Store): Repositories {
     library: mockLibrary(store),
     payroll: mockPayroll(store),
     leave: mockLeave(store),
+    approvals: {
+      list: () => Promise.resolve([]),
+      decide: (_id, _decision, _note) => Promise.reject(new Error('not implemented')),
+    },
     dashboard: mockDashboard(store),
     bus: mockBus(store),
     myAttendance: mockMyAttendance(store),
@@ -74,6 +78,10 @@ export function createHttpRepositories(http: HttpClient): Repositories {
     library: httpLibrary(http),
     payroll: httpPayroll(http),
     leave: httpLeave(http),
+    approvals: {
+      list: () => Promise.resolve([]),
+      decide: (_id, _decision, _note) => Promise.reject(new Error('not implemented')),
+    },
     dashboard: httpDashboard(http),
     bus: httpBus(http),
     myAttendance: httpMyAttendance(http),
