@@ -1,12 +1,21 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Modal,
+  TextInput,
+  TouchableOpacity,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { ScreenHeader, Pill } from '../components';
-import { useAnnouncements } from '@/features/announcements/hooks';
+import { useAnnouncements, useCreateAnnouncement } from '@/features/announcements/hooks';
+import { useAuth } from '@/features/auth/AuthProvider';
 import { Skeleton } from '@/ui/state/Skeleton';
 import { ErrorState } from '@/ui/state/ErrorState';
 import { EmptyState } from '@/ui/state/EmptyState';
@@ -26,100 +35,178 @@ export const AnnouncementsScreen: React.FC = () => {
   const pinned = announcements.filter((a) => a.pinned);
   const rest = announcements.filter((a) => !a.pinned);
 
+  const { session } = useAuth();
+  const isPrincipal = session?.user.role === 'principal';
+  const createAnnouncement = useCreateAnnouncement();
+  const [composeOpen, setComposeOpen] = useState(false);
+  const [draftTitle, setDraftTitle] = useState('');
+  const [draftBody, setDraftBody] = useState('');
+
+  const submitAnnouncement = () => {
+    if (!draftTitle.trim() || !draftBody.trim()) return;
+    createAnnouncement.mutate(
+      { title: draftTitle.trim(), body: draftBody.trim(), type: 'info' },
+      {
+        onSuccess: () => {
+          setDraftTitle('');
+          setDraftBody('');
+          setComposeOpen(false);
+        },
+      }
+    );
+  };
+
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 16, paddingBottom: 40 }]}
-      showsVerticalScrollIndicator={false}
-    >
-      <Animated.View entering={FadeInDown.delay(50).springify()}>
-        <ScreenHeader title="Announcements" subtitle={`${announcements.length} total`} showBack />
-      </Animated.View>
+    <View style={{ flex: 1 }}>
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 16, paddingBottom: 40 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        <Animated.View entering={FadeInDown.delay(50).springify()}>
+          <ScreenHeader title="Announcements" subtitle={`${announcements.length} total`} showBack />
+        </Animated.View>
 
-      {isLoading ? (
-        <>
-          {[0, 1, 2, 3].map((i) => (
-            <Skeleton key={i} height={90} radius={12} />
-          ))}
-        </>
-      ) : isError ? (
-        <ErrorState onRetry={refetch} />
-      ) : announcements.length === 0 ? (
-        <EmptyState label="No announcements" />
-      ) : (
-        <>
-          {pinned.length > 0 && (
-            <>
-              <Animated.View entering={FadeInDown.delay(100).springify()}>
-                <Text style={styles.sectionLabel}>📌 Pinned</Text>
-              </Animated.View>
-              {pinned.map((ann, i) => {
-                const cfg = TYPE_CONFIG[ann.type];
-                return (
-                  <Animated.View key={ann.id} entering={FadeInDown.delay(130 + i * 50).springify()}>
-                    <View style={[styles.annCard, styles.pinnedCard]}>
-                      <View style={[styles.typeIcon, { backgroundColor: cfg.soft }]}>
-                        <Ionicons name={cfg.icon as never} size={20} color={cfg.color} />
-                      </View>
-                      <View style={styles.annContent}>
-                        <View style={styles.annHeader}>
-                          <Text style={styles.annTitle}>{ann.title}</Text>
-                          <Pill
-                            label={ann.type.charAt(0).toUpperCase() + ann.type.slice(1)}
-                            color={cfg.color}
-                            backgroundColor={cfg.soft}
-                            size="sm"
-                          />
+        {isLoading ? (
+          <>
+            {[0, 1, 2, 3].map((i) => (
+              <Skeleton key={i} height={90} radius={12} />
+            ))}
+          </>
+        ) : isError ? (
+          <ErrorState onRetry={refetch} />
+        ) : announcements.length === 0 ? (
+          <EmptyState label="No announcements" />
+        ) : (
+          <>
+            {pinned.length > 0 && (
+              <>
+                <Animated.View entering={FadeInDown.delay(100).springify()}>
+                  <Text style={styles.sectionLabel}>📌 Pinned</Text>
+                </Animated.View>
+                {pinned.map((ann, i) => {
+                  const cfg = TYPE_CONFIG[ann.type];
+                  return (
+                    <Animated.View
+                      key={ann.id}
+                      entering={FadeInDown.delay(130 + i * 50).springify()}
+                    >
+                      <View style={[styles.annCard, styles.pinnedCard]}>
+                        <View style={[styles.typeIcon, { backgroundColor: cfg.soft }]}>
+                          <Ionicons name={cfg.icon as never} size={20} color={cfg.color} />
                         </View>
-                        <Text style={styles.annBody} numberOfLines={2}>
-                          {ann.body}
-                        </Text>
-                        <Text style={styles.annMeta}>
-                          {ann.from} · {ann.date}
-                        </Text>
+                        <View style={styles.annContent}>
+                          <View style={styles.annHeader}>
+                            <Text style={styles.annTitle}>{ann.title}</Text>
+                            <Pill
+                              label={ann.type.charAt(0).toUpperCase() + ann.type.slice(1)}
+                              color={cfg.color}
+                              backgroundColor={cfg.soft}
+                              size="sm"
+                            />
+                          </View>
+                          <Text style={styles.annBody} numberOfLines={2}>
+                            {ann.body}
+                          </Text>
+                          <Text style={styles.annMeta}>
+                            {ann.from} · {ann.date}
+                          </Text>
+                        </View>
                       </View>
-                    </View>
-                  </Animated.View>
-                );
-              })}
-            </>
-          )}
+                    </Animated.View>
+                  );
+                })}
+              </>
+            )}
 
-          <Animated.View entering={FadeInDown.delay(250).springify()}>
-            <Text style={styles.sectionLabel}>Recent</Text>
-          </Animated.View>
-          {rest.map((ann, i) => {
-            const cfg = TYPE_CONFIG[ann.type];
-            return (
-              <Animated.View key={ann.id} entering={FadeInDown.delay(280 + i * 50).springify()}>
-                <View style={styles.annCard}>
-                  <View style={[styles.typeIcon, { backgroundColor: cfg.soft }]}>
-                    <Ionicons name={cfg.icon as never} size={20} color={cfg.color} />
-                  </View>
-                  <View style={styles.annContent}>
-                    <View style={styles.annHeader}>
-                      <Text style={styles.annTitle}>{ann.title}</Text>
-                      <Pill
-                        label={ann.type.charAt(0).toUpperCase() + ann.type.slice(1)}
-                        color={cfg.color}
-                        backgroundColor={cfg.soft}
-                        size="sm"
-                      />
+            <Animated.View entering={FadeInDown.delay(250).springify()}>
+              <Text style={styles.sectionLabel}>Recent</Text>
+            </Animated.View>
+            {rest.map((ann, i) => {
+              const cfg = TYPE_CONFIG[ann.type];
+              return (
+                <Animated.View key={ann.id} entering={FadeInDown.delay(280 + i * 50).springify()}>
+                  <View style={styles.annCard}>
+                    <View style={[styles.typeIcon, { backgroundColor: cfg.soft }]}>
+                      <Ionicons name={cfg.icon as never} size={20} color={cfg.color} />
                     </View>
-                    <Text style={styles.annBody} numberOfLines={2}>
-                      {ann.body}
-                    </Text>
-                    <Text style={styles.annMeta}>
-                      {ann.from} · {ann.date}
-                    </Text>
+                    <View style={styles.annContent}>
+                      <View style={styles.annHeader}>
+                        <Text style={styles.annTitle}>{ann.title}</Text>
+                        <Pill
+                          label={ann.type.charAt(0).toUpperCase() + ann.type.slice(1)}
+                          color={cfg.color}
+                          backgroundColor={cfg.soft}
+                          size="sm"
+                        />
+                      </View>
+                      <Text style={styles.annBody} numberOfLines={2}>
+                        {ann.body}
+                      </Text>
+                      <Text style={styles.annMeta}>
+                        {ann.from} · {ann.date}
+                      </Text>
+                    </View>
                   </View>
-                </View>
-              </Animated.View>
-            );
-          })}
-        </>
+                </Animated.View>
+              );
+            })}
+          </>
+        )}
+      </ScrollView>
+
+      {isPrincipal && (
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => setComposeOpen(true)}
+          activeOpacity={0.9}
+        >
+          <Ionicons name="add" size={26} color={Colors.white} />
+        </TouchableOpacity>
       )}
-    </ScrollView>
+
+      <Modal
+        visible={composeOpen}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setComposeOpen(false)}
+      >
+        <View style={styles.modalBackdrop}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>New Announcement</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Title"
+              placeholderTextColor={Colors.inkSoft}
+              value={draftTitle}
+              onChangeText={setDraftTitle}
+            />
+            <TextInput
+              style={[styles.input, styles.inputMultiline]}
+              placeholder="Write a message…"
+              placeholderTextColor={Colors.inkSoft}
+              value={draftBody}
+              onChangeText={setDraftBody}
+              multiline
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity onPress={() => setComposeOpen(false)} style={styles.modalCancel}>
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={submitAnnouncement}
+                style={styles.modalSend}
+                disabled={createAnnouncement.isPending}
+              >
+                <Text style={styles.modalSendText}>
+                  {createAnnouncement.isPending ? 'Posting…' : 'Post'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </View>
   );
 };
 
@@ -179,4 +266,47 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.inkMuted,
   },
+  fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 28,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Shadows.pop,
+  },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  modalCard: {
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: Radii.xl,
+    borderTopRightRadius: Radii.xl,
+    padding: 24,
+    gap: 12,
+  },
+  modalTitle: { fontFamily: FontFamily.extraBold, fontSize: 20, color: Colors.ink },
+  input: {
+    backgroundColor: Colors.paper2,
+    borderRadius: Radii.md,
+    borderWidth: 1,
+    borderColor: Colors.rule,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontFamily: FontFamily.regular,
+    fontSize: 15,
+    color: Colors.ink,
+  },
+  inputMultiline: { height: 100, textAlignVertical: 'top' },
+  modalActions: { flexDirection: 'row', justifyContent: 'flex-end', gap: 12, marginTop: 4 },
+  modalCancel: { paddingVertical: 12, paddingHorizontal: 16 },
+  modalCancelText: { fontFamily: FontFamily.semiBold, fontSize: 14, color: Colors.inkMuted },
+  modalSend: {
+    paddingVertical: 12,
+    paddingHorizontal: 22,
+    borderRadius: Radii.full,
+    backgroundColor: Colors.primary,
+  },
+  modalSendText: { fontFamily: FontFamily.bold, fontSize: 14, color: Colors.white },
 });
