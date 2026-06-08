@@ -61,3 +61,25 @@ describe('mock store', () => {
     });
   });
 });
+
+describe('multi-account store', () => {
+  beforeEach(() => AsyncStorage.clear());
+
+  it('defaults to the teacher account', async () => {
+    const store = await createStore();
+    expect(store.session.user.role).toBe('teacher');
+  });
+
+  it('setCurrentAccount switches the active session by email', async () => {
+    const store = await createStore();
+    await store.setCurrentAccount('sunita.r@westbrook.edu');
+    expect(store.session.user.role).toBe('principal');
+    expect(store.session.user.email).toBe('sunita.r@westbrook.edu');
+  });
+
+  it('unknown email leaves the current account unchanged', async () => {
+    const store = await createStore();
+    await store.setCurrentAccount('nobody@example.com');
+    expect(store.session.user.role).toBe('teacher');
+  });
+});

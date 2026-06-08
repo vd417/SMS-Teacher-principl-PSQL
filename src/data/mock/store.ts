@@ -1,12 +1,19 @@
 import { readJson, writeJson } from '@/lib/asyncStore';
-import { seed, type SeedShape } from './seed';
+import { seed, principalSession, type SeedShape } from './seed';
 
 export type TableName = keyof Omit<SeedShape, 'session'>;
 const STORAGE_PREFIX = 'sd.mock.';
+const CURRENT_ACCOUNT_KEY = `${STORAGE_PREFIX}currentAccount`;
+
+// All demo accounts, keyed by lowercased email.
+const ACCOUNTS = [seed.session, principalSession];
+const accountByEmail = new Map(ACCOUNTS.map((s) => [s.user.email.toLowerCase(), s]));
+const DEFAULT_EMAIL = seed.session.user.email.toLowerCase();
 
 export interface Store {
   tables: Omit<SeedShape, 'session'>;
   session: SeedShape['session'];
+  setCurrentAccount(email: string): Promise<void>;
   persist(table: TableName): Promise<void>;
   genId(prefix: string): string;
 }
@@ -19,10 +26,22 @@ export async function createStore(): Promise<Store> {
     const fallback = JSON.parse(JSON.stringify(seed[name]));
     tables[name] = await readJson(`${STORAGE_PREFIX}${name}`, fallback);
   }
+
+  let currentEmail = (await readJson<string>(CURRENT_ACCOUNT_KEY, DEFAULT_EMAIL)).toLowerCase();
+  if (!accountByEmail.has(currentEmail)) currentEmail = DEFAULT_EMAIL;
+
   let counter = 0;
   return {
     tables,
-    session: seed.session,
+    get session() {
+      return accountByEmail.get(currentEmail) ?? seed.session;
+    },
+    async setCurrentAccount(email) {
+      const key = email.toLowerCase();
+      if (!accountByEmail.has(key)) return;
+      currentEmail = key;
+      await writeJson(CURRENT_ACCOUNT_KEY, currentEmail);
+    },
     async persist(table) {
       await writeJson(`${STORAGE_PREFIX}${table}`, tables[table]);
     },
