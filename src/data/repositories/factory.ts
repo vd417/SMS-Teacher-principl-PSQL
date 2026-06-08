@@ -35,6 +35,8 @@ import { mockBus } from '@/data/mock/bus.repo';
 import { httpBus } from '@/data/http/bus.repo';
 import { mockMyAttendance } from '@/data/mock/myAttendance.repo';
 import { httpMyAttendance } from '@/data/http/myAttendance.repo';
+import { mockApprovals } from '@/data/mock/approvals.repo';
+import { httpApprovals } from '@/data/http/approvals.repo';
 
 export function createMockRepositories(store: Store): Repositories {
   return {
@@ -52,10 +54,7 @@ export function createMockRepositories(store: Store): Repositories {
     library: mockLibrary(store),
     payroll: mockPayroll(store),
     leave: mockLeave(store),
-    approvals: {
-      list: () => Promise.resolve([]),
-      decide: (_id, _decision, _note) => Promise.reject(new Error('not implemented')),
-    },
+    approvals: mockApprovals(store),
     dashboard: mockDashboard(store),
     bus: mockBus(store),
     myAttendance: mockMyAttendance(store),
@@ -78,10 +77,7 @@ export function createHttpRepositories(http: HttpClient): Repositories {
     library: httpLibrary(http),
     payroll: httpPayroll(http),
     leave: httpLeave(http),
-    approvals: {
-      list: () => Promise.resolve([]),
-      decide: (_id, _decision, _note) => Promise.reject(new Error('not implemented')),
-    },
+    approvals: httpApprovals(http),
     dashboard: httpDashboard(http),
     bus: httpBus(http),
     myAttendance: httpMyAttendance(http),
