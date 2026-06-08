@@ -82,4 +82,11 @@ describe('multi-account store', () => {
     await store.setCurrentAccount('nobody@example.com');
     expect(store.session.user.role).toBe('teacher');
   });
+
+  it('persists the chosen account across a fresh createStore', async () => {
+    const store = await createStore();
+    await store.setCurrentAccount('sunita.r@westbrook.edu');
+    const reopened = await createStore();
+    expect(reopened.session.user.role).toBe('principal');
+  });
 });
