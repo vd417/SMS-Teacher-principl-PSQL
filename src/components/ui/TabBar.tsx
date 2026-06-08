@@ -17,7 +17,8 @@ const TAB_ICONS: Record<
   Profile: { active: 'person', inactive: 'person-outline' },
   PHome: { active: 'home', inactive: 'home-outline' },
   Approvals: { active: 'checkmark-done', inactive: 'checkmark-done-outline' },
-  PCalendar: { active: 'calendar', inactive: 'calendar-outline' },
+  PAttendance: { active: 'stats-chart', inactive: 'stats-chart-outline' },
+  PTimetable: { active: 'grid', inactive: 'grid-outline' },
   PInbox: { active: 'chatbubbles', inactive: 'chatbubbles-outline' },
   PProfile: { active: 'person', inactive: 'person-outline' },
 };
@@ -30,7 +31,8 @@ const TAB_LABELS: Record<string, string> = {
   Profile: 'Me',
   PHome: 'Home',
   Approvals: 'Approvals',
-  PCalendar: 'Calendar',
+  PAttendance: 'Attendance',
+  PTimetable: 'Timetable',
   PInbox: 'Inbox',
   PProfile: 'Me',
 };

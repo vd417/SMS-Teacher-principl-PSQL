@@ -61,7 +61,8 @@ export type ProfileStackParamList = {
 export type PrincipalTabParamList = {
   PHome: undefined;
   Approvals: undefined;
-  PCalendar: undefined;
+  PAttendance: undefined;
+  PTimetable: undefined;
   PInbox: undefined;
   PProfile: undefined;
 };
