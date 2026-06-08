@@ -45,6 +45,11 @@ export interface NewLeaveInput {
   reason: string;
   substitute?: string;
 }
+export interface NewAnnouncementInput {
+  title: string;
+  body: string;
+  type: Announcement['type'];
+}
 export interface GradeInput {
   studentId: string;
   examId: string;
@@ -100,6 +105,7 @@ export interface ChatRepository {
 }
 export interface AnnouncementsRepository {
   list(): Promise<Announcement[]>;
+  create(input: NewAnnouncementInput): Promise<Announcement>;
 }
 export interface CalendarRepository {
   list(): Promise<CalendarEvent[]>;

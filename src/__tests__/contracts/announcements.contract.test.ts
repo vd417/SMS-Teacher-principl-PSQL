@@ -21,12 +21,32 @@ const FIXTURE: AnnouncementDTO[] = [
   },
 ];
 
-const fetchImpl = jest.fn(async () => ({
-  ok: true,
-  status: 200,
-  json: async () => FIXTURE,
-  text: async () => JSON.stringify(FIXTURE),
-})) as unknown as typeof fetch;
+const fetchImpl = jest.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
+  const method = init?.method?.toUpperCase() ?? 'GET';
+  if (method === 'POST') {
+    const body = JSON.parse(String(init?.body ?? '{}'));
+    const created = {
+      id: 'an_new',
+      title: body.title,
+      body: body.body,
+      type: body.type,
+      from: 'Sunita Rao',
+      date: '2026-06-08',
+    };
+    return {
+      ok: true,
+      status: 201,
+      json: async () => created,
+      text: async () => JSON.stringify(created),
+    } as Response;
+  }
+  return {
+    ok: true,
+    status: 200,
+    json: async () => FIXTURE,
+    text: async () => JSON.stringify(FIXTURE),
+  } as Response;
+}) as unknown as typeof fetch;
 
 announcementsContract('mock', async () => mockAnnouncements(await createStore()));
 announcementsContract('http', async () =>

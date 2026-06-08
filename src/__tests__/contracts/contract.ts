@@ -119,6 +119,16 @@ export function announcementsContract(name: string, make: () => Promise<Announce
         expect(a).not.toHaveProperty('color');
       }
     });
+
+    it('create returns an announcement echoing the input title and type', async () => {
+      const repo = await make();
+      const input = { title: 'Contract Notice', body: 'Body text', type: 'info' as const };
+      const created = await repo.create(input);
+      expect(typeof created.id).toBe('string');
+      expect(created.title).toBe(input.title);
+      expect(created.type).toBe(input.type);
+      expect(typeof created.from).toBe('string');
+    });
   });
 }
 
