@@ -22,6 +22,8 @@ import type {
   LeaveType,
   LeaveStatus,
   Role,
+  ApprovalRequest,
+  ApprovalRequestType,
 } from '@/data/domain';
 
 export interface SessionDTO {
@@ -365,4 +367,40 @@ export const toDashboardStats = (d: DashboardStatsDTO): DashboardStats => ({
   attendanceToday: d.attendance_today,
   pendingAssignments: d.pending_assignments,
   upcomingExams: d.upcoming_exams,
+});
+
+// ─── Approvals ───────────────────────────────────────────────────────────────
+export interface ApprovalRequestDTO {
+  id: string;
+  type: ApprovalRequestType;
+  requester_id: string;
+  requester_name: string;
+  requester_initials: string;
+  title: string;
+  detail: string;
+  from?: string;
+  to?: string;
+  reason?: string;
+  substitute?: string;
+  priority: ApprovalRequest['priority'];
+  status: ApprovalRequest['status'];
+  applied_on: string;
+  decided_note?: string;
+}
+export const toApprovalRequest = (d: ApprovalRequestDTO): ApprovalRequest => ({
+  id: d.id,
+  type: d.type,
+  requesterId: d.requester_id,
+  requesterName: d.requester_name,
+  requesterInitials: d.requester_initials,
+  title: d.title,
+  detail: d.detail,
+  from: d.from,
+  to: d.to,
+  reason: d.reason,
+  substitute: d.substitute,
+  priority: d.priority,
+  status: d.status,
+  appliedOn: d.applied_on,
+  decidedNote: d.decided_note,
 });
