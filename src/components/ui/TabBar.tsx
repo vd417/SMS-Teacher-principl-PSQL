@@ -15,6 +15,11 @@ const TAB_ICONS: Record<
   Classes: { active: 'school', inactive: 'school-outline' },
   Inbox: { active: 'chatbubbles', inactive: 'chatbubbles-outline' },
   Profile: { active: 'person', inactive: 'person-outline' },
+  PHome: { active: 'home', inactive: 'home-outline' },
+  Approvals: { active: 'checkmark-done', inactive: 'checkmark-done-outline' },
+  PCalendar: { active: 'calendar', inactive: 'calendar-outline' },
+  PInbox: { active: 'chatbubbles', inactive: 'chatbubbles-outline' },
+  PProfile: { active: 'person', inactive: 'person-outline' },
 };
 
 const TAB_LABELS: Record<string, string> = {
@@ -23,6 +28,11 @@ const TAB_LABELS: Record<string, string> = {
   Classes: 'Classes',
   Inbox: 'Inbox',
   Profile: 'Me',
+  PHome: 'Home',
+  Approvals: 'Approvals',
+  PCalendar: 'Calendar',
+  PInbox: 'Inbox',
+  PProfile: 'Me',
 };
 
 export const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, navigation }) => {
