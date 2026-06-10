@@ -8,16 +8,23 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { ScreenHeader } from '../components';
 import { useExams } from '../features/exams/hooks';
 import { useGradesByExam } from '../features/grades/hooks';
 import { deriveColorSet } from '../theme/derive';
+import type { HomeStackParamList } from '../navigation/types';
+
+type GradesNav = NativeStackNavigationProp<HomeStackParamList, 'GradesScreen'>;
 
 export const GradesScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<GradesNav>();
 
   const { data: exams = [], isLoading: examsLoading } = useExams();
   const completedExams = exams.filter((e) => e.status === 'completed');
@@ -50,7 +57,21 @@ export const GradesScreen: React.FC = () => {
       showsVerticalScrollIndicator={false}
     >
       <Animated.View entering={FadeInDown.delay(50).springify()}>
-        <ScreenHeader title="Grades" subtitle="Exam results" showBack />
+        <ScreenHeader
+          title="Grades"
+          subtitle="Exam results"
+          showBack
+          rightComponent={
+            <TouchableOpacity
+              style={styles.enterBtn}
+              onPress={() => navigation.navigate('MarksPickClass')}
+              activeOpacity={0.85}
+            >
+              <Ionicons name="create-outline" size={16} color={Colors.primary} />
+              <Text style={styles.enterBtnText}>Enter</Text>
+            </TouchableOpacity>
+          }
+        />
       </Animated.View>
 
       {/* Exam Picker */}
@@ -151,6 +172,16 @@ export const GradesScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: Colors.paper },
+  enterBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: Colors.primarySoft,
+    borderRadius: Radii.full,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+  },
+  enterBtnText: { fontFamily: FontFamily.semiBold, fontSize: 13, color: Colors.primary },
   scroll: { paddingHorizontal: 20, gap: 12 },
   centered: { paddingVertical: 40, alignItems: 'center' },
   examPicker: { marginBottom: 4 },

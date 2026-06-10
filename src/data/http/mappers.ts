@@ -416,6 +416,7 @@ export interface StaffAttendanceEntryDTO {
   phone: string;
   checked_in: boolean;
   check_in_at?: string;
+  role?: string;
 }
 export interface PrincipalOverviewDTO {
   kpis: {
@@ -441,6 +442,7 @@ export const toPrincipalOverview = (d: PrincipalOverviewDTO): PrincipalOverview 
     phone: s.phone,
     checkedIn: s.checked_in,
     checkInAt: s.check_in_at,
+    role: s.role,
   })),
 });
 
@@ -479,5 +481,6 @@ export const toSchoolAttendance = (d: SchoolAttendanceDTO): SchoolAttendance => 
     phone: s.phone,
     checkedIn: s.checked_in,
     checkInAt: s.check_in_at,
+    role: s.role,
   })),
 });

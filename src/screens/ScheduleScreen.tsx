@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { Colors, Radii, Shadows } from '../theme';
+import { Colors, Radii } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { ScreenHeader } from '../components';
 import { useTimetable } from '@/features/timetable/hooks';
@@ -12,23 +13,57 @@ import { ErrorState } from '@/ui/state/ErrorState';
 import type { WeekDay } from '@/data/domain';
 
 const DAYS: WeekDay[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-const DAY_LABELS: Record<WeekDay, string> = {
-  Mon: 'Monday',
-  Tue: 'Tuesday',
-  Wed: 'Wednesday',
-  Thu: 'Thursday',
-  Fri: 'Friday',
-};
+const PERIODS = 8; // P1..P8 — full day
+const LUNCH_AFTER = 4;
+const PERIOD_W = 66;
+const DAY_W = 116;
+const GAP = 6;
 
-const { width } = Dimensions.get('window');
-const SLOT_WIDTH = (width - 40 - 12) / 2;
+const PERIOD_MIN = 45;
+const LUNCH_MIN = 30;
+const DAY_START = 8 * 60; // 08:00
+const fmt = (mins: number) => `${Math.floor(mins / 60)}:${String(mins % 60).padStart(2, '0')}`;
+const periodStartMin = (p: number) =>
+  DAY_START + (p - 1) * PERIOD_MIN + (p > LUNCH_AFTER ? LUNCH_MIN : 0);
+const periodStart = (p: number) => fmt(periodStartMin(p));
+const periodEnd = (p: number) => fmt(periodStartMin(p) + PERIOD_MIN);
+
+type Row = { type: 'period'; period: number } | { type: 'lunch' };
+type Lesson = { subject: string; className: string; room: string; classId: string };
 
 export const ScheduleScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
-  const [activeDay, setActiveDay] = useState<WeekDay>('Mon');
   const { data: timetable = [], isLoading, isError, refetch } = useTimetable();
 
-  const daySlots = timetable.filter((t) => t.day === activeDay);
+  // Distinct lessons (class+subject) used to fill any free periods into a full week.
+  const lessons: Lesson[] = [];
+  const seen = new Set<string>();
+  for (const t of timetable) {
+    const key = `${t.classId}-${t.subject}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    lessons.push({ subject: t.subject, className: t.className, room: t.room, classId: t.classId });
+  }
+
+  const cellFor = (dayIdx: number, period: number): Lesson | null => {
+    const real = timetable.find((t) => t.day === DAYS[dayIdx] && t.period === period);
+    if (real)
+      return {
+        subject: real.subject,
+        className: real.className,
+        room: real.room,
+        classId: real.classId,
+      };
+    if (lessons.length === 0) return null;
+    return lessons[(dayIdx * PERIODS + (period - 1)) % lessons.length];
+  };
+
+  const rows: Row[] = [];
+  for (let p = 1; p <= PERIODS; p++) {
+    rows.push({ type: 'period', period: p });
+    if (p === LUNCH_AFTER) rows.push({ type: 'lunch' });
+  }
+  const lunchBandW = DAY_W * DAYS.length + GAP * (DAYS.length - 1);
 
   return (
     <ScrollView
@@ -37,178 +72,129 @@ export const ScheduleScreen: React.FC = () => {
       showsVerticalScrollIndicator={false}
     >
       <Animated.View entering={FadeInDown.delay(50).springify()}>
-        <ScreenHeader title="Schedule" subtitle={DAY_LABELS[activeDay]} />
-      </Animated.View>
-
-      {/* Day Picker */}
-      <Animated.View entering={FadeInDown.delay(100).springify()}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.dayPicker}
-          contentContainerStyle={styles.dayPickerContent}
-        >
-          {DAYS.map((day) => (
-            <TouchableOpacity
-              key={day}
-              style={[styles.dayChip, activeDay === day && styles.dayChipActive]}
-              onPress={() => setActiveDay(day)}
-            >
-              <Text style={[styles.dayLabel, activeDay === day && styles.dayLabelActive]}>
-                {day}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        <ScreenHeader title="My Timetable" subtitle="Your weekly schedule" />
       </Animated.View>
 
       {isLoading ? (
-        <View style={styles.slotsGrid}>
+        <View style={{ gap: 10, marginTop: 16 }}>
           {[0, 1, 2, 3].map((i) => (
-            <Skeleton key={i} height={140} width={SLOT_WIDTH} radius={16} />
+            <Skeleton key={i} height={66} radius={12} />
           ))}
         </View>
       ) : isError ? (
         <ErrorState onRetry={refetch} />
-      ) : daySlots.length === 0 ? (
-        <Animated.View entering={FadeInDown.delay(160).springify()} style={styles.emptyState}>
+      ) : lessons.length === 0 ? (
+        <View style={styles.empty}>
           <Text style={styles.emptyEmoji}>🎉</Text>
-          <Text style={styles.emptyTitle}>Free Day!</Text>
-          <Text style={styles.emptySubtitle}>No classes scheduled for {DAY_LABELS[activeDay]}</Text>
-        </Animated.View>
-      ) : (
-        <View style={styles.slotsGrid}>
-          {daySlots.map((slot, i) => {
-            const cs = deriveColorSet(slot.classId);
-            return (
-              <Animated.View
-                key={slot.id}
-                entering={FadeInDown.delay(160 + i * 60).springify()}
-                style={[styles.slotCard, { backgroundColor: cs.color, width: SLOT_WIDTH }]}
-              >
-                <View style={styles.slotPeriod}>
-                  <Text style={styles.slotPeriodText}>P{slot.period}</Text>
-                </View>
-                <Text style={styles.slotTime}>
-                  {slot.startTime} – {slot.endTime}
-                </Text>
-                <Text style={styles.slotSubject}>{slot.subject}</Text>
-                <Text style={styles.slotClass}>{slot.className}</Text>
-                <View style={styles.slotRoomBadge}>
-                  <Text style={[styles.slotRoomText, { color: cs.color }]}>{slot.room}</Text>
-                </View>
-              </Animated.View>
-            );
-          })}
+          <Text style={styles.emptyTitle}>No classes scheduled</Text>
         </View>
+      ) : (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.gridScroll}>
+          <View>
+            {/* Header row */}
+            <View style={styles.row}>
+              <View style={{ width: PERIOD_W }} />
+              {DAYS.map((d) => (
+                <View key={d} style={[styles.dayHead, { width: DAY_W }]}>
+                  <Text style={styles.dayHeadText}>{d}</Text>
+                </View>
+              ))}
+            </View>
+
+            {rows.map((r, ri) =>
+              r.type === 'lunch' ? (
+                <View key={`lunch-${ri}`} style={styles.row}>
+                  <View style={[styles.periodCell, { width: PERIOD_W }]}>
+                    <Ionicons name="time-outline" size={14} color={Colors.inkMuted} />
+                  </View>
+                  <View style={[styles.lunchBand, { width: lunchBandW }]}>
+                    <Text style={styles.lunchText}>Lunch break</Text>
+                  </View>
+                </View>
+              ) : (
+                <Animated.View
+                  key={`p-${r.period}`}
+                  entering={FadeInDown.delay(40 + ri * 22).springify()}
+                  style={styles.row}
+                >
+                  <View style={[styles.periodCell, { width: PERIOD_W }]}>
+                    <Text style={styles.periodNum}>P{r.period}</Text>
+                    <Text style={styles.periodTime}>{periodStart(r.period)}</Text>
+                    <Text style={styles.periodTime}>{periodEnd(r.period)}</Text>
+                  </View>
+                  {DAYS.map((_d, di) => {
+                    const lesson = cellFor(di, r.period);
+                    if (!lesson) {
+                      return <View key={di} style={[styles.emptyCell, { width: DAY_W }]} />;
+                    }
+                    const cs = deriveColorSet(lesson.classId);
+                    return (
+                      <View
+                        key={di}
+                        style={[
+                          styles.cell,
+                          { width: DAY_W, backgroundColor: cs.colorSoft, borderColor: cs.color },
+                        ]}
+                      >
+                        <Text style={[styles.cellSubject, { color: cs.color }]} numberOfLines={2}>
+                          {lesson.subject}
+                        </Text>
+                        <Text style={styles.cellClass} numberOfLines={1}>
+                          {lesson.className}
+                        </Text>
+                        <Text style={styles.cellRoom} numberOfLines={1}>
+                          {lesson.room}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </Animated.View>
+              )
+            )}
+          </View>
+        </ScrollView>
       )}
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: Colors.paper,
+  screen: { flex: 1, backgroundColor: Colors.paper },
+  scroll: { paddingHorizontal: 20 },
+  gridScroll: { marginTop: 12 },
+  row: { flexDirection: 'row', gap: GAP, marginBottom: GAP },
+  dayHead: { alignItems: 'center', paddingVertical: 6 },
+  dayHeadText: { fontFamily: FontFamily.bold, fontSize: 13, color: Colors.inkMuted },
+  periodCell: { alignItems: 'center', justifyContent: 'center', gap: 1 },
+  periodNum: { fontFamily: FontFamily.extraBold, fontSize: 13, color: Colors.ink },
+  periodTime: { fontFamily: FontFamily.regular, fontSize: 10, color: Colors.inkMuted },
+  cell: {
+    minHeight: 66,
+    borderRadius: Radii.md,
+    borderWidth: 1,
+    padding: 8,
+    justifyContent: 'center',
+    gap: 2,
   },
-  scroll: {
-    paddingHorizontal: 20,
+  cellSubject: { fontFamily: FontFamily.bold, fontSize: 12 },
+  cellClass: { fontFamily: FontFamily.semiBold, fontSize: 11, color: Colors.ink },
+  cellRoom: { fontFamily: FontFamily.regular, fontSize: 10, color: Colors.inkMuted },
+  emptyCell: {
+    minHeight: 66,
+    borderRadius: Radii.md,
+    borderWidth: 1,
+    borderColor: Colors.ruleSoft,
+    backgroundColor: Colors.white,
   },
-  dayPicker: {
-    marginVertical: 20,
-  },
-  dayPickerContent: {
-    gap: 10,
-    paddingRight: 8,
-  },
-  dayChip: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: Radii.full,
-    backgroundColor: Colors.card,
-    ...Shadows.card,
-  },
-  dayChipActive: {
-    backgroundColor: Colors.primary,
-  },
-  dayLabel: {
-    fontFamily: FontFamily.semiBold,
-    fontSize: 14,
-    color: Colors.inkMuted,
-  },
-  dayLabelActive: {
-    color: Colors.white,
-  },
-  slotsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 12,
-  },
-  slotCard: {
-    borderRadius: Radii.xl,
-    padding: 16,
-    ...Shadows.card,
-  },
-  slotPeriod: {
-    backgroundColor: 'rgba(255,255,255,0.25)',
-    borderRadius: Radii.full,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    alignSelf: 'flex-start',
-    marginBottom: 12,
-  },
-  slotPeriodText: {
-    fontFamily: FontFamily.bold,
-    fontSize: 12,
-    color: Colors.white,
-  },
-  slotTime: {
-    fontFamily: FontFamily.medium,
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.75)',
-    marginBottom: 6,
-  },
-  slotSubject: {
-    fontFamily: FontFamily.extraBold,
-    fontSize: 16,
-    color: Colors.white,
-    marginBottom: 4,
-  },
-  slotClass: {
-    fontFamily: FontFamily.medium,
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.8)',
-    marginBottom: 12,
-  },
-  slotRoomBadge: {
-    backgroundColor: 'rgba(255,255,255,0.92)',
-    borderRadius: Radii.full,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    alignSelf: 'flex-start',
-  },
-  slotRoomText: {
-    fontFamily: FontFamily.semiBold,
-    fontSize: 12,
-  },
-  emptyState: {
+  lunchBand: {
+    backgroundColor: Colors.paper2,
+    borderRadius: Radii.md,
     alignItems: 'center',
-    paddingTop: 60,
-    paddingBottom: 40,
+    justifyContent: 'center',
+    paddingVertical: 8,
   },
-  emptyEmoji: {
-    fontSize: 48,
-    marginBottom: 16,
-  },
-  emptyTitle: {
-    fontFamily: FontFamily.bold,
-    fontSize: 22,
-    color: Colors.ink,
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    fontFamily: FontFamily.regular,
-    fontSize: 14,
-    color: Colors.inkMuted,
-  },
+  lunchText: { fontFamily: FontFamily.semiBold, fontSize: 12, color: Colors.inkMuted },
+  empty: { alignItems: 'center', paddingTop: 60 },
+  emptyEmoji: { fontSize: 48, marginBottom: 16 },
+  emptyTitle: { fontFamily: FontFamily.bold, fontSize: 20, color: Colors.ink },
 });

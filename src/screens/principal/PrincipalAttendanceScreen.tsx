@@ -1,16 +1,81 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  ActivityIndicator,
+  TouchableOpacity,
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors, Radii, Shadows } from '../../theme';
 import { FontFamily } from '../../theme/typography';
-import { Avatar } from '../../components';
+import { SectionPickerModal, TeacherSubjectDrawer } from '../../components';
+import type { SectionOption } from '../../components';
 import { usePrincipalAttendance } from '@/features/principal/hooks';
+import { useClasses } from '@/features/classes/hooks';
+import { deriveColorSet } from '@/theme/derive';
+import type { PrincipalAttendanceStackParamList } from '../../navigation/types';
+
+type PAttendanceNav = NativeStackNavigationProp<
+  PrincipalAttendanceStackParamList,
+  'PrincipalAttendanceScreen'
+>;
+
+type GradeGroup = {
+  name: string;
+  present: number;
+  total: number;
+  pct: number;
+  options: SectionOption[];
+};
 
 export const PrincipalAttendanceScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<PAttendanceNav>();
   const { data, isLoading } = usePrincipalAttendance();
+  const { data: classList = [] } = useClasses();
+
+  const classById = useMemo(() => Object.fromEntries(classList.map((c) => [c.id, c])), [classList]);
+
+  const [picker, setPicker] = useState<GradeGroup | null>(null);
+  const [staffView, setStaffView] = useState<'teaching' | 'support' | null>(null);
+
+  const allStaff = data?.staff ?? [];
+  const teachingStaff = allStaff.filter((s) => !s.role);
+  const supportStaff = allStaff.filter((s) => s.role);
+  const presentCount = (list: typeof allStaff) => list.filter((s) => s.checkedIn).length;
+
+  // Group the per-section attendance into grades so the principal picks a
+  // class, then a section (via popup), before opening that section's attendance.
+  const gradeGroups = useMemo<GradeGroup[]>(() => {
+    const map = new Map<string, GradeGroup>();
+    for (const c of data?.classes ?? []) {
+      const name = classById[c.classId]?.name ?? c.className;
+      const g = map.get(name) ?? { name, present: 0, total: 0, pct: 0, options: [] };
+      g.present += c.present;
+      g.total += c.total;
+      g.options.push({
+        id: c.classId,
+        section: classById[c.classId]?.section ?? '?',
+        subtitle: `${c.pct}% present`,
+      });
+      map.set(name, g);
+    }
+    return [...map.values()].map((g) => ({
+      ...g,
+      pct: g.total ? Math.round((g.present / g.total) * 100) : 0,
+    }));
+  }, [data, classById]);
+
+  const openAttendance = (classId: string) => {
+    setPicker(null);
+    navigation.navigate('AttendanceScreen', { classId });
+  };
 
   return (
     <View style={styles.root}>
@@ -41,63 +106,99 @@ export const PrincipalAttendanceScreen: React.FC = () => {
 
             {/* Students by class */}
             <Text style={styles.section}>Students by class</Text>
-            {data.classes.map((c, i) => (
-              <Animated.View
-                key={c.classId}
-                entering={FadeInDown.delay(40 * i).springify()}
-                style={styles.classRow}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.className}>{c.className}</Text>
-                  <View style={styles.barTrack}>
-                    <View style={[styles.barFill, { width: `${c.pct}%` }]} />
-                  </View>
-                </View>
-                <Text style={styles.classMeta}>
-                  {c.present}/{c.total}
-                </Text>
-                <Text style={styles.classPct}>{c.pct}%</Text>
-              </Animated.View>
-            ))}
+            <Text style={styles.sectionHint}>Select a class, then a section to view or edit</Text>
+            {gradeGroups.map((g, i) => {
+              const cs = deriveColorSet(g.name);
+              return (
+                <Animated.View key={g.name} entering={FadeInDown.delay(40 * i).springify()}>
+                  <TouchableOpacity
+                    style={[styles.classCard, { backgroundColor: cs.color }]}
+                    activeOpacity={0.88}
+                    onPress={() => setPicker(g)}
+                  >
+                    <View style={styles.cardHeader}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.cardClassName}>{g.name}</Text>
+                        <Text style={styles.cardSubject}>
+                          {g.options.length} section{g.options.length > 1 ? 's' : ''} · tap to
+                          choose
+                        </Text>
+                      </View>
+                      <View style={styles.iconBadge}>
+                        <Ionicons name="school" size={20} color={cs.color} />
+                      </View>
+                    </View>
+
+                    <View style={styles.cardAttRow}>
+                      <Text style={styles.cardCount}>
+                        {g.present}/{g.total} present
+                      </Text>
+                      <Text style={styles.cardPct}>{g.pct}%</Text>
+                    </View>
+                    <View style={styles.cardBarTrack}>
+                      <View style={[styles.cardBarFill, { width: `${g.pct}%` }]} />
+                    </View>
+                  </TouchableOpacity>
+                </Animated.View>
+              );
+            })}
 
             {/* Staff */}
             <Text style={styles.section}>Staff</Text>
-            {data.staff.map((s, i) => (
-              <Animated.View
-                key={s.teacherId}
-                entering={FadeInDown.delay(40 * i).springify()}
-                style={styles.staffRow}
+            <Animated.View entering={FadeInDown.springify()}>
+              <TouchableOpacity
+                style={styles.staffCard}
+                activeOpacity={0.9}
+                onPress={() => setStaffView('teaching')}
               >
-                <Avatar initials={s.initials} size={36} />
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.staffName}>{s.name}</Text>
-                  <Text style={styles.staffMeta}>{s.subject}</Text>
+                <View style={[styles.staffIcon, { backgroundColor: Colors.primary }]}>
+                  <Ionicons name="school" size={20} color={Colors.white} />
                 </View>
-                <View
-                  style={[
-                    styles.statusPill,
-                    { backgroundColor: s.checkedIn ? Colors.primarySoft : Colors.paper2 },
-                  ]}
-                >
-                  <Ionicons
-                    name={s.checkedIn ? 'checkmark-circle' : 'ellipse-outline'}
-                    size={13}
-                    color={s.checkedIn ? Colors.present : Colors.inkMuted}
-                  />
-                  <Text
-                    style={[
-                      styles.statusText,
-                      { color: s.checkedIn ? Colors.present : Colors.inkMuted },
-                    ]}
-                  >
-                    {s.checkedIn ? 'In' : 'Out'}
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.staffCardTitle}>Teaching staff</Text>
+                  <Text style={styles.staffCardMeta}>
+                    {presentCount(teachingStaff)}/{teachingStaff.length} checked in · tap to view
                   </Text>
                 </View>
-              </Animated.View>
-            ))}
+                <Ionicons name="chevron-forward" size={20} color={Colors.inkSoft} />
+              </TouchableOpacity>
+            </Animated.View>
+            <Animated.View entering={FadeInDown.delay(60).springify()}>
+              <TouchableOpacity
+                style={styles.staffCard}
+                activeOpacity={0.9}
+                onPress={() => setStaffView('support')}
+              >
+                <View style={[styles.staffIcon, { backgroundColor: Colors.teal }]}>
+                  <Ionicons name="people" size={20} color={Colors.white} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.staffCardTitle}>Non-teaching staff</Text>
+                  <Text style={styles.staffCardMeta}>
+                    {presentCount(supportStaff)}/{supportStaff.length} checked in · tap to view
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={Colors.inkSoft} />
+              </TouchableOpacity>
+            </Animated.View>
           </>
         )}
       </ScrollView>
+
+      <SectionPickerModal
+        visible={!!picker}
+        gradeName={picker?.name ?? null}
+        sections={picker?.options ?? []}
+        onSelect={openAttendance}
+        onClose={() => setPicker(null)}
+      />
+
+      <TeacherSubjectDrawer
+        visible={staffView !== null}
+        title={staffView === 'support' ? 'Non-teaching staff' : 'Teaching staff'}
+        staff={staffView === 'support' ? supportStaff : teachingStaff}
+        onClose={() => setStaffView(null)}
+      />
     </View>
   );
 };
@@ -128,7 +229,56 @@ const styles = StyleSheet.create({
     marginTop: 22,
     marginBottom: 10,
   },
-  classRow: {
+  sectionHint: {
+    fontFamily: FontFamily.regular,
+    fontSize: 12,
+    color: Colors.inkMuted,
+    marginTop: -6,
+    marginBottom: 10,
+  },
+  classCard: {
+    borderRadius: Radii.xl,
+    padding: 18,
+    marginBottom: 12,
+    ...Shadows.card,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 14,
+  },
+  cardClassName: { fontFamily: FontFamily.extraBold, fontSize: 20, color: Colors.white },
+  cardSubject: {
+    fontFamily: FontFamily.medium,
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.75)',
+    marginTop: 3,
+  },
+  iconBadge: {
+    width: 42,
+    height: 42,
+    borderRadius: Radii.md,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardAttRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
+    marginBottom: 8,
+  },
+  cardCount: { fontFamily: FontFamily.semiBold, fontSize: 14, color: 'rgba(255,255,255,0.9)' },
+  cardPct: { fontFamily: FontFamily.extraBold, fontSize: 20, color: Colors.white },
+  cardBarTrack: {
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    overflow: 'hidden',
+  },
+  cardBarFill: { height: 6, borderRadius: 3, backgroundColor: Colors.white },
+  staffCard: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -138,36 +288,19 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     ...Shadows.card,
   },
-  className: { fontFamily: FontFamily.semiBold, fontSize: 14, color: Colors.ink, marginBottom: 8 },
-  barTrack: { height: 6, borderRadius: 3, backgroundColor: Colors.paper2, overflow: 'hidden' },
-  barFill: { height: 6, borderRadius: 3, backgroundColor: Colors.primary },
-  classMeta: { fontFamily: FontFamily.medium, fontSize: 13, color: Colors.inkMuted },
-  classPct: {
-    fontFamily: FontFamily.bold,
-    fontSize: 14,
-    color: Colors.primary,
+  staffIcon: {
     width: 42,
-    textAlign: 'right',
-  },
-  staffRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: Colors.white,
+    height: 42,
     borderRadius: Radii.md,
-    padding: 12,
-    marginBottom: 8,
-    ...Shadows.card,
-  },
-  staffName: { fontFamily: FontFamily.semiBold, fontSize: 14, color: Colors.ink },
-  staffMeta: { fontFamily: FontFamily.regular, fontSize: 12, color: Colors.inkMuted },
-  statusPill: {
-    flexDirection: 'row',
+    backgroundColor: Colors.primary,
     alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: Radii.full,
+    justifyContent: 'center',
   },
-  statusText: { fontFamily: FontFamily.bold, fontSize: 12 },
+  staffCardTitle: { fontFamily: FontFamily.bold, fontSize: 15, color: Colors.ink },
+  staffCardMeta: {
+    fontFamily: FontFamily.regular,
+    fontSize: 12,
+    color: Colors.inkMuted,
+    marginTop: 2,
+  },
 });

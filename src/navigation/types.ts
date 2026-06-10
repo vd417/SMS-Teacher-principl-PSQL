@@ -3,7 +3,7 @@ import type { NavigatorScreenParams } from '@react-navigation/native';
 // Main tab navigator params
 export type MainTabParamList = {
   Home: undefined;
-  Calendar: undefined;
+  Timetable: undefined;
   Classes: undefined;
   Inbox: undefined;
   Profile: undefined;
@@ -14,6 +14,8 @@ export type HomeStackParamList = {
   HomeScreen: undefined;
   AttendancePickClass: undefined;
   AttendanceScreen: { classId: string };
+  MarksPickClass: undefined;
+  MarksEntryScreen: { examId: string };
   StudentScreen: { studentId: string };
   ExamsScreen: undefined;
   ExamDetail: { examId: string };
@@ -34,12 +36,6 @@ export type ClassesStackParamList = {
   ClassDetailScreen: { classId: string };
   StudentScreen: { studentId: string };
   AttendanceScreen: { classId: string };
-};
-
-// Calendar stack params
-export type CalendarStackParamList = {
-  CalendarScreen: undefined;
-  ScheduleScreen: undefined;
 };
 
 // Inbox stack params
@@ -73,6 +69,18 @@ export type PrincipalHomeStackParamList = {
   AnnouncementsScreen: undefined;
   BusScreen: undefined;
   TeacherDirectoryScreen: undefined;
+};
+
+// Principal Attendance stack params
+export type PrincipalAttendanceStackParamList = {
+  PrincipalAttendanceScreen: undefined;
+  AttendanceScreen: { classId: string };
+};
+
+// Principal Timetable stack params
+export type PrincipalTimetableStackParamList = {
+  SchoolTimetableScreen: undefined;
+  ClassTimetableScreen: { classId: string };
 };
 
 // Root navigator

@@ -198,6 +198,8 @@ export interface StaffAttendanceEntry {
   phone: string;
   checkedIn: boolean;
   checkInAt?: string; // ISO timestamp
+  /** Department/role for non-teaching staff (e.g. Security, Guard, Peon). Teachers group by subject. */
+  role?: string;
 }
 export interface PrincipalKpis {
   studentsPresentPct: number;

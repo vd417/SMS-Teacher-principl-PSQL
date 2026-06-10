@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -14,18 +14,38 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
-import { ScreenHeader } from '../components';
+import { ScreenHeader, SectionPickerModal } from '../components';
+import type { SectionOption } from '../components';
 import { useClasses } from '@/features/classes/hooks';
 import { deriveColorSet } from '@/theme/derive';
 import type { HomeStackParamList } from '../navigation/types';
 
 type AttPickNav = NativeStackNavigationProp<HomeStackParamList, 'AttendancePickClass'>;
 
+type GradeGroup = { name: string; sections: SectionOption[] };
+
 export const AttendancePickClassScreen: React.FC = () => {
   const navigation = useNavigation<AttPickNav>();
   const insets = useSafeAreaInsets();
 
   const { data: classes = [], isLoading, isError } = useClasses();
+  const [picker, setPicker] = useState<GradeGroup | null>(null);
+
+  // Group classes by grade name so the user picks a class, then a section.
+  const grades = useMemo<GradeGroup[]>(() => {
+    const map = new Map<string, SectionOption[]>();
+    for (const c of classes) {
+      const arr = map.get(c.name) ?? [];
+      arr.push({ id: c.id, section: c.section, subtitle: `${c.studentCount} students` });
+      map.set(c.name, arr);
+    }
+    return [...map.entries()].map(([name, sections]) => ({ name, sections }));
+  }, [classes]);
+
+  const openAttendance = (classId: string) => {
+    setPicker(null);
+    navigation.navigate('AttendanceScreen', { classId });
+  };
 
   return (
     <ScrollView
@@ -34,7 +54,7 @@ export const AttendancePickClassScreen: React.FC = () => {
       showsVerticalScrollIndicator={false}
     >
       <Animated.View entering={FadeInDown.delay(50).springify()}>
-        <ScreenHeader title="Mark Attendance" subtitle="Select a class to continue" showBack />
+        <ScreenHeader title="Mark Attendance" subtitle="Select a class, then a section" showBack />
       </Animated.View>
 
       <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.dateCard}>
@@ -54,40 +74,43 @@ export const AttendancePickClassScreen: React.FC = () => {
         </View>
       )}
 
-      {!isLoading && !isError && classes.length === 0 && (
+      {!isLoading && !isError && grades.length === 0 && (
         <View style={styles.center}>
           <Text style={styles.emptyText}>No classes found</Text>
         </View>
       )}
 
-      {classes.map((cls, i) => {
-        const { color } = deriveColorSet(cls.id);
+      {grades.map((g, i) => {
+        const cs = deriveColorSet(g.name);
         return (
-          <Animated.View key={cls.id} entering={FadeInDown.delay(140 + i * 60).springify()}>
+          <Animated.View key={g.name} entering={FadeInDown.delay(140 + i * 60).springify()}>
             <TouchableOpacity
-              style={styles.classCard}
-              onPress={() => navigation.navigate('AttendanceScreen', { classId: cls.id })}
+              style={styles.gradeCard}
+              onPress={() => setPicker(g)}
               activeOpacity={0.85}
             >
-              <View style={[styles.classColor, { backgroundColor: color }]}>
+              <View style={[styles.gradeIcon, { backgroundColor: cs.color }]}>
                 <Ionicons name="school" size={22} color={Colors.white} />
               </View>
-              <View style={styles.classInfo}>
-                <Text style={styles.className}>
-                  {cls.name} – {cls.section}
-                </Text>
-                <Text style={styles.classSubject}>{cls.subject}</Text>
-                <Text style={styles.classCount}>
-                  {cls.studentCount} students · {cls.room}
+              <View style={styles.gradeInfo}>
+                <Text style={styles.gradeName}>{g.name}</Text>
+                <Text style={styles.gradeMeta}>
+                  {g.sections.length} section{g.sections.length > 1 ? 's' : ''} · tap to choose
                 </Text>
               </View>
-              <View style={styles.arrowWrap}>
-                <Ionicons name="chevron-forward" size={20} color={Colors.inkSoft} />
-              </View>
+              <Ionicons name="chevron-forward" size={20} color={Colors.inkSoft} />
             </TouchableOpacity>
           </Animated.View>
         );
       })}
+
+      <SectionPickerModal
+        visible={!!picker}
+        gradeName={picker?.name ?? null}
+        sections={picker?.sections ?? []}
+        onSelect={openAttendance}
+        onClose={() => setPicker(null)}
+      />
     </ScrollView>
   );
 };
@@ -116,7 +139,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.primary,
   },
-  classCard: {
+  gradeCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: Colors.card,
@@ -124,7 +147,7 @@ const styles = StyleSheet.create({
     padding: 16,
     ...Shadows.card,
   },
-  classColor: {
+  gradeIcon: {
     width: 54,
     height: 54,
     borderRadius: Radii.md,
@@ -132,33 +155,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: 14,
   },
-  classInfo: {
+  gradeInfo: {
     flex: 1,
   },
-  className: {
+  gradeName: {
     fontFamily: FontFamily.bold,
     fontSize: 17,
     color: Colors.ink,
   },
-  classSubject: {
+  gradeMeta: {
     fontFamily: FontFamily.regular,
     fontSize: 13,
     color: Colors.inkMuted,
-    marginTop: 2,
-  },
-  classCount: {
-    fontFamily: FontFamily.regular,
-    fontSize: 12,
-    color: Colors.inkSoft,
-    marginTop: 4,
-  },
-  arrowWrap: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: Colors.paper2,
-    alignItems: 'center',
-    justifyContent: 'center',
+    marginTop: 3,
   },
   center: {
     paddingVertical: 40,

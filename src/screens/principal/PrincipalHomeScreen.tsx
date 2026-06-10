@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -6,12 +6,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Colors, Radii, Shadows } from '../../theme';
 import { FontFamily } from '../../theme/typography';
-import { Avatar, Card, SectionHeader, PunchButton } from '../../components';
+import { Avatar, Card, Donut, SectionHeader } from '../../components';
 import { useAuth } from '@/features/auth/AuthProvider';
-import { useMyAttendanceToday, usePunch } from '@/features/teacherAttendance/hooks';
 import { usePrincipalOverview } from '@/features/principal/hooks';
 import { useApprovals } from '@/features/approvals/hooks';
-import { isAppError } from '@/lib/errors';
 
 const SHORTCUTS = [
   { key: 'AnnouncementsScreen', label: 'Broadcast', icon: 'megaphone-outline' as const },
@@ -27,23 +25,14 @@ export const PrincipalHomeScreen: React.FC = () => {
 
   const { data: overview } = usePrincipalOverview();
   const { data: approvals = [] } = useApprovals();
-  const { data: myToday, isLoading: myTodayLoading } = useMyAttendanceToday();
-  const punch = usePunch();
-  const [msg, setMsg] = useState<string | null>(null);
 
-  const canCheckIn = !myTodayLoading && !myToday?.checkIn;
   const pending = approvals.filter((a) => a.status === 'pending');
   const notCheckedIn = (overview?.staff ?? []).filter((s) => !s.checkedIn);
 
-  const handleCheckIn = () => {
-    punch.mutate('in', {
-      onSuccess: (day) => {
-        const ev = day.checkIn;
-        setMsg(ev?.verified ? 'Checked in ✓' : 'Checked in — flagged');
-      },
-      onError: (e) => setMsg(isAppError(e) ? e.message : 'Could not check in.'),
-    });
-  };
+  const studentsPct = overview?.kpis.studentsPresentPct ?? 0;
+  const staffTotal = overview?.kpis.staffTotal ?? 0;
+  const staffPresent = overview?.kpis.staffPresent ?? 0;
+  const staffPct = staffTotal ? Math.round((staffPresent / staffTotal) * 100) : 0;
 
   return (
     <View style={styles.root}>
@@ -61,26 +50,35 @@ export const PrincipalHomeScreen: React.FC = () => {
           <Avatar initials={user?.initials ?? '?'} size={50} />
         </Animated.View>
 
-        {/* Check-in */}
+        {/* Attendance chart */}
         <Animated.View entering={FadeInDown.delay(120).springify()}>
-          <Card style={styles.checkCard}>
-            <View style={styles.rowCenter}>
-              <Ionicons name="location" size={16} color={Colors.primary} />
-              <Text style={styles.checkTitle}>My Attendance</Text>
-            </View>
-            {canCheckIn ? (
-              <PunchButton
-                label="Check In"
-                icon="enter-outline"
-                onPress={handleCheckIn}
-                loading={punch.isPending}
-              />
-            ) : (
-              <View style={styles.rowCenter}>
-                <Ionicons name="checkmark-circle" size={16} color={Colors.present} />
-                <Text style={styles.checkedText}>{msg ?? 'Checked in'}</Text>
+          <Card style={styles.attCard}>
+            <Text style={styles.attTitle}>{"Today's Attendance"}</Text>
+            <View style={styles.attDonuts}>
+              <View style={styles.attItem}>
+                <Donut
+                  percentage={studentsPct}
+                  size={96}
+                  strokeWidth={10}
+                  color={Colors.primary}
+                  backgroundColor={Colors.primarySoft2}
+                />
+                <Text style={styles.attLabel}>Students</Text>
               </View>
-            )}
+              <View style={styles.attItem}>
+                <Donut
+                  percentage={staffPct}
+                  size={96}
+                  strokeWidth={10}
+                  color={Colors.present}
+                  backgroundColor={Colors.presentSoft}
+                />
+                <Text style={styles.attLabel}>Teachers</Text>
+                <Text style={styles.attSub}>
+                  {staffPresent}/{staffTotal} in
+                </Text>
+              </View>
+            </View>
           </Card>
         </Animated.View>
 
@@ -170,10 +168,12 @@ const styles = StyleSheet.create({
   greeting: { fontFamily: FontFamily.regular, fontSize: 14, color: Colors.inkMuted },
   name: { fontFamily: FontFamily.extraBold, fontSize: 24, color: Colors.ink },
   sub: { fontFamily: FontFamily.medium, fontSize: 13, color: Colors.inkMuted, marginTop: 2 },
-  checkCard: { padding: 16, marginBottom: 16, gap: 12 },
-  rowCenter: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  checkTitle: { fontFamily: FontFamily.bold, fontSize: 15, color: Colors.ink },
-  checkedText: { fontFamily: FontFamily.medium, fontSize: 14, color: Colors.ink3 },
+  attCard: { padding: 16, marginBottom: 16, gap: 16 },
+  attTitle: { fontFamily: FontFamily.bold, fontSize: 15, color: Colors.ink },
+  attDonuts: { flexDirection: 'row', justifyContent: 'space-around' },
+  attItem: { alignItems: 'center', gap: 8 },
+  attLabel: { fontFamily: FontFamily.semiBold, fontSize: 14, color: Colors.ink },
+  attSub: { fontFamily: FontFamily.regular, fontSize: 12, color: Colors.inkMuted, marginTop: -4 },
   kpiRow: { flexDirection: 'row', gap: 10, marginBottom: 8 },
   kpi: {
     flex: 1,

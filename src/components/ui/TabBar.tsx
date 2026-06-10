@@ -11,7 +11,7 @@ const TAB_ICONS: Record<
   { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }
 > = {
   Home: { active: 'home', inactive: 'home-outline' },
-  Calendar: { active: 'calendar', inactive: 'calendar-outline' },
+  Timetable: { active: 'grid', inactive: 'grid-outline' },
   Classes: { active: 'school', inactive: 'school-outline' },
   Inbox: { active: 'chatbubbles', inactive: 'chatbubbles-outline' },
   Profile: { active: 'person', inactive: 'person-outline' },
@@ -25,7 +25,7 @@ const TAB_ICONS: Record<
 
 const TAB_LABELS: Record<string, string> = {
   Home: 'Home',
-  Calendar: 'Calendar',
+  Timetable: 'Timetable',
   Classes: 'Classes',
   Inbox: 'Inbox',
   Profile: 'Me',

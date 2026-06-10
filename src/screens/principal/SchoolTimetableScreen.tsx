@@ -1,28 +1,53 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
   ActivityIndicator,
+  TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors, Radii, Shadows } from '../../theme';
 import { FontFamily } from '../../theme/typography';
-import { useTimetable } from '@/features/timetable/hooks';
-import type { WeekDay } from '@/data/domain';
+import { SectionPickerModal } from '../../components';
+import type { SectionOption } from '../../components';
+import { useClasses } from '@/features/classes/hooks';
+import { deriveColorSet } from '@/theme/derive';
+import type { PrincipalTimetableStackParamList } from '../../navigation/types';
 
-const DAYS: WeekDay[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+type TimetableNav = NativeStackNavigationProp<
+  PrincipalTimetableStackParamList,
+  'SchoolTimetableScreen'
+>;
+
+type GradeGroup = { name: string; sections: SectionOption[] };
 
 export const SchoolTimetableScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
-  const { data: slots = [], isLoading } = useTimetable();
-  const [day, setDay] = useState<WeekDay>('Mon');
+  const navigation = useNavigation<TimetableNav>();
+  const { data: classes = [], isLoading } = useClasses();
+  const [picker, setPicker] = useState<GradeGroup | null>(null);
 
-  const daySlots = slots.filter((s) => s.day === day).sort((a, b) => a.period - b.period);
+  // Group classes by grade so the principal picks a class, then a section (popup).
+  const grades = useMemo<GradeGroup[]>(() => {
+    const map = new Map<string, SectionOption[]>();
+    for (const c of classes) {
+      const arr = map.get(c.name) ?? [];
+      arr.push({ id: c.id, section: c.section, subtitle: c.room });
+      map.set(c.name, arr);
+    }
+    return [...map.entries()].map(([name, sections]) => ({ name, sections }));
+  }, [classes]);
+
+  const openTimetable = (classId: string) => {
+    setPicker(null);
+    navigation.navigate('ClassTimetableScreen', { classId });
+  };
 
   return (
     <View style={styles.root}>
@@ -31,55 +56,43 @@ export const SchoolTimetableScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.h1}>Timetable</Text>
-        <Text style={styles.sub}>School master schedule</Text>
-
-        {/* Day selector */}
-        <View style={styles.dayRow}>
-          {DAYS.map((d) => {
-            const active = d === day;
-            return (
-              <TouchableOpacity
-                key={d}
-                style={[styles.dayChip, active && styles.dayChipActive]}
-                onPress={() => setDay(d)}
-                activeOpacity={0.85}
-              >
-                <Text style={[styles.dayChipText, active && styles.dayChipTextActive]}>{d}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+        <Text style={styles.sub}>Select a class to view its schedule</Text>
 
         {isLoading ? (
           <ActivityIndicator color={Colors.primary} style={{ marginTop: 40 }} />
-        ) : daySlots.length === 0 ? (
-          <View style={styles.empty}>
-            <Ionicons name="calendar-clear-outline" size={44} color={Colors.inkMuted} />
-            <Text style={styles.emptyText}>No periods scheduled</Text>
-          </View>
         ) : (
-          daySlots.map((s, i) => (
-            <Animated.View
-              key={s.id}
-              entering={FadeInDown.delay(40 * i).springify()}
-              style={styles.slotRow}
-            >
-              <View style={styles.periodBadge}>
-                <Text style={styles.periodNum}>P{s.period}</Text>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.slotSubject}>{s.subject}</Text>
-                <Text style={styles.slotMeta}>
-                  {s.className} · {s.room}
-                </Text>
-              </View>
-              <Text style={styles.slotTime}>
-                {s.startTime}–{s.endTime}
-              </Text>
-            </Animated.View>
-          ))
+          grades.map((g, i) => {
+            const cs = deriveColorSet(g.name);
+            return (
+              <Animated.View key={g.name} entering={FadeInDown.delay(40 * i).springify()}>
+                <TouchableOpacity
+                  style={[styles.classCard, { backgroundColor: cs.color }]}
+                  activeOpacity={0.88}
+                  onPress={() => setPicker(g)}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.cardClassName}>{g.name}</Text>
+                    <Text style={styles.cardSubject}>
+                      {g.sections.length} section{g.sections.length > 1 ? 's' : ''} · tap to choose
+                    </Text>
+                  </View>
+                  <View style={styles.iconBadge}>
+                    <Ionicons name="calendar" size={20} color={cs.color} />
+                  </View>
+                </TouchableOpacity>
+              </Animated.View>
+            );
+          })
         )}
       </ScrollView>
+
+      <SectionPickerModal
+        visible={!!picker}
+        gradeName={picker?.name ?? null}
+        sections={picker?.sections ?? []}
+        onSelect={openTimetable}
+        onClose={() => setPicker(null)}
+      />
     </View>
   );
 };
@@ -89,40 +102,27 @@ const styles = StyleSheet.create({
   scroll: { paddingHorizontal: 20 },
   h1: { fontFamily: FontFamily.extraBold, fontSize: 26, color: Colors.ink },
   sub: { fontFamily: FontFamily.medium, fontSize: 14, color: Colors.inkMuted, marginBottom: 16 },
-  dayRow: { flexDirection: 'row', gap: 8, marginBottom: 16 },
-  dayChip: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: Radii.full,
-    backgroundColor: Colors.white,
-    alignItems: 'center',
-    ...Shadows.card,
-  },
-  dayChipActive: { backgroundColor: Colors.primary },
-  dayChipText: { fontFamily: FontFamily.bold, fontSize: 13, color: Colors.inkMuted },
-  dayChipTextActive: { color: Colors.white },
-  empty: { alignItems: 'center', marginTop: 50, gap: 10 },
-  emptyText: { fontFamily: FontFamily.semiBold, fontSize: 15, color: Colors.inkMuted },
-  slotRow: {
+  classCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    backgroundColor: Colors.white,
-    borderRadius: Radii.md,
-    padding: 14,
-    marginBottom: 8,
+    borderRadius: Radii.xl,
+    padding: 18,
+    marginBottom: 12,
     ...Shadows.card,
   },
-  periodBadge: {
+  cardClassName: { fontFamily: FontFamily.extraBold, fontSize: 20, color: Colors.white },
+  cardSubject: {
+    fontFamily: FontFamily.medium,
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.8)',
+    marginTop: 3,
+  },
+  iconBadge: {
     width: 42,
     height: 42,
     borderRadius: Radii.md,
-    backgroundColor: Colors.primarySoft,
+    backgroundColor: 'rgba(255,255,255,0.92)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  periodNum: { fontFamily: FontFamily.extraBold, fontSize: 14, color: Colors.primary },
-  slotSubject: { fontFamily: FontFamily.bold, fontSize: 15, color: Colors.ink },
-  slotMeta: { fontFamily: FontFamily.regular, fontSize: 13, color: Colors.inkMuted, marginTop: 2 },
-  slotTime: { fontFamily: FontFamily.semiBold, fontSize: 12, color: Colors.inkMuted },
 });

@@ -31,9 +31,9 @@ const QUICK_ACTIONS = [
     soft: Colors.presentSoft,
   },
   {
-    icon: 'ribbon',
+    icon: 'create',
     label: 'Marks',
-    screen: 'GradesScreen',
+    screen: 'MarksPickClass',
     color: Colors.blue,
     soft: Colors.blueSoft,
   },

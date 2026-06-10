@@ -8,7 +8,9 @@ import { TeacherDirectoryScreen } from '../screens/principal/TeacherDirectoryScr
 import { AnnouncementsScreen } from '../screens/AnnouncementsScreen';
 import { BusScreen } from '../screens/BusScreen';
 import { PrincipalAttendanceScreen } from '../screens/principal/PrincipalAttendanceScreen';
+import { AttendanceScreen } from '../screens/AttendanceScreen';
 import { SchoolTimetableScreen } from '../screens/principal/SchoolTimetableScreen';
+import { ClassTimetableScreen } from '../screens/principal/ClassTimetableScreen';
 import { ChatScreen } from '../screens/ChatScreen';
 import { ChatThreadScreen } from '../screens/ChatThreadScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
@@ -17,6 +19,8 @@ import { SettingsScreen } from '../screens/SettingsScreen';
 import type {
   PrincipalTabParamList,
   PrincipalHomeStackParamList,
+  PrincipalAttendanceStackParamList,
+  PrincipalTimetableStackParamList,
   InboxStackParamList,
   ProfileStackParamList,
 } from './types';
@@ -31,6 +35,25 @@ const PrincipalHomeStackNavigator = () => (
     <HomeStack.Screen name="BusScreen" component={BusScreen} />
     <HomeStack.Screen name="TeacherDirectoryScreen" component={TeacherDirectoryScreen} />
   </HomeStack.Navigator>
+);
+
+const AttendanceStack = createStackNavigator<PrincipalAttendanceStackParamList>();
+const PrincipalAttendanceStackNavigator = () => (
+  <AttendanceStack.Navigator screenOptions={{ headerShown: false }}>
+    <AttendanceStack.Screen
+      name="PrincipalAttendanceScreen"
+      component={PrincipalAttendanceScreen}
+    />
+    <AttendanceStack.Screen name="AttendanceScreen" component={AttendanceScreen} />
+  </AttendanceStack.Navigator>
+);
+
+const TimetableStack = createStackNavigator<PrincipalTimetableStackParamList>();
+const PrincipalTimetableStackNavigator = () => (
+  <TimetableStack.Navigator screenOptions={{ headerShown: false }}>
+    <TimetableStack.Screen name="SchoolTimetableScreen" component={SchoolTimetableScreen} />
+    <TimetableStack.Screen name="ClassTimetableScreen" component={ClassTimetableScreen} />
+  </TimetableStack.Navigator>
 );
 
 const InboxStack = createStackNavigator<InboxStackParamList>();
@@ -54,8 +77,8 @@ export const PrincipalTabNavigator = () => (
   <Tab.Navigator tabBar={(props) => <TabBar {...props} />} screenOptions={{ headerShown: false }}>
     <Tab.Screen name="PHome" component={PrincipalHomeStackNavigator} />
     <Tab.Screen name="Approvals" component={ApprovalsScreen} />
-    <Tab.Screen name="PAttendance" component={PrincipalAttendanceScreen} />
-    <Tab.Screen name="PTimetable" component={SchoolTimetableScreen} />
+    <Tab.Screen name="PAttendance" component={PrincipalAttendanceStackNavigator} />
+    <Tab.Screen name="PTimetable" component={PrincipalTimetableStackNavigator} />
     <Tab.Screen name="PInbox" component={InboxStackNavigator} />
     <Tab.Screen name="PProfile" component={ProfileStackNavigator} />
   </Tab.Navigator>

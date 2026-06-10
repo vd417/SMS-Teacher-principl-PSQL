@@ -10,3 +10,5 @@ export * from './ui/Toast';
 export * from './ui/Donut';
 export * from './ui/TabBar';
 export * from './ui/PunchButton';
+export * from './ui/SectionPickerModal';
+export * from './ui/TeacherSubjectDrawer';

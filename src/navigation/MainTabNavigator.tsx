@@ -3,7 +3,6 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { TabBar } from '../components';
 import { HomeScreen } from '../screens/HomeScreen';
-import { CalendarScreen } from '../screens/CalendarScreen';
 import { ScheduleScreen } from '../screens/ScheduleScreen';
 import { ClassesScreen } from '../screens/ClassesScreen';
 import { ClassDetailScreen } from '../screens/ClassDetailScreen';
@@ -17,6 +16,8 @@ import { SettingsScreen } from '../screens/SettingsScreen';
 import { PayslipScreen } from '../screens/PayslipScreen';
 import { LeaveScreen } from '../screens/LeaveScreen';
 import { AttendancePickClassScreen } from '../screens/AttendancePickClassScreen';
+import { MarksPickClassScreen } from '../screens/MarksPickClassScreen';
+import { MarksEntryScreen } from '../screens/MarksEntryScreen';
 import { ExamsScreen } from '../screens/ExamsScreen';
 import { ExamDetailScreen } from '../screens/ExamDetailScreen';
 import { ExamNewScreen } from '../screens/ExamNewScreen';
@@ -30,7 +31,6 @@ import type {
   MainTabParamList,
   HomeStackParamList,
   ClassesStackParamList,
-  CalendarStackParamList,
   InboxStackParamList,
   ProfileStackParamList,
 } from './types';
@@ -44,6 +44,8 @@ const HomeStackNavigator = () => (
     <HomeStack.Screen name="HomeScreen" component={HomeScreen} />
     <HomeStack.Screen name="AttendancePickClass" component={AttendancePickClassScreen} />
     <HomeStack.Screen name="AttendanceScreen" component={AttendanceScreen} />
+    <HomeStack.Screen name="MarksPickClass" component={MarksPickClassScreen} />
+    <HomeStack.Screen name="MarksEntryScreen" component={MarksEntryScreen} />
     <HomeStack.Screen name="StudentScreen" component={StudentScreen} />
     <HomeStack.Screen name="ExamsScreen" component={ExamsScreen} />
     <HomeStack.Screen name="ExamDetail" component={ExamDetailScreen} />
@@ -57,15 +59,6 @@ const HomeStackNavigator = () => (
     <HomeStack.Screen name="PayslipScreen" component={PayslipScreen} />
     <HomeStack.Screen name="LeaveScreen" component={LeaveScreen} />
   </HomeStack.Navigator>
-);
-
-// ─── Calendar Stack ────────────────────────────────────────────────────────
-const CalendarStack = createStackNavigator<CalendarStackParamList>();
-const CalendarStackNavigator = () => (
-  <CalendarStack.Navigator screenOptions={{ headerShown: false }}>
-    <CalendarStack.Screen name="CalendarScreen" component={CalendarScreen} />
-    <CalendarStack.Screen name="ScheduleScreen" component={ScheduleScreen} />
-  </CalendarStack.Navigator>
 );
 
 // ─── Classes Stack ─────────────────────────────────────────────────────────
@@ -104,7 +97,7 @@ const ProfileStackNavigator = () => (
 export const MainTabNavigator = () => (
   <Tab.Navigator tabBar={(props) => <TabBar {...props} />} screenOptions={{ headerShown: false }}>
     <Tab.Screen name="Home" component={HomeStackNavigator} />
-    <Tab.Screen name="Calendar" component={CalendarStackNavigator} />
+    <Tab.Screen name="Timetable" component={ScheduleScreen} />
     <Tab.Screen name="Classes" component={ClassesStackNavigator} />
     <Tab.Screen name="Inbox" component={InboxStackNavigator} />
     <Tab.Screen name="Profile" component={ProfileStackNavigator} />
