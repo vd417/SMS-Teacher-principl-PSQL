@@ -161,8 +161,10 @@ export interface AnnouncementDTO {
   body: string;
   date: string;
   from: string;
+  role?: string;
   type: Announcement['type'];
   pinned?: boolean;
+  audience?: string;
 }
 export const toAnnouncement = (d: AnnouncementDTO): Announcement => ({
   id: d.id,

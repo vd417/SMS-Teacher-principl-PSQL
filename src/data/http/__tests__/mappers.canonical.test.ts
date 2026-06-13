@@ -12,6 +12,8 @@ import {
   toLeaveRequest,
   fromNewLeave,
   type LeaveRequestDTO,
+  toAnnouncement,
+  type AnnouncementDTO,
 } from '@/data/http/mappers';
 
 describe('StudentDTO canonical contract', () => {
@@ -200,5 +202,33 @@ describe('LeaveRequestDTO canonical contract', () => {
     expect(
       fromNewLeave({ type: 'sick', from: '2026-07-05', to: '2026-07-06', reason: 'Flu' })
     ).toEqual({ type: 'sick', from_date: '2026-07-05', to_date: '2026-07-06', reason: 'Flu' });
+  });
+});
+
+describe('AnnouncementDTO canonical contract', () => {
+  const dto: AnnouncementDTO = {
+    id: 'a1',
+    title: 'Holiday',
+    body: 'School closed',
+    date: '2026-06-13',
+    from: 'Principal',
+    role: 'principal',
+    type: 'info',
+    pinned: true,
+    audience: 'all',
+  };
+
+  it('exposes role and audience and maps to the domain Announcement', () => {
+    expect(dto.role).toBe('principal');
+    expect(dto.audience).toBe('all');
+    expect(toAnnouncement(dto)).toEqual({
+      id: 'a1',
+      title: 'Holiday',
+      body: 'School closed',
+      date: '2026-06-13',
+      from: 'Principal',
+      type: 'info',
+      pinned: true,
+    });
   });
 });
