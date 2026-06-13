@@ -76,14 +76,23 @@ export const toClass = (d: ClassDTO): Class => ({
 
 export interface StudentDTO {
   id: string;
+  admission_no: string;
   name: string;
-  roll: string;
   initials: string;
+  gender: 'M' | 'F';
   class_id: string;
-  attendance: number;
   grade: string;
-  parent: string;
-  parent_phone: string;
+  section: string;
+  class_label: string;
+  roll: string;
+  guardian_name: string;
+  guardian_phone: string;
+  attendance_pct: number;
+  fee_status: 'paid' | 'partial' | 'due';
+  fee_due: number;
+  house: string;
+  avatar_hue: number;
+  status: 'active' | 'inactive';
 }
 export const toStudent = (d: StudentDTO): Student => ({
   id: d.id,
@@ -91,10 +100,10 @@ export const toStudent = (d: StudentDTO): Student => ({
   roll: d.roll,
   initials: d.initials,
   classId: d.class_id,
-  attendance: d.attendance,
+  attendance: d.attendance_pct,
   grade: d.grade,
-  parent: d.parent,
-  parentPhone: d.parent_phone,
+  parent: d.guardian_name,
+  parentPhone: d.guardian_phone,
 });
 
 // ─── Timetable ───────────────────────────────────────────────────────────────
