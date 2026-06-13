@@ -232,44 +232,48 @@ export const toPayslip = (d: PayslipDTO): PayslipEntry => ({
   status: d.status,
 });
 
-// ─── Exams ───────────────────────────────────────────────────────────────────
-export interface ExamDTO {
+// ─── Exam papers ─────────────────────────────────────────────────────────────
+export interface ExamPaperDTO {
   id: string;
-  title: string;
+  exam_id: string;
+  name: string;
   class_id: string;
   class_name: string;
   subject: string;
   date: string;
-  time: string;
-  duration: number;
+  start_time: string;
+  duration_min: number;
   max_marks: number;
+  room: string;
+  invigilator1: string;
+  invigilator2: string;
   topics: string[];
   status: ExamStatus;
 }
-export const toExam = (d: ExamDTO): Exam => ({
+export const toExam = (d: ExamPaperDTO): Exam => ({
   id: d.id,
-  title: d.title,
+  title: d.name,
   classId: d.class_id,
   className: d.class_name,
   subject: d.subject,
   date: d.date,
-  time: d.time,
-  duration: d.duration,
+  time: d.start_time,
+  duration: d.duration_min,
   maxMarks: d.max_marks,
   topics: d.topics,
   status: d.status,
 });
 export const toExamDTO = (
   e: Partial<Exam> & { classId?: string; maxMarks?: number }
-): Partial<ExamDTO> => ({
+): Partial<ExamPaperDTO> => ({
   ...(e.id !== undefined && { id: e.id }),
-  ...(e.title !== undefined && { title: e.title }),
+  ...(e.title !== undefined && { name: e.title }),
   ...(e.classId !== undefined && { class_id: e.classId }),
   ...(e.className !== undefined && { class_name: e.className }),
   ...(e.subject !== undefined && { subject: e.subject }),
   ...(e.date !== undefined && { date: e.date }),
-  ...(e.time !== undefined && { time: e.time }),
-  ...(e.duration !== undefined && { duration: e.duration }),
+  ...(e.time !== undefined && { start_time: e.time }),
+  ...(e.duration !== undefined && { duration_min: e.duration }),
   ...(e.maxMarks !== undefined && { max_marks: e.maxMarks }),
   ...(e.topics !== undefined && { topics: e.topics }),
   ...(e.status !== undefined && { status: e.status }),

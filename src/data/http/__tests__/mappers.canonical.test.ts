@@ -1,4 +1,10 @@
-import { toStudent, type StudentDTO } from '@/data/http/mappers';
+import {
+  toStudent,
+  type StudentDTO,
+  toExam,
+  toExamDTO,
+  type ExamPaperDTO,
+} from '@/data/http/mappers';
 
 describe('StudentDTO canonical contract', () => {
   const dto: StudentDTO = {
@@ -56,6 +62,51 @@ describe('StudentDTO canonical contract', () => {
       grade: '6',
       parent: 'Priya Patel',
       parentPhone: '9876543210',
+    });
+  });
+});
+
+describe('ExamPaperDTO canonical contract', () => {
+  const dto: ExamPaperDTO = {
+    id: 'p1',
+    exam_id: 'e1',
+    name: 'Mid-Term Algebra',
+    class_id: 'c1',
+    class_name: '6-A',
+    subject: 'Math',
+    date: '2026-06-15',
+    start_time: '10:00 AM',
+    duration_min: 60,
+    max_marks: 50,
+    room: 'R-101',
+    invigilator1: 'T. Rao',
+    invigilator2: 'S. Khan',
+    topics: ['Algebra'],
+    status: 'upcoming',
+  };
+
+  it('maps canonical paper fields to the domain Exam shape', () => {
+    expect(toExam(dto)).toEqual({
+      id: 'p1',
+      title: 'Mid-Term Algebra',
+      classId: 'c1',
+      className: '6-A',
+      subject: 'Math',
+      date: '2026-06-15',
+      time: '10:00 AM',
+      duration: 60,
+      maxMarks: 50,
+      topics: ['Algebra'],
+      status: 'upcoming',
+    });
+  });
+
+  it('writes canonical snake_case keys from a domain patch', () => {
+    expect(toExamDTO({ title: 'T', classId: 'c1', duration: 45, maxMarks: 20 })).toEqual({
+      name: 'T',
+      class_id: 'c1',
+      duration_min: 45,
+      max_marks: 20,
     });
   });
 });
