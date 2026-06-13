@@ -301,17 +301,35 @@ export const toGrade = (d: GradeDTO): GradeEntry => ({
   grade: d.grade,
 });
 
-// ─── Attendance ──────────────────────────────────────────────────────────────
+// ─── Attendance (roll-call) ────────────────────────────────────────────────────
+export type CanonicalAttendanceStatus = 'present' | 'absent' | 'late' | 'leave' | 'holiday';
+
+const ATT_WORD_TO_CODE: Record<CanonicalAttendanceStatus, AttendanceStatus> = {
+  present: 'P',
+  absent: 'A',
+  late: 'L',
+  leave: 'V',
+  holiday: 'A',
+};
+const ATT_CODE_TO_WORD: Record<AttendanceStatus, CanonicalAttendanceStatus> = {
+  P: 'present',
+  A: 'absent',
+  L: 'late',
+  V: 'leave',
+};
+
 export interface AttendanceRecordDTO {
   student_id: string;
-  status: AttendanceStatus;
+  status: CanonicalAttendanceStatus;
   date: string;
 }
 export const toAttendanceRecord = (d: AttendanceRecordDTO): AttendanceRecord => ({
   studentId: d.student_id,
-  status: d.status,
+  status: ATT_WORD_TO_CODE[d.status],
   date: d.date,
 });
+export const fromAttendanceStatus = (s: AttendanceStatus): CanonicalAttendanceStatus =>
+  ATT_CODE_TO_WORD[s];
 
 // ─── Chat ─────────────────────────────────────────────────────────────────────
 export interface ChatContactDTO {

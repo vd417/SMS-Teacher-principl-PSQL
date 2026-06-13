@@ -6,6 +6,9 @@ import {
   type ExamPaperDTO,
   toGrade,
   type GradeDTO,
+  toAttendanceRecord,
+  fromAttendanceStatus,
+  type AttendanceRecordDTO,
 } from '@/data/http/mappers';
 
 describe('StudentDTO canonical contract', () => {
@@ -136,5 +139,29 @@ describe('GradeDTO canonical contract', () => {
       maxMarks: 50,
       grade: 'A',
     });
+  });
+});
+
+describe('AttendanceRecordDTO canonical contract', () => {
+  it('maps canonical status words to the domain P/A/L/V codes', () => {
+    const cases: [AttendanceRecordDTO['status'], string][] = [
+      ['present', 'P'],
+      ['absent', 'A'],
+      ['late', 'L'],
+      ['leave', 'V'],
+    ];
+    for (const [word, code] of cases) {
+      const dto: AttendanceRecordDTO = { student_id: 's1', status: word, date: '2026-06-13' };
+      expect(toAttendanceRecord(dto)).toEqual({
+        studentId: 's1',
+        status: code,
+        date: '2026-06-13',
+      });
+    }
+  });
+
+  it('writes canonical status words from domain codes', () => {
+    expect(fromAttendanceStatus('P')).toBe('present');
+    expect(fromAttendanceStatus('V')).toBe('leave');
   });
 });

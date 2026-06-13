@@ -1,6 +1,6 @@
 import type { AttendanceRepository } from '@/data/repositories/types';
 import type { HttpClient } from '@/lib/httpClient';
-import { toAttendanceRecord, type AttendanceRecordDTO } from './mappers';
+import { toAttendanceRecord, fromAttendanceStatus, type AttendanceRecordDTO } from './mappers';
 
 export function httpAttendance(http: HttpClient): AttendanceRepository {
   return {
@@ -15,7 +15,7 @@ export function httpAttendance(http: HttpClient): AttendanceRepository {
           date,
           records: records.map((r) => ({
             student_id: r.studentId,
-            status: r.status,
+            status: fromAttendanceStatus(r.status),
             date: r.date,
           })),
         })
