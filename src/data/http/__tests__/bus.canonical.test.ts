@@ -1,5 +1,3 @@
-// We test the mapper by importing the internal toBus via a tiny re-export.
-// Add `export { toBus, type BusDTO };` at the end of bus.repo.ts in Step 3.
 import { toBus, type BusDTO } from '@/data/http/bus.repo';
 
 describe('BusDTO canonical contract', () => {

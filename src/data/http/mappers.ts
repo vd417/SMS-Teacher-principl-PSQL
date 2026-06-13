@@ -311,6 +311,7 @@ const ATT_WORD_TO_CODE: Record<CanonicalAttendanceStatus, AttendanceStatus> = {
   absent: 'A',
   late: 'L',
   leave: 'V',
+  // Domain has no holiday state; collapse to absent. No save path round-trips holiday, so this is one-way only.
   holiday: 'A',
 };
 const ATT_CODE_TO_WORD: Record<AttendanceStatus, CanonicalAttendanceStatus> = {
@@ -327,7 +328,7 @@ export interface AttendanceRecordDTO {
 }
 export const toAttendanceRecord = (d: AttendanceRecordDTO): AttendanceRecord => ({
   studentId: d.student_id,
-  status: ATT_WORD_TO_CODE[d.status],
+  status: ATT_WORD_TO_CODE[d.status] ?? 'A',
   date: d.date,
 });
 export const fromAttendanceStatus = (s: AttendanceStatus): CanonicalAttendanceStatus =>
@@ -392,6 +393,7 @@ export interface LeaveRequestDTO {
   applied_on: string;
   decided_note?: string;
 }
+// Server sends only the domain-supported leave types; canonical union is wider, so we narrow.
 export const toLeaveRequest = (d: LeaveRequestDTO): LeaveRequest => ({
   id: d.id,
   type: d.type as LeaveType,
@@ -409,7 +411,7 @@ export const fromNewLeave = (r: {
   reason: string;
   substitute?: string;
 }): Partial<LeaveRequestDTO> => ({
-  type: r.type as CanonicalLeaveType,
+  type: r.type,
   from_date: r.from,
   to_date: r.to,
   reason: r.reason,
