@@ -4,6 +4,8 @@ import {
   toExam,
   toExamDTO,
   type ExamPaperDTO,
+  toGrade,
+  type GradeDTO,
 } from '@/data/http/mappers';
 
 describe('StudentDTO canonical contract', () => {
@@ -107,6 +109,32 @@ describe('ExamPaperDTO canonical contract', () => {
       class_id: 'c1',
       duration_min: 45,
       max_marks: 20,
+    });
+  });
+});
+
+describe('GradeDTO canonical contract', () => {
+  const dto: GradeDTO = {
+    id: 'g1',
+    student_id: 's1',
+    student_name: 'Maya Patel',
+    exam_paper_id: 'p1',
+    marks: 42,
+    max_marks: 50,
+    grade: 'A',
+    gpa: 3.7,
+    pass: true,
+    date: '2026-06-16',
+  };
+
+  it('maps exam_paper_id into the domain examId field', () => {
+    expect(toGrade(dto)).toEqual({
+      studentId: 's1',
+      studentName: 'Maya Patel',
+      examId: 'p1',
+      marks: 42,
+      maxMarks: 50,
+      grade: 'A',
     });
   });
 });

@@ -281,17 +281,21 @@ export const toExamDTO = (
 
 // ─── Grades ──────────────────────────────────────────────────────────────────
 export interface GradeDTO {
+  id: string;
   student_id: string;
   student_name: string;
-  exam_id: string;
+  exam_paper_id: string;
   marks: number;
   max_marks: number;
   grade: string;
+  gpa: number;
+  pass: boolean;
+  date: string;
 }
 export const toGrade = (d: GradeDTO): GradeEntry => ({
   studentId: d.student_id,
   studentName: d.student_name,
-  examId: d.exam_id,
+  examId: d.exam_paper_id,
   marks: d.marks,
   maxMarks: d.max_marks,
   grade: d.grade,
