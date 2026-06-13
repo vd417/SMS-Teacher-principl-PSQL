@@ -47,7 +47,9 @@ export const PrincipalHomeScreen: React.FC = () => {
             <Text style={styles.name}>{(user?.name ?? 'Principal').split(' ')[0]} 👋</Text>
             <Text style={styles.sub}>{user?.title ?? 'Principal'}</Text>
           </View>
-          <Avatar initials={user?.initials ?? '?'} size={50} />
+          <TouchableOpacity onPress={() => navigation.navigate('PrincipalMoreScreen')}>
+            <Avatar initials={user?.initials ?? '?'} size={50} />
+          </TouchableOpacity>
         </Animated.View>
 
         {/* Attendance chart */}

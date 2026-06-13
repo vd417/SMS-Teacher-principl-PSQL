@@ -67,9 +67,13 @@ export type PrincipalTabParamList = {
 // Principal Home stack params
 export type PrincipalHomeStackParamList = {
   PrincipalHomeScreen: undefined;
+  PrincipalMoreScreen: undefined;
   AnnouncementsScreen: undefined;
   BusScreen: undefined;
   TeacherDirectoryScreen: undefined;
+  PayslipScreen: undefined;
+  LeaveScreen: undefined;
+  LibraryScreen: undefined;
 };
 
 // Principal Attendance stack params

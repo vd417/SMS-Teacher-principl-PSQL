@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { TabBar } from '../components';
 import { PrincipalHomeScreen } from '../screens/principal/PrincipalHomeScreen';
+import { PrincipalMoreScreen } from '../screens/principal/PrincipalMoreScreen';
 import { ApprovalsScreen } from '../screens/principal/ApprovalsScreen';
 import { TeacherDirectoryScreen } from '../screens/principal/TeacherDirectoryScreen';
 import { AnnouncementsScreen } from '../screens/AnnouncementsScreen';
@@ -16,6 +17,9 @@ import { ChatThreadScreen } from '../screens/ChatThreadScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
 import { MyAttendanceScreen } from '../screens/MyAttendanceScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
+import { PayslipScreen } from '../screens/PayslipScreen';
+import { LeaveScreen } from '../screens/LeaveScreen';
+import { LibraryScreen } from '../screens/LibraryScreen';
 import type {
   PrincipalTabParamList,
   PrincipalHomeStackParamList,
@@ -31,9 +35,13 @@ const HomeStack = createStackNavigator<PrincipalHomeStackParamList>();
 const PrincipalHomeStackNavigator = () => (
   <HomeStack.Navigator screenOptions={{ headerShown: false }}>
     <HomeStack.Screen name="PrincipalHomeScreen" component={PrincipalHomeScreen} />
+    <HomeStack.Screen name="PrincipalMoreScreen" component={PrincipalMoreScreen} />
     <HomeStack.Screen name="AnnouncementsScreen" component={AnnouncementsScreen} />
     <HomeStack.Screen name="BusScreen" component={BusScreen} />
     <HomeStack.Screen name="TeacherDirectoryScreen" component={TeacherDirectoryScreen} />
+    <HomeStack.Screen name="PayslipScreen" component={PayslipScreen} />
+    <HomeStack.Screen name="LeaveScreen" component={LeaveScreen} />
+    <HomeStack.Screen name="LibraryScreen" component={LibraryScreen} />
   </HomeStack.Navigator>
 );
 
