@@ -4,12 +4,14 @@ import { toChatContact, toChatMessage, type ChatContactDTO, type ChatMessageDTO 
 
 export function httpChat(http: HttpClient): ChatRepository {
   return {
-    contacts: () => http.get<ChatContactDTO[]>('/chats').then((d) => d.map(toChatContact)),
+    contacts: () => http.get<ChatContactDTO[]>('/threads').then((d) => d.map(toChatContact)),
 
     messages: (contactId) =>
-      http.get<ChatMessageDTO[]>(`/chats/${contactId}/messages`).then((d) => d.map(toChatMessage)),
+      http
+        .get<ChatMessageDTO[]>(`/threads/${contactId}/messages`)
+        .then((d) => d.map(toChatMessage)),
 
     send: (contactId, text) =>
-      http.post<ChatMessageDTO>(`/chats/${contactId}/messages`, { text }).then(toChatMessage),
+      http.post<ChatMessageDTO>(`/threads/${contactId}/messages`, { text }).then(toChatMessage),
   };
 }

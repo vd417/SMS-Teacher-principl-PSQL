@@ -72,7 +72,7 @@ const fetchImpl = jest.fn(async (url: RequestInfo | URL, init?: RequestInit) => 
     } as Response;
   }
 
-  // GET /chats — contacts list
+  // GET /threads — contacts list
   return {
     ok: true,
     status: 200,
