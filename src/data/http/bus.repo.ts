@@ -2,17 +2,17 @@ import type { BusRepository } from '@/data/repositories/types';
 import type { Bus, BusPosition, BoardingRecord, BoardingStatus } from '@/data/domain';
 import type { HttpClient } from '@/lib/httpClient';
 
-interface BusStopDTO {
+export interface BusStopDTO {
   id: string;
   name: string;
   time: string;
-  order: number;
+  seq: number;
   lat: number;
   lng: number;
 }
-interface BusDTO {
+export interface BusDTO {
   id: string;
-  number: string;
+  bus_no: string;
   route_name: string;
   driver: string;
   driver_phone: string;
@@ -35,13 +35,20 @@ interface BoardingRecordDTO {
   status: BoardingStatus;
 }
 
-const toBus = (d: BusDTO): Bus => ({
+export const toBus = (d: BusDTO): Bus => ({
   id: d.id,
-  number: d.number,
+  number: d.bus_no,
   routeName: d.route_name,
   driver: d.driver,
   driverPhone: d.driver_phone,
-  stops: d.stops.map((s) => ({ ...s })),
+  stops: d.stops.map((s) => ({
+    id: s.id,
+    name: s.name,
+    time: s.time,
+    order: s.seq,
+    lat: s.lat,
+    lng: s.lng,
+  })),
 });
 const toPosition = (d: BusPositionDTO): BusPosition => ({
   busId: d.bus_id,
