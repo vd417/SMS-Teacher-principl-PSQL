@@ -9,6 +9,9 @@ import {
   toAttendanceRecord,
   fromAttendanceStatus,
   type AttendanceRecordDTO,
+  toLeaveRequest,
+  fromNewLeave,
+  type LeaveRequestDTO,
 } from '@/data/http/mappers';
 
 describe('StudentDTO canonical contract', () => {
@@ -163,5 +166,39 @@ describe('AttendanceRecordDTO canonical contract', () => {
   it('writes canonical status words from domain codes', () => {
     expect(fromAttendanceStatus('P')).toBe('present');
     expect(fromAttendanceStatus('V')).toBe('leave');
+  });
+});
+
+describe('LeaveRequestDTO canonical contract', () => {
+  const dto: LeaveRequestDTO = {
+    id: 'l1',
+    requester_id: 'u1',
+    type: 'casual',
+    from_date: '2026-07-01',
+    to_date: '2026-07-02',
+    reason: 'Family',
+    substitute: 'T. Rao',
+    status: 'pending',
+    applied_on: '2026-06-20',
+    decided_note: undefined,
+  };
+
+  it('maps from_date/to_date/applied_on to the domain from/to/appliedOn', () => {
+    expect(toLeaveRequest(dto)).toEqual({
+      id: 'l1',
+      type: 'casual',
+      from: '2026-07-01',
+      to: '2026-07-02',
+      reason: 'Family',
+      substitute: 'T. Rao',
+      status: 'pending',
+      appliedOn: '2026-06-20',
+    });
+  });
+
+  it('writes canonical snake_case keys for a new leave request', () => {
+    expect(
+      fromNewLeave({ type: 'sick', from: '2026-07-05', to: '2026-07-06', reason: 'Flu' })
+    ).toEqual({ type: 'sick', from_date: '2026-07-05', to_date: '2026-07-06', reason: 'Flu' });
   });
 });

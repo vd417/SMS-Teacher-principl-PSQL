@@ -369,25 +369,49 @@ export const toChatMessage = (d: ChatMessageDTO): ChatMessage => ({
 });
 
 // ─── Leave ───────────────────────────────────────────────────────────────────
+export type CanonicalLeaveType =
+  | 'casual'
+  | 'sick'
+  | 'earned'
+  | 'medical'
+  | 'maternity'
+  | 'emergency'
+  | 'other';
+
 export interface LeaveRequestDTO {
   id: string;
+  requester_id: string;
+  type: CanonicalLeaveType;
+  from_date: string;
+  to_date: string;
+  reason: string;
+  substitute?: string;
+  status: LeaveStatus;
+  applied_on: string;
+  decided_note?: string;
+}
+export const toLeaveRequest = (d: LeaveRequestDTO): LeaveRequest => ({
+  id: d.id,
+  type: d.type as LeaveType,
+  from: d.from_date,
+  to: d.to_date,
+  reason: d.reason,
+  substitute: d.substitute,
+  status: d.status,
+  appliedOn: d.applied_on,
+});
+export const fromNewLeave = (r: {
   type: LeaveType;
   from: string;
   to: string;
   reason: string;
   substitute?: string;
-  status: LeaveStatus;
-  applied_on: string;
-}
-export const toLeaveRequest = (d: LeaveRequestDTO): LeaveRequest => ({
-  id: d.id,
-  type: d.type,
-  from: d.from,
-  to: d.to,
-  reason: d.reason,
-  substitute: d.substitute,
-  status: d.status,
-  appliedOn: d.applied_on,
+}): Partial<LeaveRequestDTO> => ({
+  type: r.type as CanonicalLeaveType,
+  from_date: r.from,
+  to_date: r.to,
+  reason: r.reason,
+  ...(r.substitute !== undefined && { substitute: r.substitute }),
 });
 
 // ─── Dashboard ───────────────────────────────────────────────────────────────
