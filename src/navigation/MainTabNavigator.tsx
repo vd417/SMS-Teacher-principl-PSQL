@@ -23,6 +23,7 @@ import { ExamDetailScreen } from '../screens/ExamDetailScreen';
 import { ExamNewScreen } from '../screens/ExamNewScreen';
 import { GradesScreen } from '../screens/GradesScreen';
 import { AssignmentsScreen } from '../screens/AssignmentsScreen';
+import { AssignmentNewScreen } from '../screens/AssignmentNewScreen';
 import { AnnouncementsScreen } from '../screens/AnnouncementsScreen';
 import { LibraryScreen } from '../screens/LibraryScreen';
 import { MoreScreen } from '../screens/MoreScreen';
@@ -52,6 +53,7 @@ const HomeStackNavigator = () => (
     <HomeStack.Screen name="ExamNew" component={ExamNewScreen} />
     <HomeStack.Screen name="GradesScreen" component={GradesScreen} />
     <HomeStack.Screen name="AssignmentsScreen" component={AssignmentsScreen} />
+    <HomeStack.Screen name="AssignmentNewScreen" component={AssignmentNewScreen} />
     <HomeStack.Screen name="AnnouncementsScreen" component={AnnouncementsScreen} />
     <HomeStack.Screen name="MoreScreen" component={MoreScreen} />
     <HomeStack.Screen name="BusScreen" component={BusScreen} />

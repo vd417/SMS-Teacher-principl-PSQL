@@ -13,6 +13,14 @@ export const examSchema = z.object({
   addToCalendar: z.boolean(),
 });
 
+export const assignmentSchema = z.object({
+  title: z.string().min(3, 'Title must be at least 3 characters'),
+  classId: z.string().min(1, 'Please select a class'),
+  dueDate: z.string().min(1, 'Due date is required'),
+  description: z.string().optional(),
+  imageUri: z.string().optional(),
+});
+
 export const leaveSchema = z.object({
   type: z.enum(['casual', 'sick', 'emergency', 'other']),
   from: z.string().min(1, 'Start date is required'),
@@ -26,5 +34,6 @@ export const chatMessageSchema = z.object({
 });
 
 export type ExamSchemaType = z.infer<typeof examSchema>;
+export type AssignmentSchemaType = z.infer<typeof assignmentSchema>;
 export type LeaveSchemaType = z.infer<typeof leaveSchema>;
 export type ChatMessageSchemaType = z.infer<typeof chatMessageSchema>;

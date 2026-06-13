@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { ScreenHeader, Pill } from '../components';
@@ -12,6 +14,9 @@ import { Skeleton } from '@/ui/state/Skeleton';
 import { ErrorState } from '@/ui/state/ErrorState';
 import { EmptyState } from '@/ui/state/EmptyState';
 import type { AssignmentStatus } from '@/data/domain';
+import type { HomeStackParamList } from '../navigation/types';
+
+type AssignmentsNav = NativeStackNavigationProp<HomeStackParamList, 'AssignmentsScreen'>;
 
 const STATUS_LABELS: Record<AssignmentStatus, string> = {
   active: 'Active',
@@ -34,6 +39,7 @@ const STATUS_SOFT: Record<AssignmentStatus, string> = {
 
 export const AssignmentsScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<AssignmentsNav>();
   const [filter, setFilter] = useState<AssignmentStatus | 'all'>('all');
   const { data: assignments = [], isLoading, isError, refetch } = useAssignments();
 
@@ -54,7 +60,20 @@ export const AssignmentsScreen: React.FC = () => {
       showsVerticalScrollIndicator={false}
     >
       <Animated.View entering={FadeInDown.delay(50).springify()}>
-        <ScreenHeader title="Assignments" subtitle={`${assignments.length} total`} showBack />
+        <ScreenHeader
+          title="Assignments"
+          subtitle={`${assignments.length} total`}
+          showBack
+          rightComponent={
+            <TouchableOpacity
+              style={styles.addBtn}
+              onPress={() => navigation.navigate('AssignmentNewScreen')}
+              accessibilityLabel="New homework"
+            >
+              <Ionicons name="add" size={22} color={Colors.white} />
+            </TouchableOpacity>
+          }
+        />
       </Animated.View>
 
       {/* Filters */}
@@ -112,6 +131,18 @@ export const AssignmentsScreen: React.FC = () => {
                   <Text style={styles.asgnClass}>
                     {asgn.className} · {asgn.subject}
                   </Text>
+                  {asgn.description ? (
+                    <Text style={styles.asgnDesc} numberOfLines={2}>
+                      {asgn.description}
+                    </Text>
+                  ) : null}
+                  {asgn.imageUri ? (
+                    <Image
+                      source={{ uri: asgn.imageUri }}
+                      style={styles.asgnImage}
+                      resizeMode="cover"
+                    />
+                  ) : null}
                   <View style={styles.cardMeta}>
                     <View style={styles.metaItem}>
                       <Ionicons name="calendar-outline" size={13} color={Colors.inkMuted} />
@@ -192,6 +223,28 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.inkMuted,
     marginBottom: 8,
+  },
+  asgnDesc: {
+    fontFamily: FontFamily.regular,
+    fontSize: 13,
+    color: Colors.ink3,
+    marginBottom: 8,
+  },
+  asgnImage: {
+    width: '100%',
+    height: 140,
+    borderRadius: Radii.md,
+    backgroundColor: Colors.paper2,
+    marginBottom: 10,
+  },
+  addBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: Radii.full,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Shadows.card,
   },
   cardMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 10 },
   metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },

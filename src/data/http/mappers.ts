@@ -141,6 +141,8 @@ export interface AssignmentDTO {
   submissions_count: number;
   total_students: number;
   status: Assignment['status'];
+  description?: string;
+  image_uri?: string;
 }
 export const toAssignment = (d: AssignmentDTO): Assignment => ({
   id: d.id,
@@ -152,6 +154,8 @@ export const toAssignment = (d: AssignmentDTO): Assignment => ({
   submissionsCount: d.submissions_count,
   totalStudents: d.total_students,
   status: d.status,
+  description: d.description,
+  imageUri: d.image_uri,
 });
 
 // ─── Announcements ───────────────────────────────────────────────────────────

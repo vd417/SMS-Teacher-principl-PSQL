@@ -39,6 +39,13 @@ export interface NewExamInput {
   topics: string[];
   status: ExamStatus;
 }
+export interface NewAssignmentInput {
+  title: string;
+  classId: string;
+  dueDate: string;
+  description?: string;
+  imageUri?: string;
+}
 export interface NewLeaveInput {
   type: LeaveRequest['type'];
   from: string;
@@ -98,6 +105,7 @@ export interface GradesRepository {
 }
 export interface AssignmentsRepository {
   list(): Promise<Assignment[]>;
+  create(input: NewAssignmentInput): Promise<Assignment>;
 }
 export interface ChatRepository {
   contacts(): Promise<ChatContact[]>;

@@ -100,6 +100,10 @@ export interface Assignment {
   submissionsCount: number;
   totalStudents: number;
   status: AssignmentStatus;
+  /** Optional longer instructions shown on the homework card/detail. */
+  description?: string;
+  /** Optional attached image (data URI on web, file URI on native). */
+  imageUri?: string;
 }
 export interface ChatContact {
   id: string;
