@@ -13,14 +13,23 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 const FIXTURE: StudentDTO[] = [
   {
     id: 's1',
+    admission_no: 'ADM-001',
     name: 'Aarav Sharma',
-    roll: '01',
     initials: 'AS',
+    gender: 'M',
     class_id: 'c1',
-    attendance: 96,
     grade: 'A',
-    parent: 'Rajesh Sharma',
-    parent_phone: '+1 555-0101',
+    section: 'A',
+    class_label: 'Grade 9-A',
+    roll: '01',
+    guardian_name: 'Rajesh Sharma',
+    guardian_phone: '+1 555-0101',
+    attendance_pct: 96,
+    fee_status: 'paid',
+    fee_due: 0,
+    house: 'Blue',
+    avatar_hue: 210,
+    status: 'active',
   },
 ];
 

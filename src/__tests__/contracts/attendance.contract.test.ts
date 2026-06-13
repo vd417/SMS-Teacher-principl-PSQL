@@ -14,9 +14,9 @@ const DATE = '2026-04-27';
 
 // Mutable state for the http fixture so save → forClass round-trip works
 let httpStore: AttendanceRecordDTO[] = [
-  { student_id: 's1', status: 'P', date: DATE },
-  { student_id: 's2', status: 'P', date: DATE },
-  { student_id: 's3', status: 'P', date: DATE },
+  { student_id: 's1', status: 'present', date: DATE },
+  { student_id: 's2', status: 'present', date: DATE },
+  { student_id: 's3', status: 'present', date: DATE },
 ];
 
 const fetchImpl = jest.fn(async (url: RequestInfo | URL, init?: RequestInit) => {

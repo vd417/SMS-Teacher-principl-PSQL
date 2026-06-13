@@ -13,12 +13,16 @@ const EXAM_ID = 'e3';
 
 const FIXTURE: GradeDTO[] = [
   {
+    id: 'g1',
     student_id: 's1',
     student_name: 'Aarav Sharma',
-    exam_id: EXAM_ID,
+    exam_paper_id: EXAM_ID,
     marks: 88,
     max_marks: 100,
     grade: 'A',
+    gpa: 3.7,
+    pass: true,
+    date: '2026-06-16',
   },
 ];
 
@@ -28,12 +32,16 @@ const fetchImpl = jest.fn(async (url: RequestInfo | URL, init?: RequestInit) => 
   if (method === 'PUT') {
     const body = JSON.parse(String(init?.body ?? '{}'));
     const upserted: GradeDTO = {
+      id: 'g_new',
       student_id: body.student_id,
       student_name: 'Test Student',
-      exam_id: body.exam_id,
+      exam_paper_id: body.exam_paper_id,
       marks: body.marks,
       max_marks: 100,
       grade: 'A',
+      gpa: 3.7,
+      pass: true,
+      date: '2026-06-16',
     };
     return {
       ok: true,

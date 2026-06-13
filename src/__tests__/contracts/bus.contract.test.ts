@@ -11,13 +11,13 @@ jest.mock('@/lib/latency', () => ({ simulateLatency: () => Promise.resolve() }))
 
 const BUS = {
   id: 'bus_north',
-  number: 'WBA-07',
+  bus_no: 'WBA-07',
   route_name: 'North Loop',
   driver: 'Marcus Bell',
   driver_phone: '+1 (415) 555-0142',
   stops: [
-    { id: 'stop_1', name: 'Campus', time: '07:30', order: 0, lat: 37.78, lng: -122.4 },
-    { id: 'stop_2', name: 'Oak Street', time: '07:42', order: 1, lat: 37.77, lng: -122.41 },
+    { id: 'stop_1', name: 'Campus', time: '07:30', seq: 0, lat: 37.78, lng: -122.4 },
+    { id: 'stop_2', name: 'Oak Street', time: '07:42', seq: 1, lat: 37.77, lng: -122.41 },
   ],
 };
 let rosterStore = [

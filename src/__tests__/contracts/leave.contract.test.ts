@@ -12,9 +12,10 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 const FIXTURE: LeaveRequestDTO[] = [
   {
     id: 'lr1',
+    requester_id: 'u1',
     type: 'casual',
-    from: '2026-03-15',
-    to: '2026-03-16',
+    from_date: '2026-03-15',
+    to_date: '2026-03-16',
     reason: 'Personal work.',
     status: 'approved',
     applied_on: '2026-03-10',
@@ -28,9 +29,10 @@ const fetchImpl = jest.fn(async (url: RequestInfo | URL, init?: RequestInit) => 
     const body = JSON.parse(String(init?.body ?? '{}'));
     const created: LeaveRequestDTO = {
       id: 'lr_new',
+      requester_id: 'u1',
       type: body.type ?? 'casual',
-      from: body.from,
-      to: body.to,
+      from_date: body.from_date,
+      to_date: body.to_date,
       reason: body.reason,
       substitute: body.substitute,
       status: 'pending',

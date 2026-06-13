@@ -3,23 +3,27 @@ import { createStore } from '@/data/mock/store';
 import { mockExams } from '@/data/mock/exams.repo';
 import { httpExams } from '@/data/http/exams.repo';
 import { createHttpClient } from '@/lib/httpClient';
-import type { ExamDTO } from '@/data/http/mappers';
+import type { ExamPaperDTO } from '@/data/http/mappers';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );
 
-const FIXTURE: ExamDTO[] = [
+const FIXTURE: ExamPaperDTO[] = [
   {
     id: 'e1',
-    title: 'Mid-Term Mathematics',
+    exam_id: 'exam1',
+    name: 'Mid-Term Mathematics',
     class_id: 'c1',
     class_name: 'Grade 9-A',
     subject: 'Mathematics',
     date: '2026-05-10',
-    time: '9:00 AM',
-    duration: 120,
+    start_time: '9:00 AM',
+    duration_min: 120,
     max_marks: 100,
+    room: 'R-101',
+    invigilator1: 'T. Rao',
+    invigilator2: 'S. Khan',
     topics: ['Algebra', 'Geometry'],
     status: 'upcoming',
   },
@@ -31,16 +35,20 @@ const fetchImpl = jest.fn(async (url: RequestInfo | URL, init?: RequestInit) => 
 
   if (method === 'POST') {
     const body = JSON.parse(String(init?.body ?? '{}'));
-    const created: ExamDTO = {
+    const created: ExamPaperDTO = {
       id: 'e_new',
-      title: body.title,
+      exam_id: 'exam1',
+      name: body.name,
       class_id: body.class_id,
       class_name: 'Grade 9-A',
       subject: 'Mathematics',
       date: body.date,
-      time: body.time,
-      duration: body.duration,
+      start_time: body.start_time,
+      duration_min: body.duration_min,
       max_marks: body.max_marks,
+      room: 'R-101',
+      invigilator1: 'T. Rao',
+      invigilator2: 'S. Khan',
       topics: body.topics ?? [],
       status: body.status ?? 'upcoming',
     };
@@ -52,7 +60,7 @@ const fetchImpl = jest.fn(async (url: RequestInfo | URL, init?: RequestInit) => 
     } as Response;
   }
 
-  const isSingle = /\/exams\/[^/]+$/.test(urlStr);
+  const isSingle = /\/exam-papers\/[^/]+$/.test(urlStr);
   const body = isSingle ? FIXTURE[0] : FIXTURE;
   return {
     ok: true,
