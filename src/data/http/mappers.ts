@@ -341,7 +341,7 @@ export interface ChatContactDTO {
   role: string;
   initials: string;
   last_message: string;
-  time: string;
+  last_at: string;
   unread: number;
   online: boolean;
 }
@@ -351,24 +351,25 @@ export const toChatContact = (d: ChatContactDTO): ChatContact => ({
   role: d.role,
   initials: d.initials,
   lastMessage: d.last_message,
-  time: d.time,
+  time: d.last_at,
   unread: d.unread,
   online: d.online,
 });
 
 export interface ChatMessageDTO {
   id: string;
+  thread_id: string;
   sender_id: string;
   text: string;
-  time: string;
-  is_me: boolean;
+  sent_at: string;
+  is_mine: boolean;
 }
 export const toChatMessage = (d: ChatMessageDTO): ChatMessage => ({
   id: d.id,
   senderId: d.sender_id,
   text: d.text,
-  time: d.time,
-  isMe: d.is_me,
+  time: d.sent_at,
+  isMe: d.is_mine,
 });
 
 // ─── Leave ───────────────────────────────────────────────────────────────────

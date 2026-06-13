@@ -14,6 +14,10 @@ import {
   type LeaveRequestDTO,
   toAnnouncement,
   type AnnouncementDTO,
+  toChatMessage,
+  type ChatMessageDTO,
+  toChatContact,
+  type ChatContactDTO,
 } from '@/data/http/mappers';
 
 describe('StudentDTO canonical contract', () => {
@@ -229,6 +233,69 @@ describe('AnnouncementDTO canonical contract', () => {
       from: 'Principal',
       type: 'info',
       pinned: true,
+    });
+  });
+});
+
+describe('Chat DTO canonical contract', () => {
+  const messageDto: ChatMessageDTO = {
+    id: 'm1',
+    thread_id: 'ch1',
+    sender_id: 'ch1',
+    text: 'Good morning!',
+    sent_at: '9:00 AM',
+    is_mine: false,
+  };
+
+  it('declares the canonical message keys (thread_id/sent_at/is_mine, not time/is_me)', () => {
+    expect(Object.keys(messageDto).sort()).toEqual([
+      'id',
+      'is_mine',
+      'sender_id',
+      'sent_at',
+      'text',
+      'thread_id',
+    ]);
+    expect('time' in messageDto).toBe(false);
+    expect('is_me' in messageDto).toBe(false);
+  });
+
+  it('maps sent_at→time and is_mine→isMe on the domain ChatMessage', () => {
+    expect(toChatMessage(messageDto)).toEqual({
+      id: 'm1',
+      senderId: 'ch1',
+      text: 'Good morning!',
+      time: '9:00 AM',
+      isMe: false,
+    });
+  });
+
+  const contactDto: ChatContactDTO = {
+    id: 'ch1',
+    name: 'Principal Johnson',
+    role: 'Principal',
+    initials: 'PJ',
+    last_message: 'Please submit the exam schedule by Friday.',
+    last_at: '9:30 AM',
+    unread: 2,
+    online: true,
+  };
+
+  it('declares the canonical contact key last_at, not time', () => {
+    expect('last_at' in contactDto).toBe(true);
+    expect('time' in contactDto).toBe(false);
+  });
+
+  it('maps last_at→ domain time on the ChatContact', () => {
+    expect(toChatContact(contactDto)).toEqual({
+      id: 'ch1',
+      name: 'Principal Johnson',
+      role: 'Principal',
+      initials: 'PJ',
+      lastMessage: 'Please submit the exam schedule by Friday.',
+      time: '9:30 AM',
+      unread: 2,
+      online: true,
     });
   });
 });

@@ -16,23 +16,38 @@ const CONTACTS_FIXTURE: ChatContactDTO[] = [
     role: 'Principal',
     initials: 'PJ',
     last_message: 'Please submit the exam schedule by Friday.',
-    time: '9:30 AM',
+    last_at: '9:30 AM',
     unread: 2,
     online: true,
   },
 ];
 
 const MESSAGES_FIXTURE: ChatMessageDTO[] = [
-  { id: 'm1', sender_id: 'ch1', text: 'Good morning!', time: '9:00 AM', is_me: false },
-  { id: 'm2', sender_id: 'me', text: 'Good morning!', time: '9:05 AM', is_me: true },
+  {
+    id: 'm1',
+    thread_id: 'ch1',
+    sender_id: 'ch1',
+    text: 'Good morning!',
+    sent_at: '9:00 AM',
+    is_mine: false,
+  },
+  {
+    id: 'm2',
+    thread_id: 'ch1',
+    sender_id: 'me',
+    text: 'Good morning!',
+    sent_at: '9:05 AM',
+    is_mine: true,
+  },
 ];
 
 const SENT_FIXTURE: ChatMessageDTO = {
   id: 'm_sent',
+  thread_id: 'ch1',
   sender_id: 'me',
   text: 'Hello contract test',
-  time: '9:10 AM',
-  is_me: true,
+  sent_at: '9:10 AM',
+  is_mine: true,
 };
 
 const fetchImpl = jest.fn(async (url: RequestInfo | URL, init?: RequestInit) => {
