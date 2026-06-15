@@ -42,14 +42,18 @@ export const LoginScreen: React.FC = () => {
   const [otpCode, setOtpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [otpDestination, setOtpDestination] = useState('');
+  const [otpDevCode, setOtpDevCode] = useState<string | undefined>(undefined);
 
   const requestErr = requestOtp.error instanceof Error ? requestOtp.error.message : null;
   const verifyErr = verifyOtp.error instanceof Error ? verifyOtp.error.message : null;
 
   const handleSendOtp = () => {
+    verifyOtp.reset();
+    setOtpCode('');
     requestOtp.mutate(otpIdentifier, {
       onSuccess: (challenge) => {
         setOtpDestination(challenge.destination);
+        setOtpDevCode(challenge.devCode);
         setOtpSent(true);
       },
     });
@@ -62,7 +66,10 @@ export const LoginScreen: React.FC = () => {
   const handleChangeIdentifier = () => {
     setOtpSent(false);
     setOtpCode('');
+    setOtpDestination('');
+    setOtpDevCode(undefined);
     verifyOtp.reset();
+    requestOtp.reset();
   };
 
   const btnScale = useSharedValue(1);
@@ -229,7 +236,9 @@ export const LoginScreen: React.FC = () => {
             ) : (
               <View>
                 <Text style={styles.otpSentText}>Code sent to {otpDestination}</Text>
-                <Text style={styles.otpHintText}>Demo code: 123456</Text>
+                {otpDevCode ? (
+                  <Text style={styles.otpHintText}>Demo code: {otpDevCode}</Text>
+                ) : null}
                 <View style={styles.inputWrap}>
                   <Ionicons
                     name="keypad-outline"
