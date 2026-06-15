@@ -27,6 +27,7 @@ import type {
   PrincipalOverview,
   SchoolAttendance,
 } from '@/data/domain';
+import type { OtpChallenge } from '@/data/repositories/types';
 
 export interface SessionDTO {
   access_token: string;
@@ -53,6 +54,17 @@ export const toSession = (d: SessionDTO): Session => ({
   refreshToken: d.refresh_token,
   user: toUser(d.user),
   tenant: toTenant(d.tenant),
+});
+
+export interface OtpChallengeDTO {
+  channel: 'sms' | 'email';
+  destination: string;
+  dev_code?: string;
+}
+export const toOtpChallenge = (d: OtpChallengeDTO): OtpChallenge => ({
+  channel: d.channel,
+  destination: d.destination,
+  devCode: d.dev_code,
 });
 
 export interface ClassDTO {

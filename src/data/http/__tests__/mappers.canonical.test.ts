@@ -18,6 +18,8 @@ import {
   type ChatMessageDTO,
   toChatContact,
   type ChatContactDTO,
+  toOtpChallenge,
+  type OtpChallengeDTO,
 } from '@/data/http/mappers';
 
 describe('StudentDTO canonical contract', () => {
@@ -297,5 +299,19 @@ describe('Chat DTO canonical contract', () => {
       unread: 2,
       online: true,
     });
+  });
+});
+
+describe('OtpChallengeDTO canonical contract', () => {
+  it('maps snake_case dev_code to camelCase devCode', () => {
+    const dto: OtpChallengeDTO = {
+      channel: 'sms',
+      destination: '••••0118',
+      dev_code: '123456',
+    };
+    const challenge = toOtpChallenge(dto);
+    expect(challenge.channel).toBe('sms');
+    expect(challenge.destination).toBe('••••0118');
+    expect(challenge.devCode).toBe('123456');
   });
 });
