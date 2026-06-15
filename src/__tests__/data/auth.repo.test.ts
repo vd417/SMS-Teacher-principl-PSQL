@@ -49,6 +49,7 @@ describe('mock auth OTP', () => {
     const challenge = await repo.requestOtp('aanya.k@westbrook.edu');
     expect(challenge.channel).toBe('email');
     expect(challenge.destination).toContain('@');
+    expect(challenge.destination).toMatch(/^.••@/);
     expect(challenge.devCode).toBe('123456');
   });
 
@@ -57,6 +58,7 @@ describe('mock auth OTP', () => {
     const challenge = await repo.requestOtp('14155550118');
     expect(challenge.channel).toBe('sms');
     expect(challenge.destination).toContain('0118');
+    expect(challenge.destination).toMatch(/^••••/);
     expect(challenge.devCode).toBe('123456');
   });
 

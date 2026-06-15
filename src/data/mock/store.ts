@@ -6,7 +6,7 @@ const STORAGE_PREFIX = 'sd.mock.';
 const CURRENT_ACCOUNT_KEY = `${STORAGE_PREFIX}currentAccount`;
 
 // All demo accounts, keyed by lowercased email.
-const ACCOUNTS = [seed.session, principalSession];
+export const ACCOUNTS = [seed.session, principalSession];
 const accountByEmail = new Map(ACCOUNTS.map((s) => [s.user.email.toLowerCase(), s]));
 const DEFAULT_EMAIL = seed.session.user.email.toLowerCase();
 

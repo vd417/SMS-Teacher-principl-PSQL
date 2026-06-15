@@ -2,10 +2,9 @@ import type { AuthRepository, OtpChallenge } from '@/data/repositories/types';
 import type { Store } from './store';
 import { simulateLatency } from '@/lib/latency';
 import { AppError } from '@/lib/errors';
-import { seed, principalSession } from './seed';
+import { ACCOUNTS } from './store';
 
 const OTP_CODE = '123456';
-const ACCOUNTS = [seed.session, principalSession];
 
 const normalizeEmail = (s: string) => s.trim().toLowerCase();
 const normalizePhone = (s: string) => s.replace(/\D/g, '');
