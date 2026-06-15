@@ -21,7 +21,7 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
-import { useLogin } from '@/features/auth/hooks';
+import { useLogin, useRequestOtp, useVerifyOtp } from '@/features/auth/hooks';
 
 const DEMO_ACCOUNTS = [
   { label: 'Teacher', email: 'aanya.k@westbrook.edu' },
@@ -35,6 +35,35 @@ export const LoginScreen: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   const login = useLogin();
+
+  const requestOtp = useRequestOtp();
+  const verifyOtp = useVerifyOtp();
+  const [otpIdentifier, setOtpIdentifier] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpDestination, setOtpDestination] = useState('');
+
+  const requestErr = requestOtp.error instanceof Error ? requestOtp.error.message : null;
+  const verifyErr = verifyOtp.error instanceof Error ? verifyOtp.error.message : null;
+
+  const handleSendOtp = () => {
+    requestOtp.mutate(otpIdentifier, {
+      onSuccess: (challenge) => {
+        setOtpDestination(challenge.destination);
+        setOtpSent(true);
+      },
+    });
+  };
+
+  const handleVerifyOtp = () => {
+    verifyOtp.mutate({ identifier: otpIdentifier, code: otpCode });
+  };
+
+  const handleChangeIdentifier = () => {
+    setOtpSent(false);
+    setOtpCode('');
+    verifyOtp.reset();
+  };
 
   const btnScale = useSharedValue(1);
   const btnStyle = useAnimatedStyle(() => ({
@@ -158,6 +187,91 @@ export const LoginScreen: React.FC = () => {
                 )}
               </TouchableOpacity>
             </Animated.View>
+
+            {/* OTP login */}
+            <View style={styles.dividerRow}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or sign in with OTP</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            {!otpSent ? (
+              <View>
+                <View style={styles.inputWrap}>
+                  <Ionicons
+                    name="phone-portrait-outline"
+                    size={18}
+                    color={Colors.inkMuted}
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={styles.textInput}
+                    value={otpIdentifier}
+                    onChangeText={setOtpIdentifier}
+                    placeholder="Mobile number or email"
+                    placeholderTextColor={Colors.inkSoft}
+                    autoCapitalize="none"
+                  />
+                </View>
+                {requestErr && <Text style={styles.errorText}>{requestErr}</Text>}
+                <TouchableOpacity
+                  style={styles.otpBtn}
+                  activeOpacity={0.85}
+                  disabled={requestOtp.isPending}
+                  onPress={handleSendOtp}
+                >
+                  <Ionicons name="paper-plane-outline" size={18} color={Colors.primary} />
+                  <Text style={styles.otpBtnText}>
+                    {requestOtp.isPending ? 'Sending…' : 'Send OTP'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View>
+                <Text style={styles.otpSentText}>Code sent to {otpDestination}</Text>
+                <Text style={styles.otpHintText}>Demo code: 123456</Text>
+                <View style={styles.inputWrap}>
+                  <Ionicons
+                    name="keypad-outline"
+                    size={18}
+                    color={Colors.inkMuted}
+                    style={styles.inputIcon}
+                  />
+                  <TextInput
+                    style={styles.textInput}
+                    value={otpCode}
+                    onChangeText={setOtpCode}
+                    placeholder="Enter 6-digit code"
+                    placeholderTextColor={Colors.inkSoft}
+                    keyboardType="number-pad"
+                    maxLength={6}
+                  />
+                </View>
+                {verifyErr && <Text style={styles.errorText}>{verifyErr}</Text>}
+                <TouchableOpacity
+                  style={[
+                    styles.signInBtn,
+                    styles.otpVerifyBtn,
+                    verifyOtp.isPending && styles.signInBtnLoading,
+                  ]}
+                  activeOpacity={0.9}
+                  disabled={verifyOtp.isPending}
+                  onPress={handleVerifyOtp}
+                >
+                  <Text style={styles.signInBtnText}>
+                    {verifyOtp.isPending ? 'Verifying…' : 'Verify & Sign In'}
+                  </Text>
+                </TouchableOpacity>
+                <View style={styles.otpLinksRow}>
+                  <TouchableOpacity onPress={handleSendOtp} disabled={requestOtp.isPending}>
+                    <Text style={styles.forgotText}>Resend</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={handleChangeIdentifier}>
+                    <Text style={styles.forgotText}>Change</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
 
             {/* One-tap demo accounts */}
             <View style={styles.demoRow}>
@@ -336,6 +450,66 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.semiBold,
     fontSize: 13,
     color: Colors.primary,
+  },
+  dividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 16,
+    gap: 12,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: Colors.rule,
+  },
+  dividerText: {
+    fontFamily: FontFamily.medium,
+    fontSize: 12,
+    color: Colors.inkMuted,
+  },
+  otpBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    marginTop: 12,
+    paddingVertical: 12,
+    borderRadius: Radii.full,
+    borderWidth: 1.5,
+    borderColor: Colors.primarySoft2,
+    backgroundColor: Colors.primarySoft,
+  },
+  otpBtnText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 14,
+    color: Colors.primary,
+  },
+  otpVerifyBtn: {
+    marginTop: 12,
+  },
+  otpSentText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 13,
+    color: Colors.ink3,
+    marginBottom: 4,
+  },
+  otpHintText: {
+    fontFamily: FontFamily.regular,
+    fontSize: 12,
+    color: Colors.inkMuted,
+    marginBottom: 12,
+  },
+  otpLinksRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 12,
+  },
+  errorText: {
+    fontFamily: FontFamily.medium,
+    fontSize: 12,
+    color: Colors.coral,
+    marginTop: 8,
   },
   bioBtn: {
     flexDirection: 'row',
