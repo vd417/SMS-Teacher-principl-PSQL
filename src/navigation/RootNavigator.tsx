@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { WelcomeScreen } from '../screens/WelcomeScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { MainTabNavigator } from './MainTabNavigator';
 import { PrincipalTabNavigator } from './PrincipalTabNavigator';
@@ -25,7 +26,10 @@ export const RootNavigator = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       {status !== 'authenticated' ? (
-        <Stack.Screen name="Login" component={LoginScreen} />
+        <>
+          <Stack.Screen name="Welcome" component={WelcomeScreen} />
+          <Stack.Screen name="Login" component={LoginScreen} />
+        </>
       ) : isPrincipal ? (
         <Stack.Screen name="Principal" component={PrincipalTabNavigator} />
       ) : (

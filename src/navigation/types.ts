@@ -90,6 +90,7 @@ export type PrincipalTimetableStackParamList = {
 
 // Root navigator
 export type RootStackParamList = {
+  Welcome: undefined;
   Login: undefined;
   Main: NavigatorScreenParams<MainTabParamList>;
   Principal: NavigatorScreenParams<PrincipalTabParamList>;

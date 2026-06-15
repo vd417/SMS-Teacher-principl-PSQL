@@ -23,7 +23,7 @@ jest.mock('expo-secure-store', () => ({
   deleteItemAsync: async () => {},
 }));
 
-it('shows Login when unauthenticated', async () => {
+it('shows the Welcome screen when unauthenticated', async () => {
   const store = await createStore();
   render(
     <QueryClientProvider client={new QueryClient()}>
@@ -36,5 +36,5 @@ it('shows Login when unauthenticated', async () => {
       </RepositoryProvider>
     </QueryClientProvider>
   );
-  await waitFor(() => expect(screen.getByText('Welcome Back 👋')).toBeTruthy());
+  await waitFor(() => expect(screen.getByText('Get Started')).toBeTruthy());
 });

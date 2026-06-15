@@ -18,12 +18,20 @@ import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { useRequestOtp, useVerifyOtp } from '@/features/auth/hooks';
 
+type Role = 'teacher' | 'principal';
+
+const ROLES: { key: Role; label: string; icon: keyof typeof Ionicons.glyphMap; email: string }[] = [
+  { key: 'teacher', label: 'Teacher', icon: 'easel-outline', email: 'aanya.k@westbrook.edu' },
+  { key: 'principal', label: 'Principal', icon: 'ribbon-outline', email: 'sunita.r@westbrook.edu' },
+];
+
 export const LoginScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
 
   const requestOtp = useRequestOtp();
   const verifyOtp = useVerifyOtp();
-  const [otpIdentifier, setOtpIdentifier] = useState('');
+  const [role, setRole] = useState<Role>('teacher');
+  const [otpIdentifier, setOtpIdentifier] = useState(ROLES[0].email);
   const [otpCode, setOtpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [otpDestination, setOtpDestination] = useState('');
@@ -54,6 +62,13 @@ export const LoginScreen: React.FC = () => {
     setOtpDestination('');
     setOtpDevCode(undefined);
     verifyOtp.reset();
+    requestOtp.reset();
+  };
+
+  const handleSelectRole = (next: Role) => {
+    setRole(next);
+    const account = ROLES.find((r) => r.key === next);
+    setOtpIdentifier(account ? account.email : '');
     requestOtp.reset();
   };
 
@@ -97,6 +112,30 @@ export const LoginScreen: React.FC = () => {
 
             {!otpSent ? (
               <View>
+                {/* Role selector */}
+                <View style={styles.roleRow}>
+                  {ROLES.map((r) => {
+                    const active = role === r.key;
+                    return (
+                      <TouchableOpacity
+                        key={r.key}
+                        style={[styles.roleChip, active && styles.roleChipActive]}
+                        activeOpacity={0.85}
+                        onPress={() => handleSelectRole(r.key)}
+                      >
+                        <Ionicons
+                          name={r.icon}
+                          size={16}
+                          color={active ? Colors.white : Colors.primary}
+                        />
+                        <Text style={[styles.roleChipText, active && styles.roleChipTextActive]}>
+                          {r.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+
                 {/* Identifier */}
                 <View style={styles.inputGroup}>
                   <Text style={styles.inputLabel}>Mobile Number or Email</Text>
@@ -257,6 +296,35 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.inkMuted,
     marginBottom: 24,
+  },
+  roleRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 20,
+  },
+  roleChip: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 11,
+    borderRadius: Radii.full,
+    borderWidth: 1.5,
+    borderColor: Colors.primarySoft2,
+    backgroundColor: Colors.primarySoft,
+  },
+  roleChipActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  roleChipText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 14,
+    color: Colors.primary,
+  },
+  roleChipTextActive: {
+    color: Colors.white,
   },
   inputGroup: {
     marginBottom: 16,
