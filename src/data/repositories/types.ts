@@ -64,11 +64,19 @@ export interface GradeInput {
   marks: number;
 }
 
+export interface OtpChallenge {
+  channel: 'sms' | 'email';
+  destination: string; // masked, e.g. "••••0118" or "a••@westbrook.edu"
+  devCode?: string; // demo-only; the code to display. Absent from a real backend.
+}
+
 export interface AuthRepository {
   login(email: string, password: string): Promise<Session>;
   refresh(refreshToken: string): Promise<Session>;
   me(): Promise<User>;
   logout(): Promise<void>;
+  requestOtp(identifier: string): Promise<OtpChallenge>;
+  verifyOtp(identifier: string, code: string): Promise<Session>;
 }
 export interface ClassesRepository {
   list(): Promise<Class[]>;

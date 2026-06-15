@@ -42,3 +42,46 @@ describe('mock auth account selection', () => {
     expect(session.user.role).toBe('teacher');
   });
 });
+
+describe('mock auth OTP', () => {
+  it('requestOtp resolves for a known email and returns a masked email destination', async () => {
+    const repo = mockAuth(await createStore());
+    const challenge = await repo.requestOtp('aanya.k@westbrook.edu');
+    expect(challenge.channel).toBe('email');
+    expect(challenge.destination).toContain('@');
+    expect(challenge.devCode).toBe('123456');
+  });
+
+  it('requestOtp resolves for a known phone in any format and masks the last 4 digits', async () => {
+    const repo = mockAuth(await createStore());
+    const challenge = await repo.requestOtp('14155550118');
+    expect(challenge.channel).toBe('sms');
+    expect(challenge.destination).toContain('0118');
+    expect(challenge.devCode).toBe('123456');
+  });
+
+  it('requestOtp rejects an empty identifier', async () => {
+    const repo = mockAuth(await createStore());
+    await expect(repo.requestOtp('   ')).rejects.toThrow('Enter a mobile number or email');
+  });
+
+  it('requestOtp rejects an unregistered identifier', async () => {
+    const repo = mockAuth(await createStore());
+    await expect(repo.requestOtp('nobody@nowhere.com')).rejects.toThrow(
+      "This mobile or email isn't registered."
+    );
+  });
+
+  it('verifyOtp accepts 123456 and returns the matching account session', async () => {
+    const repo = mockAuth(await createStore());
+    const session = await repo.verifyOtp('sunita.r@westbrook.edu', '123456');
+    expect(session.user.role).toBe('principal');
+  });
+
+  it('verifyOtp rejects a wrong code', async () => {
+    const repo = mockAuth(await createStore());
+    await expect(repo.verifyOtp('aanya.k@westbrook.edu', '000000')).rejects.toThrow(
+      'Invalid code. Try again.'
+    );
+  });
+});
