@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import type { Session } from '@/data/domain';
+import type { OtpChallenge } from '@/data/repositories/types';
 import { tokenStore } from '@/lib/tokenStore';
 import { readJson, writeJson } from '@/lib/asyncStore';
 import { authSnapshot } from '@/lib/authSnapshot';
@@ -16,6 +17,8 @@ interface AuthValue {
   session: Session | null;
   signIn: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  requestOtp: (identifier: string) => Promise<OtpChallenge>;
+  signInWithOtp: (identifier: string, code: string) => Promise<void>;
 }
 const AuthContext = createContext<AuthValue | null>(null);
 
@@ -48,16 +51,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     })();
   }, [repos]);
 
+  const establishSession = useCallback(async (s: Session) => {
+    await tokenStore.save({ accessToken: s.accessToken, refreshToken: s.refreshToken });
+    await writeJson<Session>(SESSION_KEY, s);
+    authSnapshot.set({ accessToken: s.accessToken, tenantId: s.tenant.id });
+    setSession(s);
+    setStatus('authenticated');
+  }, []);
+
   const signIn = useCallback(
     async (email: string, password: string) => {
       const s = await repos.auth.login(email, password);
-      await tokenStore.save({ accessToken: s.accessToken, refreshToken: s.refreshToken });
-      await writeJson<Session>(SESSION_KEY, s);
-      authSnapshot.set({ accessToken: s.accessToken, tenantId: s.tenant.id });
-      setSession(s);
-      setStatus('authenticated');
+      await establishSession(s);
     },
+    [repos, establishSession]
+  );
+
+  const requestOtp = useCallback(
+    (identifier: string) => repos.auth.requestOtp(identifier),
     [repos]
+  );
+
+  const signInWithOtp = useCallback(
+    async (identifier: string, code: string) => {
+      const s = await repos.auth.verifyOtp(identifier, code);
+      await establishSession(s);
+    },
+    [repos, establishSession]
   );
 
   const signOut = useCallback(async () => {
@@ -74,8 +94,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [repos]);
 
   const value = useMemo(
-    () => ({ status, session, signIn, signOut }),
-    [status, session, signIn, signOut]
+    () => ({ status, session, signIn, signOut, requestOtp, signInWithOtp }),
+    [status, session, signIn, signOut, requestOtp, signInWithOtp]
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
