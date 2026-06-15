@@ -13,3 +13,16 @@ export function useLogout() {
   const { signOut } = useAuth();
   return useMutation({ mutationFn: () => signOut() });
 }
+
+export function useRequestOtp() {
+  const { requestOtp } = useAuth();
+  return useMutation({ mutationFn: (identifier: string) => requestOtp(identifier) });
+}
+
+export function useVerifyOtp() {
+  const { signInWithOtp } = useAuth();
+  return useMutation({
+    mutationFn: ({ identifier, code }: { identifier: string; code: string }) =>
+      signInWithOtp(identifier, code),
+  });
+}
