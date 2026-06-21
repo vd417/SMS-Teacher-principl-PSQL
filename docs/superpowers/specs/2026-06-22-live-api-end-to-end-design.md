@@ -105,6 +105,17 @@ Source `name/title/email/phone/...` from the user/teacher record and `tenant_nam
 using the authenticated `sub`/`tenant_id`. Update the backend's auth tests to assert the new fields.
 Change is additive and isolated to the auth slice.
 
+**BLOCKED (discovered during implementation):** the backend has no `Users`↔`Teachers` linkage.
+`dbo.Users` (auth) carries only `email`/`phone`; the display profile (`name`, `title`/Designation,
+`Department`, etc.) lives in `dbo.Teachers`, which has **no `user_id` foreign key** — the only join key
+is a fragile email/phone match. Fields `employee`, `classroom`, and `joined` have no clean column
+source at all. Implementing `/auth/me` profile enrichment therefore requires a backend **schema
+decision** (add a `Teachers.UserId` FK and map the missing fields), which needs a running SQL Server to
+migrate and validate. Rather than ship an unvalidated migration that could break login, this is left as
+a backend task. **The app side is complete and degrades gracefully:** `meSchema` treats every profile
+field as optional, so live login works today; the Profile/Home screens render blank/`—` for the
+unsourced fields until the backend linkage lands.
+
 ### 5. Per-module field alignment (one pass)
 
 For each module: boot the backend, fetch real responses, diff each app DTO field against the backend

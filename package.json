@@ -12,7 +12,8 @@
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
     "prepare": "husky",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "smoke:teacher": "node scripts/smoke/teacher-smoke.mjs"
   },
   "dependencies": {
     "@expo-google-fonts/plus-jakarta-sans": "^0.4.2",
