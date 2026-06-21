@@ -67,14 +67,14 @@ export interface GradeInput {
 export interface OtpChallenge {
   channel: 'sms' | 'email';
   destination: string; // masked, e.g. "••••0118" or "a••@westbrook.edu"
-  devCode?: string; // demo-only; the code to display. Absent from a real backend.
 }
 
 export interface AuthRepository {
   login(email: string, password: string): Promise<Session>;
-  refresh(refreshToken: string): Promise<Session>;
+  // The backend returns tokens only; identity is fetched separately via me().
+  refresh(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }>;
   me(): Promise<User>;
-  logout(): Promise<void>;
+  logout(refreshToken: string): Promise<void>;
   requestOtp(identifier: string): Promise<OtpChallenge>;
   verifyOtp(identifier: string, code: string): Promise<Session>;
 }

@@ -4,6 +4,7 @@ import type { OtpChallenge } from '@/data/repositories/types';
 import { tokenStore } from '@/lib/tokenStore';
 import { readJson, writeJson } from '@/lib/asyncStore';
 import { authSnapshot } from '@/lib/authSnapshot';
+import { authBridge } from '@/features/auth/authBridge';
 import { queryClient } from '@/lib/queryClient';
 import { useRepositories } from '@/data/repositories/RepositoryContext';
 
@@ -82,7 +83,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = useCallback(async () => {
     try {
-      await repos.auth.logout();
+      const tokens = await tokenStore.read();
+      if (tokens) await repos.auth.logout(tokens.refreshToken);
+    } catch {
+      /* best-effort server logout; always clear locally below */
     } finally {
       await tokenStore.clear();
       await writeJson<Session | null>(SESSION_KEY, null);
@@ -92,6 +96,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setStatus('unauthenticated');
     }
   }, [repos]);
+
+  // Rotates tokens on a 401 (driven by httpClient via authBridge). Returns whether
+  // a fresh access token is now in the snapshot.
+  const refresh = useCallback(async (): Promise<boolean> => {
+    try {
+      const tokens = await tokenStore.read();
+      if (!tokens) return false;
+      const next = await repos.auth.refresh(tokens.refreshToken);
+      await tokenStore.save(next);
+      authSnapshot.set({ accessToken: next.accessToken, tenantId: authSnapshot.get().tenantId });
+      setSession((prev) => (prev ? { ...prev, ...next } : prev));
+      return true;
+    } catch {
+      return false;
+    }
+  }, [repos]);
+
+  // Expose refresh/sign-out to the startup-time httpClient.
+  useEffect(() => {
+    authBridge.register({ refresh, signOut });
+  }, [refresh, signOut]);
 
   const value = useMemo(
     () => ({ status, session, signIn, signOut, requestOtp, signInWithOtp }),

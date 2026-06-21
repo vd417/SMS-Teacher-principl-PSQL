@@ -27,45 +27,8 @@ import type {
   PrincipalOverview,
   SchoolAttendance,
 } from '@/data/domain';
-import type { OtpChallenge } from '@/data/repositories/types';
-
-export interface SessionDTO {
-  access_token: string;
-  refresh_token: string;
-  user: {
-    id: string;
-    name: string;
-    initials: string;
-    title: string;
-    email: string;
-    phone: string;
-    employee: string;
-    classroom: string;
-    joined: string;
-    role: Role;
-  };
-  tenant: { id: string; name: string };
-}
-
-export const toUser = (d: SessionDTO['user']): User => ({ ...d });
-export const toTenant = (d: SessionDTO['tenant']): Tenant => ({ ...d });
-export const toSession = (d: SessionDTO): Session => ({
-  accessToken: d.access_token,
-  refreshToken: d.refresh_token,
-  user: toUser(d.user),
-  tenant: toTenant(d.tenant),
-});
-
-export interface OtpChallengeDTO {
-  channel: 'sms' | 'email';
-  destination: string;
-  dev_code?: string;
-}
-export const toOtpChallenge = (d: OtpChallengeDTO): OtpChallenge => ({
-  channel: d.channel,
-  destination: d.destination,
-  devCode: d.dev_code,
-});
+// Auth/session mapping lives in ./auth.schema.ts (zod-validated). The DTOs below
+// cover the remaining modules.
 
 export interface ClassDTO {
   id: string;

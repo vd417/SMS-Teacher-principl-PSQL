@@ -35,7 +35,6 @@ export const LoginScreen: React.FC = () => {
   const [otpCode, setOtpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [otpDestination, setOtpDestination] = useState('');
-  const [otpDevCode, setOtpDevCode] = useState<string | undefined>(undefined);
 
   const requestErr = requestOtp.error instanceof Error ? requestOtp.error.message : null;
   const verifyErr = verifyOtp.error instanceof Error ? verifyOtp.error.message : null;
@@ -46,7 +45,6 @@ export const LoginScreen: React.FC = () => {
     requestOtp.mutate(otpIdentifier, {
       onSuccess: (challenge) => {
         setOtpDestination(challenge.destination);
-        setOtpDevCode(challenge.devCode);
         setOtpSent(true);
       },
     });
@@ -60,7 +58,6 @@ export const LoginScreen: React.FC = () => {
     setOtpSent(false);
     setOtpCode('');
     setOtpDestination('');
-    setOtpDevCode(undefined);
     verifyOtp.reset();
     requestOtp.reset();
   };
@@ -181,9 +178,6 @@ export const LoginScreen: React.FC = () => {
                 <View style={styles.inputGroup}>
                   <Text style={styles.inputLabel}>Verification Code</Text>
                   <Text style={styles.otpSentText}>Code sent to {otpDestination}</Text>
-                  {otpDevCode ? (
-                    <Text style={styles.otpHintText}>Demo code: {otpDevCode}</Text>
-                  ) : null}
                   <View style={styles.inputWrap}>
                     <Ionicons
                       name="keypad-outline"
