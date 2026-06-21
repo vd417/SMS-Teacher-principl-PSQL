@@ -117,14 +117,25 @@ Modules: `classes`, `students`, `subjects`, `timetable`, `assignments`, `homewor
 
 Each DTO is expressed as a **zod schema** (§7) that doubles as the type and the validator.
 
-### 6. Pagination end-to-end (full infinite scroll)
+### 6. Pagination (cursor-ready repos; real paging only where the backend supports it)
 
-- List repos take `{ limit?, cursor? }` and return `{ items, nextCursor }`.
-- List hooks use React Query **`useInfiniteQuery`** keyed by filters; `getNextPageParam` reads `nextCursor`.
-- List screens render with `FlatList` + `onEndReached` → `fetchNextPage`, with footer spinner and
-  empty/error states. Affected screens include Classes, Students (class roster), Announcements, Library,
-  Assignments, Exams, Chat threads/messages, Leave, Approvals (and any other list-backed screen surfaced
-  during the pass).
+**Backend reality (verified):** only `GET /v1/classes/{classId}/students` (class roster) is truly
+cursor-paginated (`limit`+`cursor`→`next_cursor`). `GET /v1/students` returns a `CursorPage` envelope but
+always with `next_cursor: null`. **Every other list endpoint returns `DataEnvelope<List<T>>`** — the full
+array, no pagination.
+
+Design accordingly:
+
+- **Uniform repo shape:** every list repo method returns `{ items, nextCursor }`. For non-paginated
+  endpoints `nextCursor` is always `null` (single page).
+- **Class roster** (`students.listByClass`) accepts `{ limit?, cursor? }` and is the one endpoint that
+  truly pages. Its hook uses React Query **`useInfiniteQuery`**; `ClassDetailScreen` uses `FlatList` +
+  `onEndReached` → `fetchNextPage` with a footer spinner.
+- **All other list screens** convert to `FlatList` for consistency and render the single page; their
+  `useInfiniteQuery` (or plain `useQuery`) simply never has a next page (`getNextPageParam` returns
+  `undefined`).
+- Repos stay cursor-shaped so if the backend later adds pagination to an endpoint, only the backend +
+  that endpoint's `nextCursor` wiring changes — not the hook or screen.
 
 ### 7. Verification — replaces the deleted contract tests
 
