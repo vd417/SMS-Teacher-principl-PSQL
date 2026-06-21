@@ -20,7 +20,6 @@ import type { HomeStackParamList } from '../navigation/types';
 
 type HomeNav = NativeStackNavigationProp<HomeStackParamList>;
 const { width } = Dimensions.get('window');
-const CARD_WIDTH = (width - 48 - 12) / 2;
 
 const QUICK_ACTIONS = [
   {
@@ -55,6 +54,12 @@ const QUICK_ACTIONS = [
 
 export const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeNav>();
+  // ClassesScreen/ClassDetailScreen live in the sibling Classes tab stack, so we
+  // navigate across navigators by tab name + nested screen. The Home stack's
+  // typed navigate can't express that target, hence this narrow structural cast.
+  const navTab = navigation as unknown as {
+    navigate: (name: string, params?: { screen: string; params?: object }) => void;
+  };
   const insets = useSafeAreaInsets();
   const [_search, setSearch] = useState('');
 
@@ -220,12 +225,12 @@ export const HomeScreen: React.FC = () => {
           <SectionHeader
             title="My Classes"
             actionLabel="View All"
-            onAction={() => navigation.navigate('ClassesScreen' as never)}
+            onAction={() => navTab.navigate('Classes', { screen: 'ClassesScreen' })}
           />
           {classesLoading ? (
             <View style={styles.classGrid}>
               {[0, 1, 2, 3].map((i) => (
-                <Skeleton key={i} height={120} width={CARD_WIDTH} radius={16} />
+                <Skeleton key={i} height={120} width="48%" radius={16} />
               ))}
             </View>
           ) : (
@@ -236,10 +241,15 @@ export const HomeScreen: React.FC = () => {
                   <Animated.View
                     key={cls.id}
                     entering={FadeInRight.delay(280 + i * 60).springify()}
-                    style={[styles.classCard, { backgroundColor: cs.color, width: CARD_WIDTH }]}
+                    style={[styles.classCard, { backgroundColor: cs.color }]}
                   >
                     <TouchableOpacity
-                      onPress={() => navigation.navigate('ClassesScreen' as never)}
+                      onPress={() =>
+                        navTab.navigate('Classes', {
+                          screen: 'ClassDetailScreen',
+                          params: { classId: cls.id },
+                        })
+                      }
                       style={styles.classCardInner}
                       activeOpacity={0.85}
                     >
@@ -509,6 +519,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   classCard: {
+    width: '48%',
     borderRadius: Radii.xl,
     overflow: 'hidden',
     ...Shadows.card,

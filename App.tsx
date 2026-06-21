@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -34,22 +34,39 @@ export default function App() {
   }
 
   return (
-    <GestureHandlerRootView style={styles.flex}>
-      <SafeAreaProvider>
-        <AppProviders>
-          <NavigationContainer>
-            <StatusBar style="auto" />
-            <RootNavigator />
-          </NavigationContainer>
-        </AppProviders>
-      </SafeAreaProvider>
+    <GestureHandlerRootView style={styles.outer}>
+      {/* On web, keep the phone-shaped app in a centered, device-width frame so
+          the layout (and the bottom tab bar) renders like the real app instead
+          of stretching edge-to-edge across the browser. No-op on native. */}
+      <View style={styles.frame}>
+        <SafeAreaProvider>
+          <AppProviders>
+            <NavigationContainer>
+              <StatusBar style="auto" />
+              <RootNavigator />
+            </NavigationContainer>
+          </AppProviders>
+        </SafeAreaProvider>
+      </View>
     </GestureHandlerRootView>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: {
+  outer: {
     flex: 1,
+    ...Platform.select({
+      web: { alignItems: 'center', backgroundColor: Colors.ink },
+      default: {},
+    }),
+  },
+  frame: {
+    flex: 1,
+    width: '100%',
+    ...Platform.select({
+      web: { maxWidth: 480, alignSelf: 'center' },
+      default: {},
+    }),
   },
   loading: {
     flex: 1,

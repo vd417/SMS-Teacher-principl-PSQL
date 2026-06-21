@@ -60,6 +60,13 @@ export const MarksEntryScreen: React.FC = () => {
   };
 
   const enteredCount = students.filter((s) => (marks[s.id] ?? '').trim() !== '').length;
+  const obtainedSum = students.reduce((sum, s) => {
+    const raw = (marks[s.id] ?? '').trim();
+    const v = Number(raw);
+    return sum + (raw !== '' && !Number.isNaN(v) && v >= 0 && v <= maxMarks ? v : 0);
+  }, 0);
+  const totalPossible = enteredCount * maxMarks;
+  const overallPct = totalPossible > 0 ? Math.round((obtainedSum / totalPossible) * 100) : 0;
 
   const handleSubmit = async () => {
     const toSave = students.filter((s) => (marks[s.id] ?? '').trim() !== '');
@@ -124,18 +131,21 @@ export const MarksEntryScreen: React.FC = () => {
 
         <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.summary}>
           <View style={[styles.summaryPill, { backgroundColor: cs.colorSoft }]}>
-            <Text style={[styles.summaryNum, { color: cs.color }]}>{enteredCount}</Text>
-            <Text style={[styles.summaryLbl, { color: cs.color }]}>Entered</Text>
+            <Text style={[styles.summaryNum, { color: cs.color }]}>{obtainedSum}</Text>
+            <Text style={[styles.summaryLbl, { color: cs.color }]}>Obtained</Text>
           </View>
           <View style={styles.summaryPill}>
-            <Text style={styles.summaryNum}>{students.length}</Text>
-            <Text style={styles.summaryLbl}>Students</Text>
+            <Text style={styles.summaryNum}>{totalPossible}</Text>
+            <Text style={styles.summaryLbl}>Total marks</Text>
           </View>
           <View style={styles.summaryPill}>
-            <Text style={styles.summaryNum}>{maxMarks}</Text>
-            <Text style={styles.summaryLbl}>Max marks</Text>
+            <Text style={styles.summaryNum}>{overallPct}%</Text>
+            <Text style={styles.summaryLbl}>Average</Text>
           </View>
         </Animated.View>
+        <Text style={styles.summaryHint}>
+          {enteredCount}/{students.length} entered · {maxMarks} max per student
+        </Text>
 
         {students.length === 0 && (
           <View style={styles.center}>
@@ -226,6 +236,13 @@ const styles = StyleSheet.create({
   },
   summaryNum: { fontFamily: FontFamily.extraBold, fontSize: 20, color: Colors.ink },
   summaryLbl: { fontFamily: FontFamily.medium, fontSize: 11, color: Colors.inkMuted, marginTop: 2 },
+  summaryHint: {
+    fontFamily: FontFamily.regular,
+    fontSize: 12,
+    color: Colors.inkMuted,
+    marginTop: -2,
+    marginBottom: 2,
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

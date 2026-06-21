@@ -12,7 +12,7 @@ function jsonResponse(body: unknown, status = 200) {
 
 describe('httpClient', () => {
   it('attaches auth and tenant headers from the provider', async () => {
-    const fetchMock = jest.fn().mockReturnValue(jsonResponse({ ok: true }));
+    const fetchMock = jest.fn().mockReturnValue(jsonResponse({ data: { ok: true } }));
     const http = createHttpClient({
       baseUrl: 'https://api.test',
       getAuth: () => ({ accessToken: 'tok', tenantId: 'school1' }),
@@ -40,7 +40,7 @@ describe('httpClient', () => {
   });
 
   it('omits auth/tenant headers when none are present', async () => {
-    const fetchMock = jest.fn().mockReturnValue(jsonResponse({}, 200));
+    const fetchMock = jest.fn().mockReturnValue(jsonResponse({ data: {} }, 200));
     const http = createHttpClient({
       baseUrl: 'https://api.test',
       getAuth: () => ({ accessToken: null, tenantId: null }),
@@ -53,7 +53,7 @@ describe('httpClient', () => {
   });
 
   it('appends query params, skipping null/undefined', async () => {
-    const fetchMock = jest.fn().mockReturnValue(jsonResponse([], 200));
+    const fetchMock = jest.fn().mockReturnValue(jsonResponse({ data: [] }, 200));
     const http = createHttpClient({
       baseUrl: 'https://api.test',
       getAuth: () => ({ accessToken: null, tenantId: null }),
@@ -64,15 +64,13 @@ describe('httpClient', () => {
   });
 
   it('returns undefined for 204 responses', async () => {
-    const fetchMock = jest
-      .fn()
-      .mockReturnValue(
-        Promise.resolve({
-          ok: true,
-          status: 204,
-          json: () => Promise.reject(new Error('no body')),
-        } as unknown as Response)
-      );
+    const fetchMock = jest.fn().mockReturnValue(
+      Promise.resolve({
+        ok: true,
+        status: 204,
+        json: () => Promise.reject(new Error('no body')),
+      } as unknown as Response)
+    );
     const http = createHttpClient({
       baseUrl: 'https://api.test',
       getAuth: () => ({ accessToken: null, tenantId: null }),

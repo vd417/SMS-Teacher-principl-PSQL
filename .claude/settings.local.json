@@ -16,7 +16,15 @@
       "Bash(node -e \"const e = require\\('eslint'\\); console.log\\(e.Linter.version || e.linter.version || 'v9+'\\)\")",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(npx eslint *)"
+      "Bash(npx eslint *)",
+      "Bash(break)",
+      "PowerShell(Start-Process \"chrome.exe\" \"http://localhost:8081\"; if \\($?\\) { \"Launched Chrome\" })",
+      "Bash(command -v chromium-cli)",
+      "Bash(command -v playwright)",
+      "Bash(npm run *)",
+      "PowerShell(Start-Process \"chrome.exe\" \"http://localhost:8081\")",
+      "Skill(run)",
+      "Bash(\"/c/Program Files/Google/Chrome/Application/chrome.exe\" \"http://localhost:8081\")"
     ]
   }
 }
