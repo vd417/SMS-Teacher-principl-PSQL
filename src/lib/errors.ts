@@ -2,16 +2,19 @@ export interface AppErrorShape {
   code: string;
   status: number;
   message: string;
+  details?: Record<string, string[]>;
 }
 
 export class AppError extends Error {
   code: string;
   status: number;
-  constructor({ code, status, message }: AppErrorShape) {
+  details?: Record<string, string[]>;
+  constructor({ code, status, message, details }: AppErrorShape) {
     super(message);
     this.name = 'AppError';
     this.code = code;
     this.status = status;
+    this.details = details;
   }
 }
 
