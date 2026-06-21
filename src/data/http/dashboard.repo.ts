@@ -1,9 +1,10 @@
 import type { DashboardRepository } from '@/data/repositories/types';
 import type { HttpClient } from '@/lib/httpClient';
-import { toDashboardStats, type DashboardStatsDTO } from './mappers';
+import { toDashboardStats, dashboardStatsSchema } from './mappers';
 
 export function httpDashboard(http: HttpClient): DashboardRepository {
   return {
-    stats: () => http.get<DashboardStatsDTO>('/dashboard/stats').then(toDashboardStats),
+    stats: () =>
+      http.get('/dashboard/stats').then((x) => toDashboardStats(dashboardStatsSchema.parse(x))),
   };
 }

@@ -1,10 +1,11 @@
 import type { ClassesRepository } from '@/data/repositories/types';
 import type { HttpClient } from '@/lib/httpClient';
-import { toClass, type ClassDTO } from './mappers';
+import { toClass, classSchema } from './mappers';
 
 export function httpClasses(http: HttpClient): ClassesRepository {
   return {
-    list: () => http.get<ClassDTO[]>('/classes').then((d) => d.map(toClass)),
-    get: (id) => http.get<ClassDTO>(`/classes/${id}`).then(toClass),
+    list: () =>
+      http.get<unknown[]>('/classes').then((d) => d.map((x) => toClass(classSchema.parse(x)))),
+    get: (id) => http.get(`/classes/${id}`).then((x) => toClass(classSchema.parse(x))),
   };
 }

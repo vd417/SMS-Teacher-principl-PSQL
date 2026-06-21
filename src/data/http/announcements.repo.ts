@@ -1,12 +1,15 @@
 import type { AnnouncementsRepository, NewAnnouncementInput } from '@/data/repositories/types';
 import type { HttpClient } from '@/lib/httpClient';
-import { toAnnouncement, type AnnouncementDTO } from './mappers';
+import { toAnnouncement, announcementSchema } from './mappers';
 
 export function httpAnnouncements(http: HttpClient): AnnouncementsRepository {
   return {
-    list: () => http.get<AnnouncementDTO[]>('/announcements').then((d) => d.map(toAnnouncement)),
+    list: () =>
+      http
+        .get<unknown[]>('/announcements')
+        .then((d) => d.map((x) => toAnnouncement(announcementSchema.parse(x)))),
 
     create: (input: NewAnnouncementInput) =>
-      http.post<AnnouncementDTO>('/announcements', input).then(toAnnouncement),
+      http.post('/announcements', input).then((x) => toAnnouncement(announcementSchema.parse(x))),
   };
 }

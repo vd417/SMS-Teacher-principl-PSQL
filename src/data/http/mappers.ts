@@ -1,15 +1,19 @@
+import { z } from 'zod';
 import type {
-  Session,
-  User,
-  Tenant,
   Class,
   Student,
   TimetableSlot,
+  WeekDay,
   Assignment,
+  AssignmentStatus,
   Announcement,
+  AnnouncementType,
   CalendarEvent,
+  EventType,
   LibraryBook,
+  BookStatus,
   PayslipEntry,
+  PayslipStatus,
   DashboardStats,
   Exam,
   GradeEntry,
@@ -21,391 +25,219 @@ import type {
   LeaveRequest,
   LeaveType,
   LeaveStatus,
-  Role,
   ApprovalRequest,
-  ApprovalRequestType,
   PrincipalOverview,
   SchoolAttendance,
 } from '@/data/domain';
-// Auth/session mapping lives in ./auth.schema.ts (zod-validated). The DTOs below
-// cover the remaining modules.
+import { initialsFrom } from './auth.schema';
 
-export interface ClassDTO {
-  id: string;
-  name: string;
-  section: string;
-  subject: string;
-  student_count: number;
-  room: string;
-  next_period?: string;
+// Auth/session mapping lives in ./auth.schema.ts. The schemas below are the zod
+// boundary validators (and DTO source of truth) for the remaining modules. The
+// backend serializes snake_case and wraps payloads (the httpClient already strips
+// the {data}/{data,next_cursor} envelope before these schemas see the body).
+
+// Backend DateTime fields arrive as ISO strings; the UI wants plain dates.
+const dateOnly = (s?: string | null): string => (s ? s.slice(0, 10) : '');
+const cap = (s: string): string => (s ? s[0].toUpperCase() + s.slice(1) : s);
+function dayCount(from?: string | null, to?: string | null): number {
+  if (!from || !to) return 1;
+  const a = new Date(from.slice(0, 10)).getTime();
+  const b = new Date(to.slice(0, 10)).getTime();
+  if (Number.isNaN(a) || Number.isNaN(b)) return 1;
+  return Math.max(1, Math.round((b - a) / 86_400_000) + 1);
 }
+
+// ─── Classes ─────────────────────────────────────────────────────────────────
+export const classSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  section: z.string().nullish(),
+  subject: z.string().nullish(),
+  room: z.string().nullish(),
+  student_count: z.number().nullish(),
+  next_period: z.string().nullish(),
+});
+export type ClassDTO = z.infer<typeof classSchema>;
 export const toClass = (d: ClassDTO): Class => ({
   id: d.id,
   name: d.name,
-  section: d.section,
-  subject: d.subject,
-  studentCount: d.student_count,
-  room: d.room,
-  nextPeriod: d.next_period,
+  section: d.section ?? '',
+  subject: d.subject ?? '',
+  studentCount: d.student_count ?? 0,
+  room: d.room ?? '',
+  nextPeriod: d.next_period ?? undefined,
 });
 
-export interface StudentDTO {
-  id: string;
-  admission_no: string;
-  name: string;
-  initials: string;
-  gender: 'M' | 'F';
-  class_id: string;
-  grade: string;
-  section: string;
-  class_label: string;
-  roll: string;
-  guardian_name: string;
-  guardian_phone: string;
-  attendance_pct: number;
-  fee_status: 'paid' | 'partial' | 'due';
-  fee_due: number;
-  house: string;
-  avatar_hue: number;
-  status: 'active' | 'inactive';
-}
-export const toStudent = (d: StudentDTO): Student => ({
+// ─── Students ────────────────────────────────────────────────────────────────
+// StudentResponse has no class_id (the roster endpoint carries it in the path)
+// and no initials; roll is an int. We inject classId and derive the rest.
+export const studentSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  roll: z.union([z.number(), z.string()]).nullish(),
+  grade: z.string().nullish(),
+  attendance_pct: z.number().nullish(),
+  guardian_name: z.string().nullish(),
+  guardian_phone: z.string().nullish(),
+});
+export type StudentDTO = z.infer<typeof studentSchema>;
+export const toStudent = (d: StudentDTO, classId = ''): Student => ({
   id: d.id,
   name: d.name,
-  roll: d.roll,
-  initials: d.initials,
-  classId: d.class_id,
-  attendance: d.attendance_pct,
-  grade: d.grade,
-  parent: d.guardian_name,
-  parentPhone: d.guardian_phone,
+  roll: d.roll != null ? String(d.roll) : '',
+  initials: initialsFrom(d.name),
+  classId,
+  attendance: d.attendance_pct ?? 0,
+  grade: d.grade ?? '',
+  parent: d.guardian_name ?? '',
+  parentPhone: d.guardian_phone ?? '',
 });
 
 // ─── Timetable ───────────────────────────────────────────────────────────────
-export interface TimetableSlotDTO {
-  id: string;
-  day: TimetableSlot['day'];
-  period: number;
-  subject: string;
-  class_id: string;
-  class_name: string;
-  room: string;
-  start_time: string;
-  end_time: string;
-}
+export const timetableSlotSchema = z.object({
+  id: z.string(),
+  day: z.string(),
+  period: z.number(),
+  subject: z.string().nullish(),
+  class_id: z.string().nullish(),
+  class_name: z.string().nullish(),
+  room: z.string().nullish(),
+  start_time: z.string().nullish(),
+  end_time: z.string().nullish(),
+});
+export type TimetableSlotDTO = z.infer<typeof timetableSlotSchema>;
 export const toTimetableSlot = (d: TimetableSlotDTO): TimetableSlot => ({
   id: d.id,
-  day: d.day,
+  day: d.day as WeekDay,
   period: d.period,
-  subject: d.subject,
-  classId: d.class_id,
-  className: d.class_name,
-  room: d.room,
-  startTime: d.start_time,
-  endTime: d.end_time,
+  subject: d.subject ?? '',
+  classId: d.class_id ?? '',
+  className: d.class_name ?? '',
+  room: d.room ?? '',
+  startTime: d.start_time ?? '',
+  endTime: d.end_time ?? '',
 });
 
 // ─── Assignments ─────────────────────────────────────────────────────────────
-export interface AssignmentDTO {
-  id: string;
-  title: string;
-  class_id: string;
-  class_name: string;
-  subject: string;
-  due_date: string;
-  submissions_count: number;
-  total_students: number;
-  status: Assignment['status'];
-  description?: string;
-  image_uri?: string;
-}
+export const assignmentSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  class_id: z.string().nullish(),
+  class_name: z.string().nullish(),
+  subject: z.string().nullish(),
+  due_date: z.string().nullish(),
+  submissions_count: z.number().nullish(),
+  total_students: z.number().nullish(),
+  status: z.string(),
+  description: z.string().nullish(),
+  image_uri: z.string().nullish(),
+});
+export type AssignmentDTO = z.infer<typeof assignmentSchema>;
 export const toAssignment = (d: AssignmentDTO): Assignment => ({
   id: d.id,
   title: d.title,
-  classId: d.class_id,
-  className: d.class_name,
-  subject: d.subject,
-  dueDate: d.due_date,
-  submissionsCount: d.submissions_count,
-  totalStudents: d.total_students,
-  status: d.status,
-  description: d.description,
-  imageUri: d.image_uri,
+  classId: d.class_id ?? '',
+  className: d.class_name ?? '',
+  subject: d.subject ?? '',
+  dueDate: dateOnly(d.due_date),
+  submissionsCount: d.submissions_count ?? 0,
+  totalStudents: d.total_students ?? 0,
+  status: d.status as AssignmentStatus,
+  description: d.description ?? undefined,
+  imageUri: d.image_uri ?? undefined,
 });
 
 // ─── Announcements ───────────────────────────────────────────────────────────
-export interface AnnouncementDTO {
-  id: string;
-  title: string;
-  body: string;
-  date: string;
-  from: string;
-  role?: string;
-  type: Announcement['type'];
-  pinned?: boolean;
-  audience?: string;
-}
+export const announcementSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  body: z.string().nullish(),
+  date: z.string(),
+  from: z.string().nullish(),
+  type: z.string(),
+  pinned: z.boolean().nullish(),
+});
+export type AnnouncementDTO = z.infer<typeof announcementSchema>;
 export const toAnnouncement = (d: AnnouncementDTO): Announcement => ({
   id: d.id,
   title: d.title,
-  body: d.body,
-  date: d.date,
-  from: d.from,
-  type: d.type,
-  pinned: d.pinned,
+  body: d.body ?? '',
+  date: dateOnly(d.date),
+  from: d.from ?? '',
+  type: d.type as AnnouncementType,
+  pinned: d.pinned ?? false,
 });
 
 // ─── Calendar ────────────────────────────────────────────────────────────────
-export interface CalendarEventDTO {
-  id: string;
-  title: string;
-  date: string;
-  time?: string;
-  type: CalendarEvent['type'];
-  description?: string;
-}
+export const calendarEventSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  date: z.string(),
+  time: z.string().nullish(),
+  type: z.string(),
+  description: z.string().nullish(),
+});
+export type CalendarEventDTO = z.infer<typeof calendarEventSchema>;
 export const toCalendarEvent = (d: CalendarEventDTO): CalendarEvent => ({
   id: d.id,
   title: d.title,
-  date: d.date,
-  time: d.time,
-  type: d.type,
-  description: d.description,
+  date: dateOnly(d.date),
+  time: d.time ?? undefined,
+  type: d.type as EventType,
+  description: d.description ?? undefined,
 });
 
 // ─── Library ─────────────────────────────────────────────────────────────────
-export interface LibraryBookDTO {
-  id: string;
-  title: string;
-  author: string;
-  subject: string;
-  issued_to?: string;
-  due_date?: string;
-  status: LibraryBook['status'];
-}
+export const libraryBookSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  author: z.string(),
+  subject: z.string().nullish(),
+  issued_to: z.string().nullish(),
+  due_date: z.string().nullish(),
+  status: z.string(),
+});
+export type LibraryBookDTO = z.infer<typeof libraryBookSchema>;
 export const toLibraryBook = (d: LibraryBookDTO): LibraryBook => ({
   id: d.id,
   title: d.title,
   author: d.author,
-  subject: d.subject,
-  issuedTo: d.issued_to,
-  dueDate: d.due_date,
-  status: d.status,
+  subject: d.subject ?? '',
+  issuedTo: d.issued_to ?? undefined,
+  dueDate: d.due_date ? dateOnly(d.due_date) : undefined,
+  status: d.status as BookStatus,
 });
 
 // ─── Payroll ─────────────────────────────────────────────────────────────────
-export interface PayslipDTO {
-  id: string;
-  month: string;
-  year: number;
-  gross: number;
-  deductions: number;
-  net: number;
-  status: PayslipEntry['status'];
-}
+export const payslipSchema = z.object({
+  id: z.string(),
+  month: z.string().nullish(),
+  year: z.number(),
+  gross: z.number(),
+  deductions: z.number(),
+  net: z.number(),
+  status: z.string(),
+});
+export type PayslipDTO = z.infer<typeof payslipSchema>;
 export const toPayslip = (d: PayslipDTO): PayslipEntry => ({
   id: d.id,
-  month: d.month,
+  month: d.month ?? '',
   year: d.year,
   gross: d.gross,
   deductions: d.deductions,
   net: d.net,
-  status: d.status,
-});
-
-// ─── Exam papers ─────────────────────────────────────────────────────────────
-export interface ExamPaperDTO {
-  id: string;
-  exam_id: string;
-  name: string;
-  class_id: string;
-  class_name: string;
-  subject: string;
-  date: string;
-  start_time: string;
-  duration_min: number;
-  max_marks: number;
-  room: string;
-  invigilator1: string;
-  invigilator2: string;
-  topics: string[];
-  status: ExamStatus;
-}
-export const toExam = (d: ExamPaperDTO): Exam => ({
-  id: d.id,
-  title: d.name,
-  classId: d.class_id,
-  className: d.class_name,
-  subject: d.subject,
-  date: d.date,
-  time: d.start_time,
-  duration: d.duration_min,
-  maxMarks: d.max_marks,
-  topics: d.topics,
-  status: d.status,
-});
-export const toExamDTO = (
-  e: Partial<Exam> & { classId?: string; maxMarks?: number }
-): Partial<ExamPaperDTO> => ({
-  ...(e.id !== undefined && { id: e.id }),
-  ...(e.title !== undefined && { name: e.title }),
-  ...(e.classId !== undefined && { class_id: e.classId }),
-  ...(e.className !== undefined && { class_name: e.className }),
-  ...(e.subject !== undefined && { subject: e.subject }),
-  ...(e.date !== undefined && { date: e.date }),
-  ...(e.time !== undefined && { start_time: e.time }),
-  ...(e.duration !== undefined && { duration_min: e.duration }),
-  ...(e.maxMarks !== undefined && { max_marks: e.maxMarks }),
-  ...(e.topics !== undefined && { topics: e.topics }),
-  ...(e.status !== undefined && { status: e.status }),
-});
-
-// ─── Grades ──────────────────────────────────────────────────────────────────
-export interface GradeDTO {
-  id: string;
-  student_id: string;
-  student_name: string;
-  exam_paper_id: string;
-  marks: number;
-  max_marks: number;
-  grade: string;
-  gpa: number;
-  pass: boolean;
-  date: string;
-}
-export const toGrade = (d: GradeDTO): GradeEntry => ({
-  studentId: d.student_id,
-  studentName: d.student_name,
-  examId: d.exam_paper_id,
-  marks: d.marks,
-  maxMarks: d.max_marks,
-  grade: d.grade,
-});
-
-// ─── Attendance (roll-call) ────────────────────────────────────────────────────
-export type CanonicalAttendanceStatus = 'present' | 'absent' | 'late' | 'leave' | 'holiday';
-
-const ATT_WORD_TO_CODE: Record<CanonicalAttendanceStatus, AttendanceStatus> = {
-  present: 'P',
-  absent: 'A',
-  late: 'L',
-  leave: 'V',
-  // Domain has no holiday state; collapse to absent. No save path round-trips holiday, so this is one-way only.
-  holiday: 'A',
-};
-const ATT_CODE_TO_WORD: Record<AttendanceStatus, CanonicalAttendanceStatus> = {
-  P: 'present',
-  A: 'absent',
-  L: 'late',
-  V: 'leave',
-};
-
-export interface AttendanceRecordDTO {
-  student_id: string;
-  status: CanonicalAttendanceStatus;
-  date: string;
-}
-export const toAttendanceRecord = (d: AttendanceRecordDTO): AttendanceRecord => ({
-  studentId: d.student_id,
-  status: ATT_WORD_TO_CODE[d.status] ?? 'A',
-  date: d.date,
-});
-export const fromAttendanceStatus = (s: AttendanceStatus): CanonicalAttendanceStatus =>
-  ATT_CODE_TO_WORD[s];
-
-// ─── Chat ─────────────────────────────────────────────────────────────────────
-export interface ChatContactDTO {
-  id: string;
-  name: string;
-  role: string;
-  initials: string;
-  last_message: string;
-  last_at: string;
-  unread: number;
-  online: boolean;
-}
-export const toChatContact = (d: ChatContactDTO): ChatContact => ({
-  id: d.id,
-  name: d.name,
-  role: d.role,
-  initials: d.initials,
-  lastMessage: d.last_message,
-  time: d.last_at,
-  unread: d.unread,
-  online: d.online,
-});
-
-export interface ChatMessageDTO {
-  id: string;
-  thread_id: string;
-  sender_id: string;
-  text: string;
-  sent_at: string;
-  is_mine: boolean;
-}
-export const toChatMessage = (d: ChatMessageDTO): ChatMessage => ({
-  id: d.id,
-  senderId: d.sender_id,
-  text: d.text,
-  time: d.sent_at,
-  isMe: d.is_mine,
-});
-
-// ─── Leave ───────────────────────────────────────────────────────────────────
-export type CanonicalLeaveType =
-  | 'casual'
-  | 'sick'
-  | 'earned'
-  | 'medical'
-  | 'maternity'
-  | 'emergency'
-  | 'other';
-
-export interface LeaveRequestDTO {
-  id: string;
-  requester_id: string;
-  type: CanonicalLeaveType;
-  from_date: string;
-  to_date: string;
-  reason: string;
-  substitute?: string;
-  status: LeaveStatus;
-  applied_on: string;
-  decided_note?: string;
-}
-// Server sends only the domain-supported leave types; canonical union is wider, so we narrow.
-export const toLeaveRequest = (d: LeaveRequestDTO): LeaveRequest => ({
-  id: d.id,
-  type: d.type as LeaveType,
-  from: d.from_date,
-  to: d.to_date,
-  reason: d.reason,
-  substitute: d.substitute,
-  status: d.status,
-  appliedOn: d.applied_on,
-});
-export const fromNewLeave = (r: {
-  type: LeaveType;
-  from: string;
-  to: string;
-  reason: string;
-  substitute?: string;
-}): Partial<LeaveRequestDTO> => ({
-  type: r.type,
-  from_date: r.from,
-  to_date: r.to,
-  reason: r.reason,
-  ...(r.substitute !== undefined && { substitute: r.substitute }),
+  status: d.status as PayslipStatus,
 });
 
 // ─── Dashboard ───────────────────────────────────────────────────────────────
-export interface DashboardStatsDTO {
-  total_students: number;
-  total_classes: number;
-  attendance_today: number;
-  pending_assignments: number;
-  upcoming_exams: number;
-}
+export const dashboardStatsSchema = z.object({
+  total_students: z.number(),
+  total_classes: z.number(),
+  attendance_today: z.number(),
+  pending_assignments: z.number(),
+  upcoming_exams: z.number(),
+});
+export type DashboardStatsDTO = z.infer<typeof dashboardStatsSchema>;
 export const toDashboardStats = (d: DashboardStatsDTO): DashboardStats => ({
   totalStudents: d.total_students,
   totalClasses: d.total_classes,
@@ -414,62 +246,228 @@ export const toDashboardStats = (d: DashboardStatsDTO): DashboardStats => ({
   upcomingExams: d.upcoming_exams,
 });
 
-// ─── Approvals ───────────────────────────────────────────────────────────────
-export interface ApprovalRequestDTO {
-  id: string;
-  type: ApprovalRequestType;
-  requester_id: string;
-  requester_name: string;
-  requester_initials: string;
-  title: string;
-  detail: string;
-  from?: string;
-  to?: string;
-  reason?: string;
-  substitute?: string;
-  priority: ApprovalRequest['priority'];
-  status: ApprovalRequest['status'];
-  applied_on: string;
-  decided_note?: string;
-}
-export const toApprovalRequest = (d: ApprovalRequestDTO): ApprovalRequest => ({
+// ─── Exam papers ─────────────────────────────────────────────────────────────
+// ExamPaperResponse has no topics or class_name — defaulted client-side.
+export const examPaperSchema = z.object({
+  id: z.string(),
+  class_id: z.string().nullish(),
+  name: z.string().nullish(),
+  subject: z.string().nullish(),
+  date: z.string().nullish(),
+  start_time: z.string().nullish(),
+  duration_min: z.number().nullish(),
+  max_marks: z.number().nullish(),
+  status: z.string(),
+});
+export type ExamPaperDTO = z.infer<typeof examPaperSchema>;
+export const toExam = (d: ExamPaperDTO): Exam => ({
   id: d.id,
-  type: d.type,
-  requesterId: d.requester_id,
-  requesterName: d.requester_name,
-  requesterInitials: d.requester_initials,
-  title: d.title,
-  detail: d.detail,
-  from: d.from,
-  to: d.to,
-  reason: d.reason,
-  substitute: d.substitute,
-  priority: d.priority,
-  status: d.status,
-  appliedOn: d.applied_on,
-  decidedNote: d.decided_note,
+  title: d.name ?? '',
+  classId: d.class_id ?? '',
+  className: '',
+  subject: d.subject ?? '',
+  date: dateOnly(d.date),
+  time: d.start_time ?? '',
+  duration: d.duration_min ?? 0,
+  maxMarks: d.max_marks ?? 0,
+  topics: [],
+  status: d.status as ExamStatus,
+});
+export const toExamDTO = (
+  e: Partial<Exam> & { classId?: string; maxMarks?: number }
+): Record<string, unknown> => ({
+  ...(e.title !== undefined && { name: e.title }),
+  ...(e.classId !== undefined && { class_id: e.classId }),
+  ...(e.subject !== undefined && { subject: e.subject }),
+  ...(e.date !== undefined && { date: e.date }),
+  ...(e.time !== undefined && { start_time: e.time }),
+  ...(e.duration !== undefined && { duration_min: e.duration }),
+  ...(e.maxMarks !== undefined && { max_marks: e.maxMarks }),
+  ...(e.status !== undefined && { status: e.status }),
 });
 
-// ─── Principal overview ──────────────────────────────────────────────────────
-export interface StaffAttendanceEntryDTO {
-  teacher_id: string;
-  name: string;
-  initials: string;
-  subject: string;
-  phone: string;
-  checked_in: boolean;
-  check_in_at?: string;
-  role?: string;
-}
-export interface PrincipalOverviewDTO {
-  kpis: {
-    students_present_pct: number;
-    staff_present: number;
-    staff_total: number;
-    pending_approvals: number;
+// ─── Grades ──────────────────────────────────────────────────────────────────
+export const gradeSchema = z.object({
+  student_id: z.string(),
+  student_name: z.string().nullish(),
+  exam_paper_id: z.string(),
+  marks: z.number(),
+  max_marks: z.number(),
+  grade: z.string().nullish(),
+});
+export type GradeDTO = z.infer<typeof gradeSchema>;
+export const toGrade = (d: GradeDTO): GradeEntry => ({
+  studentId: d.student_id,
+  studentName: d.student_name ?? '',
+  examId: d.exam_paper_id,
+  marks: d.marks,
+  maxMarks: d.max_marks,
+  grade: d.grade ?? '',
+});
+
+// ─── Attendance (roll-call) ────────────────────────────────────────────────────
+export type CanonicalAttendanceStatus = 'present' | 'absent' | 'late' | 'leave' | 'holiday';
+const ATT_WORD_TO_CODE: Record<CanonicalAttendanceStatus, AttendanceStatus> = {
+  present: 'P',
+  absent: 'A',
+  late: 'L',
+  leave: 'V',
+  holiday: 'A',
+};
+const ATT_CODE_TO_WORD: Record<AttendanceStatus, CanonicalAttendanceStatus> = {
+  P: 'present',
+  A: 'absent',
+  L: 'late',
+  V: 'leave',
+};
+export const attendanceRecordSchema = z.object({
+  student_id: z.string(),
+  status: z.string(),
+  date: z.string().nullish(),
+});
+export type AttendanceRecordDTO = z.infer<typeof attendanceRecordSchema>;
+export const toAttendanceRecord = (d: AttendanceRecordDTO): AttendanceRecord => ({
+  studentId: d.student_id,
+  status: ATT_WORD_TO_CODE[d.status as CanonicalAttendanceStatus] ?? 'A',
+  date: dateOnly(d.date),
+});
+export const fromAttendanceStatus = (s: AttendanceStatus): CanonicalAttendanceStatus =>
+  ATT_CODE_TO_WORD[s];
+
+// ─── Chat (threads) ────────────────────────────────────────────────────────────
+// ChatThreadResponse has no initials/online — derived/defaulted.
+export const chatContactSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  role: z.string().nullish(),
+  last_message: z.string().nullish(),
+  last_at: z.string().nullish(),
+  unread: z.number().nullish(),
+});
+export type ChatContactDTO = z.infer<typeof chatContactSchema>;
+export const toChatContact = (d: ChatContactDTO): ChatContact => ({
+  id: d.id,
+  name: d.name,
+  role: d.role ?? '',
+  initials: initialsFrom(d.name),
+  lastMessage: d.last_message ?? '',
+  time: d.last_at ?? '',
+  unread: d.unread ?? 0,
+  online: false,
+});
+
+export const chatMessageSchema = z.object({
+  id: z.string(),
+  sender_id: z.string().nullish(),
+  text: z.string(),
+  sent_at: z.string(),
+  is_mine: z.boolean(),
+});
+export type ChatMessageDTO = z.infer<typeof chatMessageSchema>;
+export const toChatMessage = (d: ChatMessageDTO): ChatMessage => ({
+  id: d.id,
+  senderId: d.sender_id ?? '',
+  text: d.text,
+  time: d.sent_at,
+  isMe: d.is_mine,
+});
+
+// ─── Leave ───────────────────────────────────────────────────────────────────
+export const leaveResponseSchema = z.object({
+  id: z.string(),
+  requester_id: z.string().nullish(),
+  type: z.string(),
+  from_date: z.string().nullish(),
+  to_date: z.string().nullish(),
+  reason: z.string().nullish(),
+  substitute: z.string().nullish(),
+  status: z.string(),
+  applied_on: z.string().nullish(),
+  decided_note: z.string().nullish(),
+});
+export type LeaveRequestDTO = z.infer<typeof leaveResponseSchema>;
+export const toLeaveRequest = (d: LeaveRequestDTO): LeaveRequest => ({
+  id: d.id,
+  type: d.type as LeaveType,
+  from: dateOnly(d.from_date),
+  to: dateOnly(d.to_date),
+  reason: d.reason ?? '',
+  substitute: d.substitute ?? undefined,
+  status: d.status as LeaveStatus,
+  appliedOn: dateOnly(d.applied_on),
+});
+export const fromNewLeave = (r: {
+  type: LeaveType;
+  from: string;
+  to: string;
+  reason: string;
+  substitute?: string;
+}): Record<string, unknown> => ({
+  type: r.type,
+  from_date: r.from,
+  to_date: r.to,
+  reason: r.reason,
+  ...(r.substitute !== undefined && { substitute: r.substitute }),
+});
+
+// ─── Approvals ───────────────────────────────────────────────────────────────
+// Backend /approvals returns LeaveResponse[]; the rich approval display fields
+// (requester name/initials, title, detail, priority) are synthesized client-side.
+export type ApprovalRequestDTO = z.infer<typeof leaveResponseSchema>;
+export const approvalRequestSchema = leaveResponseSchema;
+export const toApprovalRequest = (d: ApprovalRequestDTO): ApprovalRequest => {
+  const days = dayCount(d.from_date, d.to_date);
+  return {
+    id: d.id,
+    type: 'leave',
+    requesterId: d.requester_id ?? '',
+    requesterName: 'Staff member',
+    requesterInitials: '—',
+    title: `${cap(d.type)} leave · ${days} day${days > 1 ? 's' : ''}`,
+    detail: d.reason ?? '',
+    from: dateOnly(d.from_date),
+    to: dateOnly(d.to_date),
+    reason: d.reason ?? undefined,
+    substitute: d.substitute ?? undefined,
+    priority: 'medium',
+    status: d.status as LeaveStatus,
+    appliedOn: dateOnly(d.applied_on),
+    decidedNote: d.decided_note ?? undefined,
   };
-  staff: StaffAttendanceEntryDTO[];
-}
+};
+
+// ─── Principal overview ──────────────────────────────────────────────────────
+const staffEntrySchema = z.object({
+  teacher_id: z.string(),
+  name: z.string(),
+  initials: z.string(),
+  subject: z.string().nullish(),
+  phone: z.string().nullish(),
+  checked_in: z.boolean(),
+  check_in_at: z.string().nullish(),
+  role: z.string().nullish(),
+});
+const toStaffEntry = (s: z.infer<typeof staffEntrySchema>) => ({
+  teacherId: s.teacher_id,
+  name: s.name,
+  initials: s.initials,
+  subject: s.subject ?? '',
+  phone: s.phone ?? '',
+  checkedIn: s.checked_in,
+  checkInAt: s.check_in_at ?? undefined,
+  role: s.role ?? undefined,
+});
+
+export const principalOverviewSchema = z.object({
+  kpis: z.object({
+    students_present_pct: z.number(),
+    staff_present: z.number(),
+    staff_total: z.number(),
+    pending_approvals: z.number(),
+  }),
+  staff: z.array(staffEntrySchema),
+});
+export type PrincipalOverviewDTO = z.infer<typeof principalOverviewSchema>;
 export const toPrincipalOverview = (d: PrincipalOverviewDTO): PrincipalOverview => ({
   kpis: {
     studentsPresentPct: d.kpis.students_present_pct,
@@ -477,35 +475,28 @@ export const toPrincipalOverview = (d: PrincipalOverviewDTO): PrincipalOverview 
     staffTotal: d.kpis.staff_total,
     pendingApprovals: d.kpis.pending_approvals,
   },
-  staff: d.staff.map((s) => ({
-    teacherId: s.teacher_id,
-    name: s.name,
-    initials: s.initials,
-    subject: s.subject,
-    phone: s.phone,
-    checkedIn: s.checked_in,
-    checkInAt: s.check_in_at,
-    role: s.role,
-  })),
+  staff: d.staff.map(toStaffEntry),
 });
 
-export interface ClassAttendanceSummaryDTO {
-  class_id: string;
-  class_name: string;
-  present: number;
-  total: number;
-  pct: number;
-}
-export interface SchoolAttendanceDTO {
-  date: string;
-  present_total: number;
-  student_total: number;
-  overall_pct: number;
-  classes: ClassAttendanceSummaryDTO[];
-  staff: StaffAttendanceEntryDTO[];
-}
+export const schoolAttendanceSchema = z.object({
+  date: z.string(),
+  present_total: z.number(),
+  student_total: z.number(),
+  overall_pct: z.number(),
+  classes: z.array(
+    z.object({
+      class_id: z.string(),
+      class_name: z.string(),
+      present: z.number(),
+      total: z.number(),
+      pct: z.number(),
+    })
+  ),
+  staff: z.array(staffEntrySchema),
+});
+export type SchoolAttendanceDTO = z.infer<typeof schoolAttendanceSchema>;
 export const toSchoolAttendance = (d: SchoolAttendanceDTO): SchoolAttendance => ({
-  date: d.date,
+  date: dateOnly(d.date),
   presentTotal: d.present_total,
   studentTotal: d.student_total,
   overallPct: d.overall_pct,
@@ -516,14 +507,5 @@ export const toSchoolAttendance = (d: SchoolAttendanceDTO): SchoolAttendance => 
     total: c.total,
     pct: c.pct,
   })),
-  staff: d.staff.map((s) => ({
-    teacherId: s.teacher_id,
-    name: s.name,
-    initials: s.initials,
-    subject: s.subject,
-    phone: s.phone,
-    checkedIn: s.checked_in,
-    checkInAt: s.check_in_at,
-    role: s.role,
-  })),
+  staff: d.staff.map(toStaffEntry),
 });

@@ -1,14 +1,17 @@
 import type { ApprovalsRepository } from '@/data/repositories/types';
 import type { HttpClient } from '@/lib/httpClient';
-import { toApprovalRequest, type ApprovalRequestDTO } from './mappers';
+import { toApprovalRequest, approvalRequestSchema } from './mappers';
 
 export function httpApprovals(http: HttpClient): ApprovalsRepository {
   return {
-    list: () => http.get<ApprovalRequestDTO[]>('/approvals').then((d) => d.map(toApprovalRequest)),
+    list: () =>
+      http
+        .get<unknown[]>('/approvals')
+        .then((d) => d.map((x) => toApprovalRequest(approvalRequestSchema.parse(x)))),
 
     decide: (id, decision, note) =>
       http
-        .patch<ApprovalRequestDTO>(`/approvals/${id}`, { status: decision, decided_note: note })
-        .then(toApprovalRequest),
+        .patch(`/approvals/${id}`, { status: decision, decided_note: note })
+        .then((x) => toApprovalRequest(approvalRequestSchema.parse(x))),
   };
 }

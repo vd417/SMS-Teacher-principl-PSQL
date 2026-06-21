@@ -1,13 +1,13 @@
 import type { AttendanceRepository } from '@/data/repositories/types';
 import type { HttpClient } from '@/lib/httpClient';
-import { toAttendanceRecord, fromAttendanceStatus, type AttendanceRecordDTO } from './mappers';
+import { toAttendanceRecord, fromAttendanceStatus, attendanceRecordSchema } from './mappers';
 
 export function httpAttendance(http: HttpClient): AttendanceRepository {
   return {
     forClass: (classId, date) =>
       http
-        .get<AttendanceRecordDTO[]>(`/classes/${classId}/attendance?date=${date}`)
-        .then((d) => d.map(toAttendanceRecord)),
+        .get<unknown[]>(`/classes/${classId}/attendance`, { params: { date } })
+        .then((d) => d.map((x) => toAttendanceRecord(attendanceRecordSchema.parse(x)))),
 
     save: (classId, date, records) =>
       http
@@ -16,7 +16,6 @@ export function httpAttendance(http: HttpClient): AttendanceRepository {
           records: records.map((r) => ({
             student_id: r.studentId,
             status: fromAttendanceStatus(r.status),
-            date: r.date,
           })),
         })
         .then(() => undefined),

@@ -1,17 +1,22 @@
 import type { ChatRepository } from '@/data/repositories/types';
 import type { HttpClient } from '@/lib/httpClient';
-import { toChatContact, toChatMessage, type ChatContactDTO, type ChatMessageDTO } from './mappers';
+import { toChatContact, toChatMessage, chatContactSchema, chatMessageSchema } from './mappers';
 
 export function httpChat(http: HttpClient): ChatRepository {
   return {
-    contacts: () => http.get<ChatContactDTO[]>('/threads').then((d) => d.map(toChatContact)),
+    contacts: () =>
+      http
+        .get<unknown[]>('/threads')
+        .then((d) => d.map((x) => toChatContact(chatContactSchema.parse(x)))),
 
     messages: (contactId) =>
       http
-        .get<ChatMessageDTO[]>(`/threads/${contactId}/messages`)
-        .then((d) => d.map(toChatMessage)),
+        .get<unknown[]>(`/threads/${contactId}/messages`)
+        .then((d) => d.map((x) => toChatMessage(chatMessageSchema.parse(x)))),
 
     send: (contactId, text) =>
-      http.post<ChatMessageDTO>(`/threads/${contactId}/messages`, { text }).then(toChatMessage),
+      http
+        .post(`/threads/${contactId}/messages`, { text })
+        .then((x) => toChatMessage(chatMessageSchema.parse(x))),
   };
 }

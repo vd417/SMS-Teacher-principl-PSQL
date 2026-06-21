@@ -1,9 +1,12 @@
 import type { CalendarRepository } from '@/data/repositories/types';
 import type { HttpClient } from '@/lib/httpClient';
-import { toCalendarEvent, type CalendarEventDTO } from './mappers';
+import { toCalendarEvent, calendarEventSchema } from './mappers';
 
 export function httpCalendar(http: HttpClient): CalendarRepository {
   return {
-    list: () => http.get<CalendarEventDTO[]>('/calendar').then((d) => d.map(toCalendarEvent)),
+    list: () =>
+      http
+        .get<unknown[]>('/calendar')
+        .then((d) => d.map((x) => toCalendarEvent(calendarEventSchema.parse(x)))),
   };
 }

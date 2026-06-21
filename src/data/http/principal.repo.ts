@@ -2,15 +2,20 @@ import type { PrincipalRepository } from '@/data/repositories/types';
 import type { HttpClient } from '@/lib/httpClient';
 import {
   toPrincipalOverview,
-  type PrincipalOverviewDTO,
+  principalOverviewSchema,
   toSchoolAttendance,
-  type SchoolAttendanceDTO,
+  schoolAttendanceSchema,
 } from './mappers';
 
 export function httpPrincipal(http: HttpClient): PrincipalRepository {
   return {
-    overview: () => http.get<PrincipalOverviewDTO>('/principal/overview').then(toPrincipalOverview),
+    overview: () =>
+      http
+        .get('/principal/overview')
+        .then((x) => toPrincipalOverview(principalOverviewSchema.parse(x))),
     attendance: () =>
-      http.get<SchoolAttendanceDTO>('/principal/attendance').then(toSchoolAttendance),
+      http
+        .get('/principal/attendance')
+        .then((x) => toSchoolAttendance(schoolAttendanceSchema.parse(x))),
   };
 }
