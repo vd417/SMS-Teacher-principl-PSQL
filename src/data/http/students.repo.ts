@@ -5,10 +5,16 @@ import { toStudent, studentSchema } from './mappers';
 export function httpStudents(http: HttpClient): StudentsRepository {
   return {
     // The roster endpoint carries the class in the path; inject it into each row.
-    listByClass: (classId) =>
+    // It is cursor-paginated, so we pass limit/cursor and return a Page.
+    listByClass: (classId, page) =>
       http
-        .get<unknown[]>(`/classes/${classId}/students`)
-        .then((d) => d.map((x) => toStudent(studentSchema.parse(x), classId))),
+        .getList<unknown>(`/classes/${classId}/students`, {
+          params: { limit: page?.limit, cursor: page?.cursor },
+        })
+        .then((p) => ({
+          items: p.items.map((x) => toStudent(studentSchema.parse(x), classId)),
+          nextCursor: p.nextCursor,
+        })),
     get: (id) => http.get(`/students/${id}`).then((x) => toStudent(studentSchema.parse(x))),
   };
 }

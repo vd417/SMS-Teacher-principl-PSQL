@@ -1,5 +1,12 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  ActivityIndicator,
+  TouchableOpacity,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -9,8 +16,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { Avatar, Pill } from '../components';
+import type { Student } from '@/data/domain';
 import { useClass } from '@/features/classes/hooks';
-import { useStudentsByClass } from '@/features/students/hooks';
+import { useStudentsByClassPaged } from '@/features/students/hooks';
 import { deriveColorSet } from '@/theme/derive';
 import { Skeleton } from '@/ui/state/Skeleton';
 import { ErrorState } from '@/ui/state/ErrorState';
@@ -33,11 +41,15 @@ export const ClassDetailScreen: React.FC = () => {
     refetch: refetchCls,
   } = useClass(classId);
   const {
-    data: classStudents = [],
+    data: studentPages,
     isLoading: studentsLoading,
     isError: studentsError,
     refetch: refetchStudents,
-  } = useStudentsByClass(classId);
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useStudentsByClassPaged(classId);
+  const classStudents = studentPages?.pages.flatMap((p) => p.items) ?? [];
 
   const isLoading = clsLoading || studentsLoading;
   const isError = clsError || studentsError;
@@ -67,12 +79,58 @@ export const ClassDetailScreen: React.FC = () => {
 
   const cs = deriveColorSet(cls.id);
 
-  return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={[styles.scroll, { paddingBottom: 40 }]}
-      showsVerticalScrollIndicator={false}
+  const renderStudent = ({ item: student, index: i }: { item: Student; index: number }) => (
+    <Animated.View
+      style={styles.studentItemWrap}
+      entering={FadeInDown.delay(Math.min(i, 8) * 40).springify()}
     >
+      <TouchableOpacity
+        style={styles.studentRow}
+        onPress={() => navigation.navigate('StudentScreen', { studentId: student.id })}
+      >
+        <Avatar initials={student.initials} size={44} backgroundColor={cs.color} />
+        <View style={styles.studentInfo}>
+          <Text style={styles.studentName}>{student.name}</Text>
+          <Text style={styles.studentRoll}>Roll #{student.roll}</Text>
+        </View>
+        <View style={styles.studentRight}>
+          <View
+            style={[
+              styles.attBadge,
+              {
+                backgroundColor:
+                  student.attendance >= 90
+                    ? Colors.presentSoft
+                    : student.attendance >= 75
+                      ? Colors.lateSoft
+                      : Colors.absentSoft,
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.attText,
+                {
+                  color:
+                    student.attendance >= 90
+                      ? Colors.present
+                      : student.attendance >= 75
+                        ? Colors.late
+                        : Colors.absent,
+                },
+              ]}
+            >
+              {student.attendance}%
+            </Text>
+          </View>
+          <Pill label={student.grade} color={cs.color} backgroundColor={cs.colorSoft} size="sm" />
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+
+  const header = (
+    <>
       {/* Hero */}
       <LinearGradient
         colors={[cs.color, cs.colorSoft]}
@@ -122,68 +180,32 @@ export const ClassDetailScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      {/* Students */}
-      <View style={styles.section}>
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Students ({classStudents.length})</Text>
-        </View>
-        {classStudents.length === 0 ? (
-          <EmptyState label="No students in this class" />
-        ) : (
-          classStudents.map((student, i) => (
-            <Animated.View key={student.id} entering={FadeInDown.delay(i * 40).springify()}>
-              <TouchableOpacity
-                style={styles.studentRow}
-                onPress={() => navigation.navigate('StudentScreen', { studentId: student.id })}
-              >
-                <Avatar initials={student.initials} size={44} backgroundColor={cs.color} />
-                <View style={styles.studentInfo}>
-                  <Text style={styles.studentName}>{student.name}</Text>
-                  <Text style={styles.studentRoll}>Roll #{student.roll}</Text>
-                </View>
-                <View style={styles.studentRight}>
-                  <View
-                    style={[
-                      styles.attBadge,
-                      {
-                        backgroundColor:
-                          student.attendance >= 90
-                            ? Colors.presentSoft
-                            : student.attendance >= 75
-                              ? Colors.lateSoft
-                              : Colors.absentSoft,
-                      },
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.attText,
-                        {
-                          color:
-                            student.attendance >= 90
-                              ? Colors.present
-                              : student.attendance >= 75
-                                ? Colors.late
-                                : Colors.absent,
-                        },
-                      ]}
-                    >
-                      {student.attendance}%
-                    </Text>
-                  </View>
-                  <Pill
-                    label={student.grade}
-                    color={cs.color}
-                    backgroundColor={cs.colorSoft}
-                    size="sm"
-                  />
-                </View>
-              </TouchableOpacity>
-            </Animated.View>
-          ))
-        )}
+      <View style={[styles.section, styles.sectionHeader]}>
+        <Text style={styles.sectionTitle}>Students ({classStudents.length})</Text>
       </View>
-    </ScrollView>
+    </>
+  );
+
+  return (
+    <FlatList
+      style={styles.screen}
+      data={classStudents}
+      keyExtractor={(s) => s.id}
+      renderItem={renderStudent}
+      ListHeaderComponent={header}
+      ListEmptyComponent={<EmptyState label="No students in this class" />}
+      onEndReached={() => {
+        if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
+      }}
+      onEndReachedThreshold={0.4}
+      ListFooterComponent={
+        isFetchingNextPage ? (
+          <ActivityIndicator style={styles.footerSpinner} color={cs.color} />
+        ) : null
+      }
+      contentContainerStyle={styles.listContent}
+      showsVerticalScrollIndicator={false}
+    />
   );
 };
 
@@ -193,6 +215,15 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.paper,
   },
   scroll: {},
+  listContent: {
+    paddingBottom: 40,
+  },
+  studentItemWrap: {
+    paddingHorizontal: 20,
+  },
+  footerSpinner: {
+    marginVertical: 16,
+  },
   hero: {
     paddingHorizontal: 20,
     paddingBottom: 32,

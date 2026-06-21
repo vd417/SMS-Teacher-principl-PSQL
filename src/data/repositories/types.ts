@@ -28,6 +28,7 @@ import type {
   PrincipalOverview,
   SchoolAttendance,
 } from '@/data/domain';
+import type { Page } from '@/lib/envelope';
 
 export interface NewExamInput {
   title: string;
@@ -83,7 +84,8 @@ export interface ClassesRepository {
   get(id: string): Promise<Class>;
 }
 export interface StudentsRepository {
-  listByClass(classId: string): Promise<Student[]>;
+  // The class roster is the one truly cursor-paginated list (limit 1–200, cursor).
+  listByClass(classId: string, page?: { limit?: number; cursor?: string }): Promise<Page<Student>>;
   get(id: string): Promise<Student>;
 }
 export interface AttendanceRepository {
