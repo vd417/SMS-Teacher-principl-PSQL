@@ -14,46 +14,56 @@ import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
-import { useRequestOtp, useVerifyOtp } from '@/features/auth/hooks';
+import { useLogin, useRequestOtp, useVerifyOtp } from '@/features/auth/hooks';
+import { authErrorMessage } from '@/features/auth/authErrors';
+import type { RootStackParamList } from '../navigation/types';
 
-type Role = 'teacher' | 'principal';
-
-const ROLES: { key: Role; label: string; icon: keyof typeof Ionicons.glyphMap; email: string }[] = [
-  { key: 'teacher', label: 'Teacher', icon: 'easel-outline', email: 'aanya.k@westbrook.edu' },
-  { key: 'principal', label: 'Principal', icon: 'ribbon-outline', email: 'sunita.r@westbrook.edu' },
-];
+type LoginNav = NativeStackNavigationProp<RootStackParamList, 'Login'>;
+type Mode = 'password' | 'otp';
 
 export const LoginScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<LoginNav>();
 
+  const login = useLogin();
   const requestOtp = useRequestOtp();
   const verifyOtp = useVerifyOtp();
-  const [role, setRole] = useState<Role>('teacher');
-  const [otpIdentifier, setOtpIdentifier] = useState(ROLES[0].email);
+
+  const [mode, setMode] = useState<Mode>('password');
+
+  // password mode
+  const [identifier, setIdentifier] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+
+  // otp mode
+  const [otpIdentifier, setOtpIdentifier] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
   const [otpDestination, setOtpDestination] = useState('');
 
-  const requestErr = requestOtp.error instanceof Error ? requestOtp.error.message : null;
-  const verifyErr = verifyOtp.error instanceof Error ? verifyOtp.error.message : null;
+  const loginErr = login.error ? authErrorMessage(login.error) : null;
+  const requestErr = requestOtp.error ? authErrorMessage(requestOtp.error) : null;
+  const verifyErr = verifyOtp.error ? authErrorMessage(verifyOtp.error) : null;
+
+  const handleSignIn = () => login.mutate({ identifier: identifier.trim(), password });
 
   const handleSendOtp = () => {
     verifyOtp.reset();
     setOtpCode('');
-    requestOtp.mutate(otpIdentifier, {
+    requestOtp.mutate(otpIdentifier.trim(), {
       onSuccess: (challenge) => {
         setOtpDestination(challenge.destination);
         setOtpSent(true);
       },
     });
   };
-
-  const handleVerifyOtp = () => {
-    verifyOtp.mutate({ identifier: otpIdentifier, code: otpCode });
-  };
-
+  const handleVerifyOtp = () =>
+    verifyOtp.mutate({ identifier: otpIdentifier.trim(), code: otpCode });
   const handleChangeIdentifier = () => {
     setOtpSent(false);
     setOtpCode('');
@@ -61,12 +71,11 @@ export const LoginScreen: React.FC = () => {
     verifyOtp.reset();
     requestOtp.reset();
   };
-
-  const handleSelectRole = (next: Role) => {
-    setRole(next);
-    const account = ROLES.find((r) => r.key === next);
-    setOtpIdentifier(account ? account.email : '');
+  const switchMode = (next: Mode) => {
+    setMode(next);
+    login.reset();
     requestOtp.reset();
+    verifyOtp.reset();
   };
 
   return (
@@ -89,7 +98,6 @@ export const LoginScreen: React.FC = () => {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Logo */}
           <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.logoWrap}>
             <View style={styles.logoCircle}>
               <Ionicons name="school" size={40} color={Colors.primary} />
@@ -98,42 +106,94 @@ export const LoginScreen: React.FC = () => {
             <Text style={styles.appTagline}>School Management System</Text>
           </Animated.View>
 
-          {/* Card */}
           <Animated.View entering={FadeInDown.delay(250).springify()} style={styles.card}>
             <Text style={styles.cardTitle}>Welcome Back 👋</Text>
             <Text style={styles.cardSubtitle}>
-              {otpSent
-                ? 'Enter the code we sent you'
-                : 'Sign in with a one-time code to your mobile or email'}
+              {mode === 'password'
+                ? 'Sign in with your email or mobile number'
+                : otpSent
+                  ? 'Enter the code we sent you'
+                  : 'Sign in with a one-time code to your mobile or email'}
             </Text>
 
-            {!otpSent ? (
+            {mode === 'password' ? (
               <View>
-                {/* Role selector */}
-                <View style={styles.roleRow}>
-                  {ROLES.map((r) => {
-                    const active = role === r.key;
-                    return (
-                      <TouchableOpacity
-                        key={r.key}
-                        style={[styles.roleChip, active && styles.roleChipActive]}
-                        activeOpacity={0.85}
-                        onPress={() => handleSelectRole(r.key)}
-                      >
-                        <Ionicons
-                          name={r.icon}
-                          size={16}
-                          color={active ? Colors.white : Colors.primary}
-                        />
-                        <Text style={[styles.roleChipText, active && styles.roleChipTextActive]}>
-                          {r.label}
-                        </Text>
-                      </TouchableOpacity>
-                    );
-                  })}
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Email or Mobile Number</Text>
+                  <View style={styles.inputWrap}>
+                    <Ionicons
+                      name="person-outline"
+                      size={18}
+                      color={Colors.inkMuted}
+                      style={styles.inputIcon}
+                    />
+                    <TextInput
+                      style={styles.textInput}
+                      value={identifier}
+                      onChangeText={setIdentifier}
+                      placeholder="Email or mobile number"
+                      placeholderTextColor={Colors.inkSoft}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                    />
+                  </View>
                 </View>
 
-                {/* Identifier */}
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>Password</Text>
+                  <View style={styles.inputWrap}>
+                    <Ionicons
+                      name="lock-closed-outline"
+                      size={18}
+                      color={Colors.inkMuted}
+                      style={styles.inputIcon}
+                    />
+                    <TextInput
+                      style={styles.textInput}
+                      value={password}
+                      onChangeText={setPassword}
+                      placeholder="Password"
+                      placeholderTextColor={Colors.inkSoft}
+                      secureTextEntry={!showPassword}
+                      autoCapitalize="none"
+                    />
+                    <TouchableOpacity onPress={() => setShowPassword((v) => !v)}>
+                      <Ionicons
+                        name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                        size={18}
+                        color={Colors.inkMuted}
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  {loginErr && <Text style={styles.errorText}>{loginErr}</Text>}
+                </View>
+
+                <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
+                  <Text style={[styles.forgotText, styles.forgotRight]}>Forgot password?</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.signInBtn, login.isPending && styles.signInBtnLoading]}
+                  activeOpacity={0.9}
+                  disabled={login.isPending}
+                  onPress={handleSignIn}
+                >
+                  {login.isPending ? (
+                    <Text style={styles.signInBtnText}>Signing in…</Text>
+                  ) : (
+                    <>
+                      <Text style={styles.signInBtnText}>Sign In</Text>
+                      <Ionicons name="arrow-forward" size={18} color={Colors.white} />
+                    </>
+                  )}
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.altLink} onPress={() => switchMode('otp')}>
+                  <Text style={styles.altLinkText}>Sign in with a one-time code instead</Text>
+                </TouchableOpacity>
+              </View>
+            ) : !otpSent ? (
+              <View>
                 <View style={styles.inputGroup}>
                   <Text style={styles.inputLabel}>Mobile Number or Email</Text>
                   <View style={styles.inputWrap}>
@@ -171,10 +231,13 @@ export const LoginScreen: React.FC = () => {
                     </>
                   )}
                 </TouchableOpacity>
+
+                <TouchableOpacity style={styles.altLink} onPress={() => switchMode('password')}>
+                  <Text style={styles.altLinkText}>Use password instead</Text>
+                </TouchableOpacity>
               </View>
             ) : (
               <View>
-                {/* Code */}
                 <View style={styles.inputGroup}>
                   <Text style={styles.inputLabel}>Verification Code</Text>
                   <Text style={styles.otpSentText}>Code sent to {otpDestination}</Text>
@@ -222,11 +285,14 @@ export const LoginScreen: React.FC = () => {
                     <Text style={styles.forgotText}>Change</Text>
                   </TouchableOpacity>
                 </View>
+
+                <TouchableOpacity style={styles.altLink} onPress={() => switchMode('password')}>
+                  <Text style={styles.altLinkText}>Use password instead</Text>
+                </TouchableOpacity>
               </View>
             )}
           </Animated.View>
 
-          {/* Footer */}
           <Animated.View entering={FadeInDown.delay(400).springify()} style={styles.footer}>
             <Text style={styles.footerText}>Westbrook Academy · v1.0.0</Text>
           </Animated.View>
@@ -291,35 +357,6 @@ const styles = StyleSheet.create({
     color: Colors.inkMuted,
     marginBottom: 24,
   },
-  roleRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 20,
-  },
-  roleChip: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 11,
-    borderRadius: Radii.full,
-    borderWidth: 1.5,
-    borderColor: Colors.primarySoft2,
-    backgroundColor: Colors.primarySoft,
-  },
-  roleChipActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  roleChipText: {
-    fontFamily: FontFamily.semiBold,
-    fontSize: 14,
-    color: Colors.primary,
-  },
-  roleChipTextActive: {
-    color: Colors.white,
-  },
   inputGroup: {
     marginBottom: 16,
   },
@@ -354,6 +391,10 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.primary,
   },
+  forgotRight: {
+    alignSelf: 'flex-end',
+    marginBottom: 16,
+  },
   signInBtn: {
     backgroundColor: Colors.primary,
     borderRadius: Radii.full,
@@ -379,16 +420,19 @@ const styles = StyleSheet.create({
     color: Colors.ink3,
     marginBottom: 4,
   },
-  otpHintText: {
-    fontFamily: FontFamily.regular,
-    fontSize: 12,
-    color: Colors.inkMuted,
-    marginBottom: 12,
-  },
   otpLinksRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 16,
+  },
+  altLink: {
+    alignItems: 'center',
+    marginTop: 18,
+  },
+  altLinkText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 13,
+    color: Colors.primary,
   },
   errorText: {
     fontFamily: FontFamily.medium,
