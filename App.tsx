@@ -15,6 +15,8 @@ import {
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { AppProviders } from './src/providers/AppProviders';
 import { initSentry, wrapWithSentry } from './src/lib/sentry';
+import { AppErrorBoundary } from './src/components/AppErrorBoundary';
+import { OfflineBanner } from './src/components/OfflineBanner';
 import { Colors } from './src/theme';
 
 initSentry();
@@ -43,12 +45,15 @@ function App() {
           of stretching edge-to-edge across the browser. No-op on native. */}
       <View style={styles.frame}>
         <SafeAreaProvider>
-          <AppProviders>
-            <NavigationContainer>
-              <StatusBar style="auto" />
-              <RootNavigator />
-            </NavigationContainer>
-          </AppProviders>
+          <AppErrorBoundary>
+            <AppProviders>
+              <NavigationContainer>
+                <StatusBar style="auto" />
+                <OfflineBanner />
+                <RootNavigator />
+              </NavigationContainer>
+            </AppProviders>
+          </AppErrorBoundary>
         </SafeAreaProvider>
       </View>
     </GestureHandlerRootView>

@@ -10,6 +10,9 @@ export const queryClient = new QueryClient({
         return count < 2;
       },
     },
+    mutations: {
+      retry: 0,
+    },
   },
 });
 
