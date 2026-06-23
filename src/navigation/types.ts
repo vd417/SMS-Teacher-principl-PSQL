@@ -50,6 +50,7 @@ export type ProfileStackParamList = {
   ProfileScreen: undefined;
   MyAttendanceScreen: undefined;
   SettingsScreen: undefined;
+  ChangePasswordScreen: undefined;
   PayslipScreen: undefined;
   LeaveScreen: undefined;
 };
@@ -92,6 +93,8 @@ export type PrincipalTimetableStackParamList = {
 export type RootStackParamList = {
   Welcome: undefined;
   Login: undefined;
+  ForgotPassword: undefined;
+  SetPassword: undefined;
   Main: NavigatorScreenParams<MainTabParamList>;
   Principal: NavigatorScreenParams<PrincipalTabParamList>;
 };
