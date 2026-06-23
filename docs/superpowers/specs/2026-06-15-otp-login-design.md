@@ -1,3 +1,9 @@
+> **SUPERSEDED (2026-06-23):** This design was written against the now-deleted mock
+> layer and a fixed demo code. Production auth — real password login, real OTP, and
+> forgot/reset/change/set-password — is specified in
+> `2026-06-23-auth-overhaul-design.md` and implemented per
+> `docs/superpowers/plans/2026-06-23-auth-overhaul.md`.
+
 # OTP Login (Mobile / Email) — Design
 
 **Date:** 2026-06-15
