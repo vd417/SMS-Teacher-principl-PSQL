@@ -16,10 +16,13 @@ type Status = 'loading' | 'authenticated' | 'unauthenticated';
 interface AuthValue {
   status: Status;
   session: Session | null;
-  signIn: (email: string, password: string) => Promise<void>;
+  signIn: (identifier: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   requestOtp: (identifier: string) => Promise<OtpChallenge>;
   signInWithOtp: (identifier: string, code: string) => Promise<void>;
+  forgotPassword: (identifier: string) => Promise<void>;
+  resetPassword: (identifier: string, code: string, password: string) => Promise<void>;
+  changePassword: (password: string) => Promise<void>;
 }
 const AuthContext = createContext<AuthValue | null>(null);
 
@@ -61,8 +64,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signIn = useCallback(
-    async (email: string, password: string) => {
-      const s = await repos.auth.login(email, password);
+    async (identifier: string, password: string) => {
+      const s = await repos.auth.login(identifier, password);
       await establishSession(s);
     },
     [repos, establishSession]
@@ -79,6 +82,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await establishSession(s);
     },
     [repos, establishSession]
+  );
+
+  const forgotPassword = useCallback(
+    (identifier: string) => repos.auth.forgotPassword(identifier),
+    [repos]
+  );
+
+  const resetPassword = useCallback(
+    (identifier: string, code: string, password: string) =>
+      repos.auth.resetPassword(identifier, code, password),
+    [repos]
+  );
+
+  const changePassword = useCallback(
+    (password: string) => repos.auth.setPassword(password),
+    [repos]
   );
 
   const signOut = useCallback(async () => {
@@ -119,8 +138,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [refresh, signOut]);
 
   const value = useMemo(
-    () => ({ status, session, signIn, signOut, requestOtp, signInWithOtp }),
-    [status, session, signIn, signOut, requestOtp, signInWithOtp]
+    () => ({
+      status,
+      session,
+      signIn,
+      signOut,
+      requestOtp,
+      signInWithOtp,
+      forgotPassword,
+      resetPassword,
+      changePassword,
+    }),
+    [
+      status,
+      session,
+      signIn,
+      signOut,
+      requestOtp,
+      signInWithOtp,
+      forgotPassword,
+      resetPassword,
+      changePassword,
+    ]
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

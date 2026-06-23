@@ -4,9 +4,34 @@ import { useAuth } from './AuthProvider';
 export function useLogin() {
   const { signIn } = useAuth();
   return useMutation({
-    mutationFn: ({ email, password }: { email: string; password: string }) =>
-      signIn(email, password),
+    mutationFn: ({ identifier, password }: { identifier: string; password: string }) =>
+      signIn(identifier, password),
   });
+}
+
+export function useForgotPassword() {
+  const { forgotPassword } = useAuth();
+  return useMutation({ mutationFn: (identifier: string) => forgotPassword(identifier) });
+}
+
+export function useResetPassword() {
+  const { resetPassword } = useAuth();
+  return useMutation({
+    mutationFn: ({
+      identifier,
+      code,
+      password,
+    }: {
+      identifier: string;
+      code: string;
+      password: string;
+    }) => resetPassword(identifier, code, password),
+  });
+}
+
+export function useChangePassword() {
+  const { changePassword } = useAuth();
+  return useMutation({ mutationFn: (password: string) => changePassword(password) });
 }
 
 export function useLogout() {
