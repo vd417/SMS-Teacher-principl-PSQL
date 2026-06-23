@@ -20,8 +20,12 @@ export function httpAuth(http: HttpClient): AuthRepository {
   };
 
   return {
-    login: async (email, password) => {
-      const t = tokenSchema.parse(await http.post('/auth/login', { email, password }));
+    login: async (identifier, password) => {
+      // Mirror sms-admin: an '@' routes the lookup to email, otherwise to phone.
+      const body = identifier.includes('@')
+        ? { email: identifier, password }
+        : { phone: identifier, password };
+      const t = tokenSchema.parse(await http.post('/auth/login', body));
       return sessionFromTokens({ accessToken: t.access_token, refreshToken: t.refresh_token });
     },
     verifyOtp: async (identifier, code) => {
@@ -43,5 +47,14 @@ export function httpAuth(http: HttpClient): AuthRepository {
     },
     me: async () => toUserFromMe(meSchema.parse(await http.get('/auth/me'))),
     logout: (refreshToken) => http.post('/auth/logout', { refresh_token: refreshToken }),
+    forgotPassword: async (identifier) => {
+      await http.post('/auth/password/forgot', { identifier });
+    },
+    resetPassword: async (identifier, code, password) => {
+      await http.post('/auth/password/reset', { identifier, code, password });
+    },
+    setPassword: async (password) => {
+      await http.post('/auth/set-password', { password });
+    },
   };
 }

@@ -71,13 +71,16 @@ export interface OtpChallenge {
 }
 
 export interface AuthRepository {
-  login(email: string, password: string): Promise<Session>;
+  login(identifier: string, password: string): Promise<Session>;
   // The backend returns tokens only; identity is fetched separately via me().
   refresh(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }>;
   me(): Promise<User>;
   logout(refreshToken: string): Promise<void>;
   requestOtp(identifier: string): Promise<OtpChallenge>;
   verifyOtp(identifier: string, code: string): Promise<Session>;
+  forgotPassword(identifier: string): Promise<void>;
+  resetPassword(identifier: string, code: string, password: string): Promise<void>;
+  setPassword(password: string): Promise<void>;
 }
 export interface ClassesRepository {
   list(): Promise<Class[]>;
