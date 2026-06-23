@@ -15,6 +15,7 @@ import Animated, {
   withSpring,
 } from 'react-native-reanimated';
 import { useRoute, RouteProp } from '@react-navigation/native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { Avatar, ScreenHeader, Toast } from '../components';
@@ -22,13 +23,11 @@ import { useClass } from '@/features/classes/hooks';
 import { useStudentsByClass } from '@/features/students/hooks';
 import { useAttendance, useMarkAttendance } from '@/features/attendance/hooks';
 import { deriveColorSet } from '@/theme/derive';
+import { todayISO, formatLongDate, addDays } from '@/lib/date';
 import type { AttendanceStatus, AttendanceRecord } from '@/data/domain';
 import type { HomeStackParamList } from '../navigation/types';
 
 type AttRoute = RouteProp<HomeStackParamList, 'AttendanceScreen'>;
-
-// Use the seed date so existing records show up
-const ATTENDANCE_DATE = '2026-04-27';
 
 type StudentAttendance = Record<string, AttendanceStatus>;
 
@@ -91,6 +90,11 @@ export const AttendanceScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { classId } = route.params;
 
+  const [date, setDate] = useState<string>(() => todayISO());
+  const today = todayISO();
+  const goPrevDay = () => setDate((d) => addDays(d, -1));
+  const goNextDay = () => setDate((d) => (d >= today ? d : addDays(d, 1)));
+
   const { data: cls, isLoading: clsLoading, isError: clsError } = useClass(classId);
   const {
     data: classStudents = [],
@@ -101,8 +105,8 @@ export const AttendanceScreen: React.FC = () => {
     data: attendanceRecords,
     isLoading: attLoading,
     isError: attError,
-  } = useAttendance(classId, ATTENDANCE_DATE);
-  const mutation = useMarkAttendance(classId, ATTENDANCE_DATE);
+  } = useAttendance(classId, date);
+  const mutation = useMarkAttendance(classId, date);
 
   const isLoading = clsLoading || studentsLoading || attLoading;
   const isError = clsError || studentsError || attError;
@@ -145,7 +149,7 @@ export const AttendanceScreen: React.FC = () => {
     const records: AttendanceRecord[] = classStudents.map((s) => ({
       studentId: s.id,
       status: attendance[s.id] ?? 'P',
-      date: ATTENDANCE_DATE,
+      date,
     }));
     mutation.mutate(records, {
       onSuccess: () => setToastVisible(true),
@@ -191,6 +195,25 @@ export const AttendanceScreen: React.FC = () => {
             subtitle={`Attendance · ${cls.subject}`}
             showBack
           />
+        </Animated.View>
+
+        <Animated.View entering={FadeInDown.delay(70).springify()} style={styles.dateBar}>
+          <TouchableOpacity
+            onPress={goPrevDay}
+            style={styles.dateNav}
+            accessibilityLabel="Previous day"
+          >
+            <Ionicons name="chevron-back" size={18} color={Colors.primary} />
+          </TouchableOpacity>
+          <Text style={styles.dateLabel}>{formatLongDate(date)}</Text>
+          <TouchableOpacity
+            onPress={goNextDay}
+            disabled={date >= today}
+            style={[styles.dateNav, date >= today && styles.dateNavDisabled]}
+            accessibilityLabel="Next day"
+          >
+            <Ionicons name="chevron-forward" size={18} color={Colors.primary} />
+          </TouchableOpacity>
         </Animated.View>
 
         {/* Stats Bar */}
@@ -275,6 +298,16 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingVertical: 40 },
   errorText: { fontFamily: FontFamily.regular, fontSize: 14, color: Colors.absent },
   emptyText: { fontFamily: FontFamily.regular, fontSize: 14, color: Colors.inkMuted },
+  dateBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  dateNav: { padding: 8, borderRadius: 999, backgroundColor: Colors.primarySoft2 },
+  dateNavDisabled: { opacity: 0.35 },
+  dateLabel: { fontFamily: FontFamily.semiBold, fontSize: 14, color: Colors.ink },
   statsBar: {
     flexDirection: 'row',
     gap: 8,
