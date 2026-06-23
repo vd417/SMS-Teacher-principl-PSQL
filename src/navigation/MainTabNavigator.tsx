@@ -15,6 +15,7 @@ import { MyAttendanceScreen } from '../screens/MyAttendanceScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
 import { PayslipScreen } from '../screens/PayslipScreen';
 import { LeaveScreen } from '../screens/LeaveScreen';
+import { ChangePasswordScreen } from '../screens/ChangePasswordScreen';
 import { AttendancePickClassScreen } from '../screens/AttendancePickClassScreen';
 import { MarksPickClassScreen } from '../screens/MarksPickClassScreen';
 import { MarksEntryScreen } from '../screens/MarksEntryScreen';
@@ -88,6 +89,7 @@ const ProfileStack = createStackNavigator<ProfileStackParamList>();
 const ProfileStackNavigator = () => (
   <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
     <ProfileStack.Screen name="ProfileScreen" component={ProfileScreen} />
+    <ProfileStack.Screen name="ChangePasswordScreen" component={ChangePasswordScreen} />
     <ProfileStack.Screen name="MyAttendanceScreen" component={MyAttendanceScreen} />
     <ProfileStack.Screen name="SettingsScreen" component={SettingsScreen} />
     <ProfileStack.Screen name="PayslipScreen" component={PayslipScreen} />

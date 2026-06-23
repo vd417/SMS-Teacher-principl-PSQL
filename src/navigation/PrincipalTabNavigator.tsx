@@ -20,6 +20,7 @@ import { SettingsScreen } from '../screens/SettingsScreen';
 import { PayslipScreen } from '../screens/PayslipScreen';
 import { LeaveScreen } from '../screens/LeaveScreen';
 import { LibraryScreen } from '../screens/LibraryScreen';
+import { ChangePasswordScreen } from '../screens/ChangePasswordScreen';
 import type {
   PrincipalTabParamList,
   PrincipalHomeStackParamList,
@@ -76,6 +77,7 @@ const ProfileStack = createStackNavigator<ProfileStackParamList>();
 const ProfileStackNavigator = () => (
   <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
     <ProfileStack.Screen name="ProfileScreen" component={ProfileScreen} />
+    <ProfileStack.Screen name="ChangePasswordScreen" component={ChangePasswordScreen} />
     <ProfileStack.Screen name="MyAttendanceScreen" component={MyAttendanceScreen} />
     <ProfileStack.Screen name="SettingsScreen" component={SettingsScreen} />
   </ProfileStack.Navigator>

@@ -30,6 +30,12 @@ const MENU_ITEMS = [
     color: Colors.present,
   },
   { icon: 'calendar-outline', label: 'Leave Requests', screen: 'LeaveScreen', color: Colors.coral },
+  {
+    icon: 'key-outline',
+    label: 'Change Password',
+    screen: 'ChangePasswordScreen',
+    color: Colors.blue,
+  },
   { icon: 'settings-outline', label: 'Settings', screen: 'SettingsScreen', color: Colors.blue },
   {
     icon: 'shield-checkmark-outline',
