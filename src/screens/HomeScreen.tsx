@@ -13,6 +13,8 @@ import { useClasses } from '@/features/classes/hooks';
 import { useDashboardStats } from '@/features/dashboard/hooks';
 import { useAnnouncements } from '@/features/announcements/hooks';
 import { useMyAttendanceToday, usePunch } from '@/features/teacherAttendance/hooks';
+import { useExams } from '@/features/exams/hooks';
+import { todayISO, formatLongDate } from '@/lib/date';
 import { isAppError } from '@/lib/errors';
 import { deriveColorSet } from '@/theme/derive';
 import { Skeleton } from '@/ui/state/Skeleton';
@@ -71,6 +73,12 @@ export const HomeScreen: React.FC = () => {
   const { data: stats, isLoading: statsLoading } = useDashboardStats();
   const { data: announcements = [] } = useAnnouncements();
 
+  const { data: exams = [] } = useExams();
+  const today = todayISO();
+  const nextExam = exams
+    .filter((e) => e.date >= today && e.status !== 'completed')
+    .sort((a, b) => a.date.localeCompare(b.date))[0];
+
   const { data: myToday, isLoading: myTodayLoading } = useMyAttendanceToday();
   const punch = usePunch();
   const [punchToast, setPunchToast] = useState<{
@@ -101,8 +109,6 @@ export const HomeScreen: React.FC = () => {
     });
   };
 
-  const upcomingExam = 'Mid-Term Math · May 10';
-
   return (
     <View style={styles.root}>
       <ScrollView
@@ -123,14 +129,18 @@ export const HomeScreen: React.FC = () => {
         </Animated.View>
 
         {/* Upcoming Banner */}
-        <Animated.View entering={FadeInDown.delay(120).springify()}>
-          <TouchableOpacity style={styles.banner} activeOpacity={0.85}>
-            <View style={styles.bannerDot} />
-            <Ionicons name="alarm" size={15} color={Colors.primary} />
-            <Text style={styles.bannerText}>Next exam: {upcomingExam}</Text>
-            <Ionicons name="chevron-forward" size={14} color={Colors.primaryBright} />
-          </TouchableOpacity>
-        </Animated.View>
+        {nextExam && (
+          <Animated.View entering={FadeInDown.delay(120).springify()}>
+            <TouchableOpacity style={styles.banner} activeOpacity={0.85}>
+              <View style={styles.bannerDot} />
+              <Ionicons name="alarm" size={15} color={Colors.primary} />
+              <Text style={styles.bannerText}>
+                Next exam: {nextExam.title} · {formatLongDate(nextExam.date)}
+              </Text>
+              <Ionicons name="chevron-forward" size={14} color={Colors.primaryBright} />
+            </TouchableOpacity>
+          </Animated.View>
+        )}
 
         {/* My Check-In / Check-Out */}
         <Animated.View entering={FadeInDown.delay(150).springify()}>
@@ -183,7 +193,7 @@ export const HomeScreen: React.FC = () => {
             <View style={styles.attendanceTop}>
               <View>
                 <Text style={styles.attendanceTitle}>{"Today's Attendance"}</Text>
-                <Text style={styles.attendanceDate}>Monday, 27 Apr 2026</Text>
+                <Text style={styles.attendanceDate}>{formatLongDate(today)}</Text>
               </View>
               {statsLoading ? (
                 <Skeleton height={80} width={80} radius={40} />
@@ -196,19 +206,6 @@ export const HomeScreen: React.FC = () => {
                   backgroundColor={Colors.primarySoft2}
                 />
               )}
-            </View>
-            <View style={styles.attStats}>
-              {[
-                { label: 'Present', value: '28', color: Colors.present, soft: Colors.presentSoft },
-                { label: 'Absent', value: '2', color: Colors.absent, soft: Colors.absentSoft },
-                { label: 'Late', value: '1', color: Colors.late, soft: Colors.lateSoft },
-                { label: 'Leave', value: '1', color: Colors.leave, soft: Colors.leaveSoft },
-              ].map((s) => (
-                <View key={s.label} style={[styles.statPill, { backgroundColor: s.soft }]}>
-                  <Text style={[styles.statVal, { color: s.color }]}>{s.value}</Text>
-                  <Text style={[styles.statLbl, { color: s.color }]}>{s.label}</Text>
-                </View>
-              ))}
             </View>
             <TouchableOpacity
               style={styles.markAttBtn}
