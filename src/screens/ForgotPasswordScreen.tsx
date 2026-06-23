@@ -93,7 +93,7 @@ export const ForgotPasswordScreen: React.FC = () => {
             ) : !sent ? (
               <View>
                 <Text style={styles.cardSubtitle}>
-                  Enter your email or mobile number and we&apos;ll send a verification code.
+                  Enter your email or mobile number and we&rsquo;ll send a verification code.
                 </Text>
                 <View style={styles.inputWrap}>
                   <Ionicons
