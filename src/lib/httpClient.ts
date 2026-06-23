@@ -1,6 +1,7 @@
 import { AppError } from './errors';
 import { runSingleFlight } from './refreshLock';
 import { unwrapData, unwrapList, type Page } from './envelope';
+import { addBreadcrumb } from './sentry';
 
 export interface AuthSnapshot {
   accessToken: string | null;
@@ -92,12 +93,18 @@ export function createHttpClient(config: HttpClientConfig): HttpClient {
       const ok = await runSingleFlight(() => config.onRefresh!());
       if (!ok) {
         config.onAuthLost?.();
-        throw await toError(res);
+        const err = await toError(res);
+        addBreadcrumb('http', { path, status: err.status, code: err.code });
+        throw err;
       }
       res = await send(method, path, body, opts);
     }
 
-    if (!res.ok) throw await toError(res);
+    if (!res.ok) {
+      const err = await toError(res);
+      addBreadcrumb('http', { path, status: err.status, code: err.code });
+      throw err;
+    }
     if (res.status === 204) return undefined;
     return res.json();
   }
