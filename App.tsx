@@ -14,9 +14,12 @@ import {
 } from '@expo-google-fonts/plus-jakarta-sans';
 import { RootNavigator } from './src/navigation/RootNavigator';
 import { AppProviders } from './src/providers/AppProviders';
+import { initSentry, wrapWithSentry } from './src/lib/sentry';
 import { Colors } from './src/theme';
 
-export default function App() {
+initSentry();
+
+function App() {
   const [fontsLoaded] = useFonts({
     PlusJakartaSans_400Regular,
     PlusJakartaSans_500Medium,
@@ -51,6 +54,8 @@ export default function App() {
     </GestureHandlerRootView>
   );
 }
+
+export default wrapWithSentry(App);
 
 const styles = StyleSheet.create({
   outer: {
