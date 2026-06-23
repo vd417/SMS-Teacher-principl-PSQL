@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { WelcomeScreen } from '../screens/WelcomeScreen';
 import { LoginScreen } from '../screens/LoginScreen';
 import { ForgotPasswordScreen } from '../screens/ForgotPasswordScreen';
+import { SetPasswordScreen } from '../screens/SetPasswordScreen';
 import { MainTabNavigator } from './MainTabNavigator';
 import { PrincipalTabNavigator } from './PrincipalTabNavigator';
 import { useAuth } from '@/features/auth/AuthProvider';
@@ -23,6 +24,7 @@ export const RootNavigator = () => {
   }
 
   const isPrincipal = session?.user.role === 'principal';
+  const mustSetPassword = session?.user.mustSetPassword === true;
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -32,6 +34,8 @@ export const RootNavigator = () => {
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
         </>
+      ) : mustSetPassword ? (
+        <Stack.Screen name="SetPassword" component={SetPasswordScreen} />
       ) : isPrincipal ? (
         <Stack.Screen name="Principal" component={PrincipalTabNavigator} />
       ) : (
