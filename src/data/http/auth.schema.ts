@@ -22,12 +22,17 @@ export const meSchema = z.object({
   classroom: z.string().optional(),
   joined: z.string().optional(),
   tenant_name: z.string().optional(),
+  must_set_password: z.boolean().optional(),
 });
 export type MeWire = z.infer<typeof meSchema>;
 
 // ─── Mapping ─────────────────────────────────────────────────────────────────
+// Backend authz uses namespaced roles (`school.principal` / `school.teacher`, see
+// sms-backend Policies.cs); unqualified `principal` / `teacher` are also accepted.
+// Match on the last dotted segment so both vocabularies map to the app Role.
 export function pickRole(roles: string[]): Role {
-  return roles.includes('principal') ? 'principal' : 'teacher';
+  const leaves = roles.map((r) => r.split('.').pop());
+  return leaves.includes('principal') ? 'principal' : 'teacher';
 }
 
 export function initialsFrom(name: string): string {
@@ -50,6 +55,7 @@ export function toUserFromMe(me: MeWire): User {
     classroom: me.classroom ?? '',
     joined: me.joined ?? '',
     role: pickRole(me.roles),
+    mustSetPassword: me.must_set_password ?? false,
   };
 }
 

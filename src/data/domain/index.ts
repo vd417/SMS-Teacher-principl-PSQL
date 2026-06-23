@@ -25,6 +25,8 @@ export interface User {
   classroom: string;
   joined: string;
   role: Role;
+  /** Backend signals the account has no password yet → force a set-password screen. */
+  mustSetPassword: boolean;
 }
 export interface Session {
   accessToken: string;
