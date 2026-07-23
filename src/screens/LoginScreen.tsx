@@ -173,6 +173,14 @@ export const LoginScreen: React.FC = () => {
                 </TouchableOpacity>
 
                 <TouchableOpacity
+                  style={styles.firstTimeRow}
+                  onPress={() => navigation.navigate('ForgotPassword', { mode: 'create' })}
+                >
+                  <Text style={styles.firstTimeText}>First time here? </Text>
+                  <Text style={styles.forgotText}>Create a password</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
                   style={[styles.signInBtn, login.isPending && styles.signInBtnLoading]}
                   activeOpacity={0.9}
                   disabled={login.isPending}
@@ -394,6 +402,16 @@ const styles = StyleSheet.create({
   forgotRight: {
     alignSelf: 'flex-end',
     marginBottom: 16,
+  },
+  firstTimeRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 16,
+  },
+  firstTimeText: {
+    fontFamily: FontFamily.regular,
+    fontSize: 13,
+    color: Colors.inkMuted,
   },
   signInBtn: {
     backgroundColor: Colors.primary,
