@@ -13,20 +13,25 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RouteProp } from '@react-navigation/native';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { useForgotPassword, useResetPassword } from '@/features/auth/hooks';
 import { authErrorMessage } from '@/features/auth/authErrors';
 import { validateNewPassword } from '@/features/auth/passwordValidation';
+import { getForgotPasswordCopy } from '@/features/auth/forgotPasswordCopy';
 import type { RootStackParamList } from '../navigation/types';
 
 type Nav = NativeStackNavigationProp<RootStackParamList, 'ForgotPassword'>;
+type Route = RouteProp<RootStackParamList, 'ForgotPassword'>;
 
 export const ForgotPasswordScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<Nav>();
+  const route = useRoute<Route>();
+  const copy = getForgotPasswordCopy(route.params?.mode);
   const forgot = useForgotPassword();
   const reset = useResetPassword();
 
@@ -79,22 +84,18 @@ export const ForgotPasswordScreen: React.FC = () => {
           </TouchableOpacity>
 
           <View style={styles.card}>
-            <Text style={styles.cardTitle}>Reset password</Text>
+            <Text style={styles.cardTitle}>{copy.title}</Text>
 
             {done ? (
               <View>
-                <Text style={styles.cardSubtitle}>
-                  Your password has been reset. Sign in with your new password.
-                </Text>
+                <Text style={styles.cardSubtitle}>{copy.doneMessage}</Text>
                 <TouchableOpacity style={styles.primaryBtn} onPress={() => navigation.goBack()}>
                   <Text style={styles.primaryBtnText}>Back to sign in</Text>
                 </TouchableOpacity>
               </View>
             ) : !sent ? (
               <View>
-                <Text style={styles.cardSubtitle}>
-                  Enter your email or mobile number and we&rsquo;ll send a verification code.
-                </Text>
+                <Text style={styles.cardSubtitle}>{copy.step1Subtitle}</Text>
                 <View style={styles.inputWrap}>
                   <Ionicons
                     name="person-outline"
@@ -125,9 +126,7 @@ export const ForgotPasswordScreen: React.FC = () => {
               </View>
             ) : (
               <View>
-                <Text style={styles.cardSubtitle}>
-                  Enter the code we sent and choose a new password.
-                </Text>
+                <Text style={styles.cardSubtitle}>{copy.step2Subtitle}</Text>
                 <View style={styles.inputWrap}>
                   <Ionicons
                     name="keypad-outline"
@@ -188,7 +187,7 @@ export const ForgotPasswordScreen: React.FC = () => {
                   onPress={handleReset}
                 >
                   <Text style={styles.primaryBtnText}>
-                    {reset.isPending ? 'Resetting…' : 'Reset password'}
+                    {reset.isPending ? copy.submitLabelPending : copy.submitLabel}
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
