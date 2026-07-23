@@ -93,7 +93,7 @@ export type PrincipalTimetableStackParamList = {
 export type RootStackParamList = {
   Welcome: undefined;
   Login: undefined;
-  ForgotPassword: undefined;
+  ForgotPassword: { mode?: 'reset' | 'create' } | undefined;
   SetPassword: undefined;
   Main: NavigatorScreenParams<MainTabParamList>;
   Principal: NavigatorScreenParams<PrincipalTabParamList>;
