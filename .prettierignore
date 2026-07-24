@@ -1,0 +1,7 @@
+# Append-only audit logs: prettier reflows markdown table column widths to
+# the longest cell in each column, which rewrites every pre-existing row's
+# padding whenever a new row with a longer value is appended. That breaks the
+# append-only contract for these shared findings tables (see commit history
+# on docs/superpowers/audits/2026-07-24-live-data-findings.md for an example
+# of the damage). Keep these out of prettier's reach.
+docs/superpowers/audits/**
