@@ -25,6 +25,7 @@ interface AuthValue {
   resetPassword: (identifier: string, code: string, password: string) => Promise<void>;
   changePassword: (password: string) => Promise<void>;
   switchSchool: (tenantId: string) => Promise<void>;
+  updatePhoto: (photoUrl: string | null) => Promise<void>;
 }
 const AuthContext = createContext<AuthValue | null>(null);
 
@@ -118,6 +119,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [repos, establishSession]
   );
 
+  const updatePhoto = useCallback(
+    async (photoUrl: string | null) => {
+      await repos.auth.updatePhoto(photoUrl);
+      setSession((prev) => (prev ? { ...prev, user: { ...prev.user, photoUrl } } : prev));
+    },
+    [repos]
+  );
+
   const forgotPassword = useCallback(
     (identifier: string) => repos.auth.forgotPassword(identifier),
     [repos]
@@ -184,6 +193,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       resetPassword,
       changePassword,
       switchSchool,
+      updatePhoto,
     }),
     [
       status,
@@ -196,6 +206,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       forgotPassword,
       resetPassword,
       changePassword,
+      updatePhoto,
       switchSchool,
     ]
   );

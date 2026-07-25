@@ -298,3 +298,62 @@ test('a rejected switchSchool leaves pendingSchools and status unchanged so the 
   expect(screen.getByText('status:selecting-school')).toBeTruthy();
   expect(screen.getByText('pending:2')).toBeTruthy();
 });
+
+test('updatePhoto calls the repo and patches session.user.photoUrl in place', async () => {
+  const mockLogin = jest.fn(async () => ({
+    accessToken: 'a',
+    refreshToken: 'r',
+    user: {
+      id: 'u1',
+      name: '',
+      initials: '—',
+      title: '',
+      email: '',
+      phone: '',
+      employee: '',
+      classroom: '',
+      joined: '',
+      role: 'teacher' as const,
+      mustSetPassword: false,
+      photoUrl: null,
+    },
+    tenant: { id: 't1', name: 'School One' },
+  }));
+  const mockListSchools = jest.fn(async () => [{ id: 't1', name: 'School One', logoUrl: null }]);
+  const mockUpdatePhoto = jest.fn(async () => undefined);
+  const fakeRepos2 = {
+    auth: { login: mockLogin, listMySchools: mockListSchools, updatePhoto: mockUpdatePhoto },
+  } as unknown as Repositories;
+
+  const Probe2 = () => {
+    const { status, session, signIn, updatePhoto } = useAuth();
+    return (
+      <>
+        <Text>{`status:${status}`}</Text>
+        <Text>{`photo:${session?.user.photoUrl ?? 'none'}`}</Text>
+        <TouchableOpacity onPress={() => signIn('asha@x.com', 'secret123')}>
+          <Text>signin</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => updatePhoto('https://cdn.example.com/a.png')}>
+          <Text>set-photo</Text>
+        </TouchableOpacity>
+      </>
+    );
+  };
+
+  render(
+    <RepositoryProvider repositories={fakeRepos2}>
+      <AuthProvider>
+        <Probe2 />
+      </AuthProvider>
+    </RepositoryProvider>
+  );
+  await waitFor(() => expect(screen.getByText('status:unauthenticated')).toBeTruthy());
+  fireEvent.press(screen.getByText('signin'));
+  await waitFor(() => expect(screen.getByText('status:authenticated')).toBeTruthy());
+  expect(screen.getByText('photo:none')).toBeTruthy();
+
+  fireEvent.press(screen.getByText('set-photo'));
+  await waitFor(() => expect(screen.getByText('photo:https://cdn.example.com/a.png')).toBeTruthy());
+  expect(mockUpdatePhoto).toHaveBeenCalledWith('https://cdn.example.com/a.png');
+});

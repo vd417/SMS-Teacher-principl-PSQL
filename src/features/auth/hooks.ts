@@ -56,3 +56,8 @@ export function useSwitchSchool() {
   const { switchSchool } = useAuth();
   return useMutation({ mutationFn: (tenantId: string) => switchSchool(tenantId) });
 }
+
+export function useUpdatePhoto() {
+  const { updatePhoto } = useAuth();
+  return useMutation({ mutationFn: (photoUrl: string | null) => updatePhoto(photoUrl) });
+}
