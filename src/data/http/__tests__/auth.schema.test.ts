@@ -48,6 +48,26 @@ test('toSessionFromMe builds a full Session', () => {
   expect(s.tenant).toEqual({ id: 't1', name: 'Westbrook' });
 });
 
+test('meSchema tolerates explicit nulls (the live backend sends null, not omitted, for unset profile fields)', () => {
+  const me = meSchema.parse({
+    id: 'u1',
+    tenant_id: 't1',
+    roles: ['teacher'],
+    name: null,
+    title: null,
+    email: null,
+    phone: null,
+    classroom: null,
+    tenant_name: null,
+    must_set_password: null,
+  });
+  const s = toSessionFromMe({ accessToken: 'a', refreshToken: 'r' }, me);
+  expect(s.user.name).toBe('');
+  expect(s.user.title).toBe('');
+  expect(s.tenant.name).toBe('');
+  expect(s.user.mustSetPassword).toBe(false);
+});
+
 test('meSchema tolerates a minimal (un-extended) /me payload', () => {
   const me = meSchema.parse({ id: 'u1', tenant_id: 't1', roles: ['principal'] });
   const s = toSessionFromMe({ accessToken: 'a', refreshToken: 'r' }, me);
