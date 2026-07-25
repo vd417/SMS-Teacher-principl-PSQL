@@ -12,6 +12,7 @@ import { Avatar, Card } from '../components';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useLogout } from '@/features/auth/hooks';
 import { useDashboardStats } from '@/features/dashboard/hooks';
+import { useMySchools } from '@/features/auth/useMySchools';
 import type { ProfileStackParamList } from '../navigation/types';
 
 type ProfileNav = NativeStackNavigationProp<ProfileStackParamList, 'ProfileScreen'>;
@@ -58,6 +59,19 @@ export const ProfileScreen: React.FC = () => {
   const user = session?.user;
   const tenantName = session?.tenant.name ?? 'School';
   const { data: stats } = useDashboardStats();
+  const { data: mySchools } = useMySchools();
+  const menuItems =
+    (mySchools?.length ?? 0) > 1
+      ? [
+          ...MENU_ITEMS,
+          {
+            icon: 'business-outline',
+            label: 'Switch School',
+            screen: 'SwitchSchool',
+            color: Colors.primary,
+          },
+        ]
+      : MENU_ITEMS;
   const logout = useLogout();
 
   const handleMenuPress = (screen: string | null) => {
@@ -131,10 +145,10 @@ export const ProfileScreen: React.FC = () => {
       <Animated.View entering={FadeInDown.delay(280).springify()} style={styles.menuSection}>
         <Text style={styles.sectionTitle}>Quick Links</Text>
         <Card padding={0} style={styles.menuCard}>
-          {MENU_ITEMS.map((item, i) => (
+          {menuItems.map((item, i) => (
             <TouchableOpacity
               key={item.label}
-              style={[styles.menuRow, i < MENU_ITEMS.length - 1 && styles.menuRowBorder]}
+              style={[styles.menuRow, i < menuItems.length - 1 && styles.menuRowBorder]}
               onPress={() => handleMenuPress(item.screen)}
               activeOpacity={0.7}
             >

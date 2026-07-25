@@ -16,6 +16,7 @@ import { SettingsScreen } from '../screens/SettingsScreen';
 import { PayslipScreen } from '../screens/PayslipScreen';
 import { LeaveScreen } from '../screens/LeaveScreen';
 import { ChangePasswordScreen } from '../screens/ChangePasswordScreen';
+import { SchoolPickerScreen } from '../screens/SchoolPickerScreen';
 import { AttendancePickClassScreen } from '../screens/AttendancePickClassScreen';
 import { MarksPickClassScreen } from '../screens/MarksPickClassScreen';
 import { MarksEntryScreen } from '../screens/MarksEntryScreen';
@@ -94,6 +95,7 @@ const ProfileStackNavigator = () => (
     <ProfileStack.Screen name="SettingsScreen" component={SettingsScreen} />
     <ProfileStack.Screen name="PayslipScreen" component={PayslipScreen} />
     <ProfileStack.Screen name="LeaveScreen" component={LeaveScreen} />
+    <ProfileStack.Screen name="SwitchSchool" component={SchoolPickerScreen} />
   </ProfileStack.Navigator>
 );
 

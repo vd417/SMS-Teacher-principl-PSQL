@@ -51,4 +51,5 @@ export const queryKeys = {
   // Prefixes for invalidating every limit/month variant at once (react-query prefix match).
   myAttendanceHistoryPrefix: (tenantId: string) => ['myAttendance', tenantId, 'history'] as const,
   myAttendanceSummaryPrefix: (tenantId: string) => ['myAttendance', tenantId, 'summary'] as const,
+  mySchools: (tenantId: string) => ['mySchools', tenantId] as const,
 };

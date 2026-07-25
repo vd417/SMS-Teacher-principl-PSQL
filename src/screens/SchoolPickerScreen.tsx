@@ -8,11 +8,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { useAuth } from '@/features/auth/AuthProvider';
+import { useMySchools } from '@/features/auth/useMySchools';
 import { authErrorMessage } from '@/features/auth/authErrors';
 
 export const SchoolPickerScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { pendingSchools, switchSchool } = useAuth();
+  const { data: fetchedSchools } = useMySchools();
   const [pickingId, setPickingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,7 +29,7 @@ export const SchoolPickerScreen: React.FC = () => {
     }
   };
 
-  const schools = pendingSchools ?? [];
+  const schools = pendingSchools ?? fetchedSchools ?? [];
 
   return (
     <LinearGradient

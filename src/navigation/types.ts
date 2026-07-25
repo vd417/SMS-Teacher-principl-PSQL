@@ -53,6 +53,7 @@ export type ProfileStackParamList = {
   ChangePasswordScreen: undefined;
   PayslipScreen: undefined;
   LeaveScreen: undefined;
+  SwitchSchool: undefined;
 };
 
 // Principal tab navigator params
