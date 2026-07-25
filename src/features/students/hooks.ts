@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRepositories } from '@/data/repositories/RepositoryContext';
 import { useTenantId } from '@/features/auth/AuthProvider';
 import { queryKeys } from '@/lib/queryClient';
@@ -37,5 +37,18 @@ export function useStudent(id: string) {
     queryKey: queryKeys.student(tenantId, id),
     queryFn: () => repos.students.get(id),
     enabled: id !== '',
+  });
+}
+
+// Teacher-driven, not self-service — students don't sign into this app.
+export function useUpdateStudentPhoto(studentId: string) {
+  const repos = useRepositories();
+  const tenantId = useTenantId();
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (photoUrl: string | null) => repos.students.updatePhoto(studentId, photoUrl),
+    onSuccess: (updated) => {
+      qc.setQueryData(queryKeys.student(tenantId, studentId), updated);
+    },
   });
 }

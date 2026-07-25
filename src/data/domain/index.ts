@@ -55,6 +55,7 @@ export interface Student {
   grade: string;
   parent: string;
   parentPhone: string;
+  photoUrl: string | null;
 }
 export interface AttendanceRecord {
   studentId: string;

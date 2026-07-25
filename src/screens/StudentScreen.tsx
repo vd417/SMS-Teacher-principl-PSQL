@@ -1,5 +1,12 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -8,11 +15,12 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { Avatar, Card, Donut, Pill } from '../components';
-import { useStudent } from '@/features/students/hooks';
+import { useStudent, useUpdateStudentPhoto } from '@/features/students/hooks';
 import { useClass } from '@/features/classes/hooks';
 import { deriveColorSet } from '@/theme/derive';
 import { Skeleton } from '@/ui/state/Skeleton';
 import { ErrorState } from '@/ui/state/ErrorState';
+import { pickImageFromLibrary, takePhotoFromCamera } from '@/lib/pickImage';
 import type { HomeStackParamList } from '../navigation/types';
 
 type StudentRoute = RouteProp<HomeStackParamList, 'StudentScreen'>;
@@ -29,6 +37,31 @@ export const StudentScreen: React.FC = () => {
     isError: studentError,
     refetch: refetchStudent,
   } = useStudent(studentId);
+  const updatePhoto = useUpdateStudentPhoto(studentId);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const handlePickPhoto = async (source: 'library' | 'camera') => {
+    setPhotoError(null);
+    try {
+      const uri = source === 'camera' ? await takePhotoFromCamera() : await pickImageFromLibrary();
+      if (!uri) return;
+      await updatePhoto.mutateAsync(uri);
+      setPickerOpen(false);
+    } catch {
+      setPhotoError('Could not update the photo. Check permissions and try again.');
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    setPhotoError(null);
+    try {
+      await updatePhoto.mutateAsync(null);
+      setPickerOpen(false);
+    } catch {
+      setPhotoError('Could not remove the photo. Try again.');
+    }
+  };
   const {
     data: cls,
     isLoading: clsLoading,
@@ -76,7 +109,27 @@ export const StudentScreen: React.FC = () => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={Colors.white} />
         </TouchableOpacity>
-        <Avatar initials={student.initials} size={72} backgroundColor="rgba(255,255,255,0.25)" />
+        <TouchableOpacity
+          onPress={() => setPickerOpen((open) => !open)}
+          activeOpacity={0.8}
+          testID="student-avatar-button"
+        >
+          <View>
+            <Avatar
+              initials={student.initials}
+              photoUri={student.photoUrl}
+              size={72}
+              backgroundColor="rgba(255,255,255,0.25)"
+            />
+            <View style={styles.avatarEditBadge}>
+              {updatePhoto.isPending ? (
+                <ActivityIndicator size="small" color={Colors.white} />
+              ) : (
+                <Ionicons name="camera" size={13} color={Colors.white} />
+              )}
+            </View>
+          </View>
+        </TouchableOpacity>
         <Text style={styles.heroName}>{student.name}</Text>
         <Text style={styles.heroRole}>
           {cls.name}-{cls.section} · Roll #{student.roll}
@@ -87,6 +140,38 @@ export const StudentScreen: React.FC = () => {
           backgroundColor="rgba(255,255,255,0.9)"
           style={styles.gradePill}
         />
+
+        {pickerOpen && (
+          <View style={styles.photoPickerRow}>
+            <TouchableOpacity
+              style={styles.photoPickerBtn}
+              onPress={() => handlePickPhoto('library')}
+              disabled={updatePhoto.isPending}
+            >
+              <Ionicons name="images-outline" size={16} color={Colors.white} />
+              <Text style={styles.photoPickerBtnText}>Library</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.photoPickerBtn}
+              onPress={() => handlePickPhoto('camera')}
+              disabled={updatePhoto.isPending}
+            >
+              <Ionicons name="camera-outline" size={16} color={Colors.white} />
+              <Text style={styles.photoPickerBtnText}>Camera</Text>
+            </TouchableOpacity>
+            {student.photoUrl && (
+              <TouchableOpacity
+                style={styles.photoPickerBtn}
+                onPress={handleRemovePhoto}
+                disabled={updatePhoto.isPending}
+              >
+                <Ionicons name="trash-outline" size={16} color={Colors.white} />
+                <Text style={styles.photoPickerBtnText}>Remove</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
+        {photoError && <Text style={styles.photoErrorText}>{photoError}</Text>}
       </LinearGradient>
 
       <View style={styles.body}>
@@ -190,6 +275,45 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 20,
+  },
+  avatarEditBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.9)',
+  },
+  photoPickerRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 14,
+  },
+  photoPickerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: Radii.full,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+  },
+  photoPickerBtnText: {
+    fontFamily: FontFamily.medium,
+    fontSize: 12,
+    color: Colors.white,
+  },
+  photoErrorText: {
+    fontFamily: FontFamily.medium,
+    fontSize: 12,
+    color: Colors.coral,
+    marginTop: 8,
+    textAlign: 'center',
   },
   heroName: {
     fontFamily: FontFamily.extraBold,

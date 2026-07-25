@@ -79,6 +79,7 @@ export const studentSchema = z.object({
   attendance_pct: z.number().nullish(),
   guardian_name: z.string().nullish(),
   guardian_phone: z.string().nullish(),
+  photo_url: z.string().nullable().optional(),
 });
 export type StudentDTO = z.infer<typeof studentSchema>;
 export const toStudent = (d: StudentDTO, classId = ''): Student => ({
@@ -91,6 +92,7 @@ export const toStudent = (d: StudentDTO, classId = ''): Student => ({
   grade: d.grade ?? '',
   parent: d.guardian_name ?? '',
   parentPhone: d.guardian_phone ?? '',
+  photoUrl: d.photo_url ?? null,
 });
 
 // ─── Timetable ───────────────────────────────────────────────────────────────

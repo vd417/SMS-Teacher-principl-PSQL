@@ -102,6 +102,8 @@ export interface StudentsRepository {
   // The class roster is the one truly cursor-paginated list (limit 1–200, cursor).
   listByClass(classId: string, page?: { limit?: number; cursor?: string }): Promise<Page<Student>>;
   get(id: string): Promise<Student>;
+  // Teacher-driven, not self-service — students don't sign into this app.
+  updatePhoto(studentId: string, photoUrl: string | null): Promise<Student>;
 }
 export interface AttendanceRepository {
   forClass(classId: string, date: string): Promise<AttendanceRecord[]>;

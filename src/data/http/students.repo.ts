@@ -16,5 +16,9 @@ export function httpStudents(http: HttpClient): StudentsRepository {
           nextCursor: p.nextCursor,
         })),
     get: (id) => http.get(`/students/${id}`).then((x) => toStudent(studentSchema.parse(x))),
+    updatePhoto: (studentId, photoUrl) =>
+      http
+        .patch(`/students/${studentId}`, { photo_url: photoUrl, set_photo: true })
+        .then((x) => toStudent(studentSchema.parse(x))),
   };
 }
