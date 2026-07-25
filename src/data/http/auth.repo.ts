@@ -4,6 +4,7 @@ import { authSnapshot } from '@/lib/authSnapshot';
 import {
   tokenSchema,
   meSchema,
+  schoolChoiceSchema,
   toSessionFromMe,
   toUserFromMe,
   maskIdentifier,
@@ -55,6 +56,14 @@ export function httpAuth(http: HttpClient): AuthRepository {
     },
     setPassword: async (password) => {
       await http.post('/auth/set-password', { password });
+    },
+    listMySchools: async () => {
+      const page = await http.getList<unknown>('/me/schools');
+      return page.items.map((x) => schoolChoiceSchema.parse(x));
+    },
+    switchSchool: async (tenantId) => {
+      const t = tokenSchema.parse(await http.post('/me/switch-school', { tenant_id: tenantId }));
+      return sessionFromTokens({ accessToken: t.access_token, refreshToken: t.refresh_token });
     },
   };
 }

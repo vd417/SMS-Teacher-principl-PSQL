@@ -8,10 +8,19 @@ function recordingHttp() {
   const http = {
     get: async (path: string) =>
       path === '/auth/me' ? { id: 'u1', tenant_id: 't1', roles: ['teacher'] } : undefined,
-    getList: async () => ({ items: [], nextCursor: null }),
+    getList: async (path: string) =>
+      path === '/me/schools'
+        ? {
+            items: [
+              { id: 't1', name: 'School One' },
+              { id: 't2', name: 'School Two' },
+            ],
+            nextCursor: null,
+          }
+        : { items: [], nextCursor: null },
     post: async (path: string, body: unknown) => {
       calls.push({ path, body });
-      if (path === '/auth/login' || path === '/auth/otp/verify')
+      if (path === '/auth/login' || path === '/auth/otp/verify' || path === '/me/switch-school')
         return { access_token: 'a', refresh_token: 'r' };
       return undefined;
     },
@@ -59,4 +68,21 @@ test('setPassword posts only the new password', async () => {
   const { http, calls } = recordingHttp();
   await httpAuth(http).setPassword('newpass12');
   expect(calls[0]).toEqual({ path: '/auth/set-password', body: { password: 'newpass12' } });
+});
+
+test('listMySchools maps the paginated /me/schools rows to id/name', async () => {
+  const { http } = recordingHttp();
+  const schools = await httpAuth(http).listMySchools();
+  expect(schools).toEqual([
+    { id: 't1', name: 'School One' },
+    { id: 't2', name: 'School Two' },
+  ]);
+});
+
+test('switchSchool posts tenant_id and resolves a full session via /auth/me', async () => {
+  const { http, calls } = recordingHttp();
+  const session = await httpAuth(http).switchSchool('t2');
+  expect(calls[0]).toEqual({ path: '/me/switch-school', body: { tenant_id: 't2' } });
+  expect(session.tenant.id).toBe('t1'); // recordingHttp's /auth/me always returns tenant_id: 't1'
+  expect(session.accessToken).toBe('a');
 });
