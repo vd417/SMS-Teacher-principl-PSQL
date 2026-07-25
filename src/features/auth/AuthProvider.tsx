@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
 import type { Session } from '@/data/domain';
-import type { OtpChallenge } from '@/data/repositories/types';
+import type { OtpChallenge, SchoolChoice } from '@/data/repositories/types';
 import { tokenStore } from '@/lib/tokenStore';
 import { readJson, writeJson } from '@/lib/asyncStore';
 import { authSnapshot } from '@/lib/authSnapshot';
@@ -12,10 +12,11 @@ import { useRepositories } from '@/data/repositories/RepositoryContext';
 // Together they rehydrate a full Session across app restarts.
 const SESSION_KEY = 'sd.session';
 
-type Status = 'loading' | 'authenticated' | 'unauthenticated';
+type Status = 'loading' | 'authenticated' | 'unauthenticated' | 'selecting-school';
 interface AuthValue {
   status: Status;
   session: Session | null;
+  pendingSchools: SchoolChoice[] | null;
   signIn: (identifier: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   requestOtp: (identifier: string) => Promise<OtpChallenge>;
@@ -23,6 +24,7 @@ interface AuthValue {
   forgotPassword: (identifier: string) => Promise<void>;
   resetPassword: (identifier: string, code: string, password: string) => Promise<void>;
   changePassword: (password: string) => Promise<void>;
+  switchSchool: (tenantId: string) => Promise<void>;
 }
 const AuthContext = createContext<AuthValue | null>(null);
 
@@ -30,6 +32,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const repos = useRepositories();
   const [status, setStatus] = useState<Status>('loading');
   const [session, setSession] = useState<Session | null>(null);
+  const [pendingSchools, setPendingSchools] = useState<SchoolChoice[] | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -66,6 +69,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signIn = useCallback(
     async (identifier: string, password: string) => {
       const s = await repos.auth.login(identifier, password);
+      let schools: SchoolChoice[] = [];
+      try {
+        schools = await repos.auth.listMySchools();
+      } catch {
+        // A secondary-endpoint failure must not block sign-in — fall back to
+        // today's single-school behavior below.
+      }
+      if (schools.length > 1) {
+        setPendingSchools(schools);
+        setStatus('selecting-school');
+        return;
+      }
       await establishSession(s);
     },
     [repos, establishSession]
@@ -79,7 +94,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signInWithOtp = useCallback(
     async (identifier: string, code: string) => {
       const s = await repos.auth.verifyOtp(identifier, code);
+      let schools: SchoolChoice[] = [];
+      try {
+        schools = await repos.auth.listMySchools();
+      } catch {
+        // See signIn's identical comment.
+      }
+      if (schools.length > 1) {
+        setPendingSchools(schools);
+        setStatus('selecting-school');
+        return;
+      }
       await establishSession(s);
+    },
+    [repos, establishSession]
+  );
+
+  const switchSchool = useCallback(
+    async (tenantId: string) => {
+      const s = await repos.auth.switchSchool(tenantId);
+      await establishSession(s);
+      setPendingSchools(null);
     },
     [repos, establishSession]
   );
@@ -141,6 +176,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     () => ({
       status,
       session,
+      pendingSchools,
       signIn,
       signOut,
       requestOtp,
@@ -148,10 +184,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       forgotPassword,
       resetPassword,
       changePassword,
+      switchSchool,
     }),
     [
       status,
       session,
+      pendingSchools,
       signIn,
       signOut,
       requestOtp,
@@ -159,6 +197,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       forgotPassword,
       resetPassword,
       changePassword,
+      switchSchool,
     ]
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

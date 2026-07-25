@@ -43,3 +43,133 @@ test('forgotPassword delegates to the repo without establishing a session', asyn
   // Still unauthenticated — forgot-password must not log the user in.
   expect(screen.getByText('status:unauthenticated')).toBeTruthy();
 });
+
+test('signIn with multiple schools stops at selecting-school and exposes pendingSchools', async () => {
+  const mockLogin = jest.fn(async () => ({
+    accessToken: 'a',
+    refreshToken: 'r',
+    user: {
+      id: 'u1',
+      name: '',
+      initials: '—',
+      title: '',
+      email: '',
+      phone: '',
+      employee: '',
+      classroom: '',
+      joined: '',
+      role: 'teacher' as const,
+      mustSetPassword: false,
+    },
+    tenant: { id: 't1', name: 'School One' },
+  }));
+  const mockListSchools = jest.fn(async () => [
+    { id: 't1', name: 'School One' },
+    { id: 't2', name: 'School Two' },
+  ]);
+  const fakeRepos = {
+    auth: { login: mockLogin, listMySchools: mockListSchools },
+  } as unknown as Repositories;
+
+  const Probe2 = () => {
+    const { status, pendingSchools, signIn } = useAuth();
+    return (
+      <>
+        <Text>{`status:${status}`}</Text>
+        <Text>{`pending:${pendingSchools?.length ?? 'null'}`}</Text>
+        <TouchableOpacity onPress={() => signIn('asha@x.com', 'secret123')}>
+          <Text>signin</Text>
+        </TouchableOpacity>
+      </>
+    );
+  };
+
+  render(
+    <RepositoryProvider repositories={fakeRepos}>
+      <AuthProvider>
+        <Probe2 />
+      </AuthProvider>
+    </RepositoryProvider>
+  );
+  await waitFor(() => expect(screen.getByText('status:unauthenticated')).toBeTruthy());
+  fireEvent.press(screen.getByText('signin'));
+  await waitFor(() => expect(screen.getByText('status:selecting-school')).toBeTruthy());
+  expect(screen.getByText('pending:2')).toBeTruthy();
+});
+
+test('switchSchool establishes the session and returns to authenticated', async () => {
+  const mockLogin = jest.fn(async () => ({
+    accessToken: 'a',
+    refreshToken: 'r',
+    user: {
+      id: 'u1',
+      name: '',
+      initials: '—',
+      title: '',
+      email: '',
+      phone: '',
+      employee: '',
+      classroom: '',
+      joined: '',
+      role: 'teacher' as const,
+      mustSetPassword: false,
+    },
+    tenant: { id: 't1', name: 'School One' },
+  }));
+  const mockListSchools = jest.fn(async () => [
+    { id: 't1', name: 'School One' },
+    { id: 't2', name: 'School Two' },
+  ]);
+  const mockSwitchSchool = jest.fn(async (tenantId: string) => ({
+    accessToken: 'a2',
+    refreshToken: 'r2',
+    user: {
+      id: 'u1',
+      name: '',
+      initials: '—',
+      title: '',
+      email: '',
+      phone: '',
+      employee: '',
+      classroom: '',
+      joined: '',
+      role: 'principal' as const,
+      mustSetPassword: false,
+    },
+    tenant: { id: tenantId, name: 'School Two' },
+  }));
+  const fakeRepos = {
+    auth: { login: mockLogin, listMySchools: mockListSchools, switchSchool: mockSwitchSchool },
+  } as unknown as Repositories;
+
+  const Probe3 = () => {
+    const { status, session, signIn, switchSchool } = useAuth();
+    return (
+      <>
+        <Text>{`status:${status}`}</Text>
+        <Text>{`tenant:${session?.tenant.id ?? 'none'}`}</Text>
+        <TouchableOpacity onPress={() => signIn('asha@x.com', 'secret123')}>
+          <Text>signin</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => switchSchool('t2')}>
+          <Text>pick-t2</Text>
+        </TouchableOpacity>
+      </>
+    );
+  };
+
+  render(
+    <RepositoryProvider repositories={fakeRepos}>
+      <AuthProvider>
+        <Probe3 />
+      </AuthProvider>
+    </RepositoryProvider>
+  );
+  await waitFor(() => expect(screen.getByText('status:unauthenticated')).toBeTruthy());
+  fireEvent.press(screen.getByText('signin'));
+  await waitFor(() => expect(screen.getByText('status:selecting-school')).toBeTruthy());
+  fireEvent.press(screen.getByText('pick-t2'));
+  await waitFor(() => expect(screen.getByText('status:authenticated')).toBeTruthy());
+  expect(mockSwitchSchool).toHaveBeenCalledWith('t2');
+  expect(screen.getByText('tenant:t2')).toBeTruthy();
+});

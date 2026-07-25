@@ -51,3 +51,8 @@ export function useVerifyOtp() {
       signInWithOtp(identifier, code),
   });
 }
+
+export function useSwitchSchool() {
+  const { switchSchool } = useAuth();
+  return useMutation({ mutationFn: (tenantId: string) => switchSchool(tenantId) });
+}
