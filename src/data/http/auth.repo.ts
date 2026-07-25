@@ -13,8 +13,21 @@ import {
 export function httpAuth(http: HttpClient): AuthRepository {
   // Login/OTP return tokens only; identity comes from /auth/me. We set the access
   // token into the snapshot first so the /me request carries the bearer.
-  const sessionFromTokens = async (t: { accessToken: string; refreshToken: string }) => {
-    authSnapshot.set({ accessToken: t.accessToken, tenantId: authSnapshot.get().tenantId });
+  //
+  // `tenantIdOverride` is used only by switchSchool: the new access token already
+  // carries the *target* tenant in its JWT claim, and the backend's tenant
+  // resolution middleware 403s any request whose X-Tenant-Id header disagrees
+  // with that claim. login/verifyOtp have no target tenant yet, so they keep
+  // whatever tenant was already in the snapshot (typically none) until /auth/me
+  // resolves the real one.
+  const sessionFromTokens = async (
+    t: { accessToken: string; refreshToken: string },
+    tenantIdOverride?: string
+  ) => {
+    authSnapshot.set({
+      accessToken: t.accessToken,
+      tenantId: tenantIdOverride ?? authSnapshot.get().tenantId,
+    });
     const me = meSchema.parse(await http.get('/auth/me'));
     authSnapshot.set({ accessToken: t.accessToken, tenantId: me.tenant_id });
     return toSessionFromMe(t, me);
@@ -62,8 +75,20 @@ export function httpAuth(http: HttpClient): AuthRepository {
       return page.items.map((x) => schoolChoiceSchema.parse(x));
     },
     switchSchool: async (tenantId) => {
-      const t = tokenSchema.parse(await http.post('/me/switch-school', { tenant_id: tenantId }));
-      return sessionFromTokens({ accessToken: t.access_token, refreshToken: t.refresh_token });
+      const prevSnapshot = authSnapshot.get();
+      try {
+        const t = tokenSchema.parse(await http.post('/me/switch-school', { tenant_id: tenantId }));
+        return await sessionFromTokens(
+          { accessToken: t.access_token, refreshToken: t.refresh_token },
+          tenantId
+        );
+      } catch (err) {
+        // A failed switch (e.g. the /auth/me follow-up rejecting) must not leave
+        // the snapshot holding a new token paired with a tenant that doesn't
+        // resolve — that would 403 every subsequent request until app restart.
+        authSnapshot.set(prevSnapshot);
+        throw err;
+      }
     },
   };
 }

@@ -14,5 +14,10 @@ export function useMySchools() {
     queryKey: queryKeys.mySchools(tenantId),
     queryFn: () => repos.auth.listMySchools(),
     enabled: status === 'authenticated',
+    // School memberships change rarely; avoid a refetch on every Profile mount
+    // for what is, for most users, a brand-new network call this screen never
+    // made before.
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
   });
 }

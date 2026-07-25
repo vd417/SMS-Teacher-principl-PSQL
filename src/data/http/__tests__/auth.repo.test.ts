@@ -1,5 +1,6 @@
 import { httpAuth } from '../auth.repo';
-import type { HttpClient } from '@/lib/httpClient';
+import { createHttpClient, type HttpClient } from '@/lib/httpClient';
+import { authSnapshot } from '@/lib/authSnapshot';
 
 // Records every POST so we can assert path + body. /auth/me returns a minimal identity
 // so the token→session path resolves.
@@ -85,4 +86,68 @@ test('switchSchool posts tenant_id and resolves a full session via /auth/me', as
   expect(calls[0]).toEqual({ path: '/me/switch-school', body: { tenant_id: 't2' } });
   expect(session.tenant.id).toBe('t1'); // recordingHttp's /auth/me always returns tenant_id: 't1'
   expect(session.accessToken).toBe('a');
+});
+
+// The recordingHttp() harness above replaces HttpClient entirely and never
+// exercises header/tenant resolution. These tests use the real createHttpClient
+// against a stubbed fetch so they can assert on the X-Tenant-Id header the live
+// httpClient sends — the thing that actually 403s against the backend's
+// TenantResolutionMiddleware when it disagrees with the JWT's tenant_id claim.
+describe('switchSchool against the real httpClient (tenant header resolution)', () => {
+  afterEach(() => authSnapshot.clear());
+
+  function jsonResponse(body: unknown, status = 200): Response {
+    return { ok: status < 400, status, statusText: '', json: async () => body } as Response;
+  }
+
+  test('the /auth/me follow-up carries the target tenant, not the tenant active before the switch', async () => {
+    authSnapshot.set({ accessToken: 'old-token', tenantId: 't1' });
+    const fetchMock = jest.fn(async (url: string, _init?: RequestInit) => {
+      if (url.endsWith('/me/switch-school')) {
+        return jsonResponse({ data: { access_token: 'new-token', refresh_token: 'r2' } });
+      }
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse({ data: { id: 'u1', tenant_id: 't2', roles: ['teacher'] } });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    const http = createHttpClient({
+      baseUrl: '',
+      getAuth: () => authSnapshot.get(),
+      fetchImpl: fetchMock as unknown as typeof fetch,
+    });
+
+    const session = await httpAuth(http).switchSchool('t2');
+
+    const meCall = fetchMock.mock.calls.find(([url]) => url.endsWith('/auth/me'));
+    expect(meCall).toBeTruthy();
+    const headers = (meCall![1] as unknown as { headers: Record<string, string> }).headers;
+    expect(headers['X-Tenant-Id']).toBe('t2');
+    expect(session.tenant.id).toBe('t2');
+  });
+
+  test('a failed switch restores the pre-switch snapshot instead of poisoning it', async () => {
+    authSnapshot.set({ accessToken: 'old-token', tenantId: 't1' });
+    const fetchMock = jest.fn(async (url: string) => {
+      if (url.endsWith('/me/switch-school')) {
+        return jsonResponse({ data: { access_token: 'new-token', refresh_token: 'r2' } });
+      }
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse({ error: { code: 'forbidden', message: 'tenant mismatch' } }, 403);
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    const http = createHttpClient({
+      baseUrl: '',
+      getAuth: () => authSnapshot.get(),
+      fetchImpl: fetchMock as unknown as typeof fetch,
+    });
+
+    await expect(httpAuth(http).switchSchool('t2')).rejects.toBeTruthy();
+
+    // Snapshot must be exactly what it was before switchSchool was called — not
+    // the new access token paired with a tenant that can't resolve, which would
+    // 403 every subsequent request (including a retry) until the app restarts.
+    expect(authSnapshot.get()).toEqual({ accessToken: 'old-token', tenantId: 't1' });
+  });
 });

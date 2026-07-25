@@ -66,15 +66,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setStatus('authenticated');
   }, []);
 
-  const signIn = useCallback(
-    async (identifier: string, password: string) => {
-      const s = await repos.auth.login(identifier, password);
+  // Shared by signIn and signInWithOtp: once a login/OTP session is minted, check
+  // whether the identity is linked to more than one school. A secondary-endpoint
+  // failure here must not block sign-in — fall back to establishing the session
+  // we already have.
+  const continueAfterLogin = useCallback(
+    async (s: Session) => {
       let schools: SchoolChoice[] = [];
       try {
         schools = await repos.auth.listMySchools();
       } catch {
-        // A secondary-endpoint failure must not block sign-in — fall back to
-        // today's single-school behavior below.
+        // fall back to single-school behavior below
       }
       if (schools.length > 1) {
         setPendingSchools(schools);
@@ -84,6 +86,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await establishSession(s);
     },
     [repos, establishSession]
+  );
+
+  const signIn = useCallback(
+    async (identifier: string, password: string) => {
+      const s = await repos.auth.login(identifier, password);
+      await continueAfterLogin(s);
+    },
+    [repos, continueAfterLogin]
   );
 
   const requestOtp = useCallback(
@@ -94,20 +104,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signInWithOtp = useCallback(
     async (identifier: string, code: string) => {
       const s = await repos.auth.verifyOtp(identifier, code);
-      let schools: SchoolChoice[] = [];
-      try {
-        schools = await repos.auth.listMySchools();
-      } catch {
-        // See signIn's identical comment.
-      }
-      if (schools.length > 1) {
-        setPendingSchools(schools);
-        setStatus('selecting-school');
-        return;
-      }
-      await establishSession(s);
+      await continueAfterLogin(s);
     },
-    [repos, establishSession]
+    [repos, continueAfterLogin]
   );
 
   const switchSchool = useCallback(
