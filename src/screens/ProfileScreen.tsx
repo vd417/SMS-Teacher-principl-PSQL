@@ -1,5 +1,12 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  ActivityIndicator,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -10,9 +17,10 @@ import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { Avatar, Card } from '../components';
 import { useAuth } from '@/features/auth/AuthProvider';
-import { useLogout } from '@/features/auth/hooks';
+import { useLogout, useUpdatePhoto } from '@/features/auth/hooks';
 import { useDashboardStats } from '@/features/dashboard/hooks';
 import { useMySchools } from '@/features/auth/useMySchools';
+import { pickImageFromLibrary, takePhotoFromCamera } from '@/lib/pickImage';
 import type { ProfileStackParamList } from '../navigation/types';
 
 type ProfileNav = NativeStackNavigationProp<ProfileStackParamList, 'ProfileScreen'>;
@@ -59,6 +67,31 @@ export const ProfileScreen: React.FC = () => {
   const user = session?.user;
   const tenantName = session?.tenant.name ?? 'School';
   const { data: stats } = useDashboardStats();
+  const updatePhoto = useUpdatePhoto();
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  const handlePickPhoto = async (source: 'library' | 'camera') => {
+    setPhotoError(null);
+    try {
+      const uri = source === 'camera' ? await takePhotoFromCamera() : await pickImageFromLibrary();
+      if (!uri) return;
+      await updatePhoto.mutateAsync(uri);
+      setPickerOpen(false);
+    } catch {
+      setPhotoError('Could not update your photo. Check permissions and try again.');
+    }
+  };
+
+  const handleRemovePhoto = async () => {
+    setPhotoError(null);
+    try {
+      await updatePhoto.mutateAsync(null);
+      setPickerOpen(false);
+    } catch {
+      setPhotoError('Could not remove your photo. Try again.');
+    }
+  };
   const { data: mySchools } = useMySchools();
   const menuItems =
     (mySchools?.length ?? 0) > 1
@@ -93,14 +126,62 @@ export const ProfileScreen: React.FC = () => {
         end={{ x: 0.5, y: 1 }}
       >
         <Animated.View entering={FadeInDown.delay(50).springify()} style={styles.heroContent}>
-          <Avatar
-            initials={user?.initials ?? '?'}
-            size={80}
-            backgroundColor="rgba(255,255,255,0.2)"
-          />
+          <TouchableOpacity
+            onPress={() => setPickerOpen((open) => !open)}
+            activeOpacity={0.8}
+            testID="profile-avatar-button"
+          >
+            <View>
+              <Avatar
+                initials={user?.initials ?? '?'}
+                photoUri={user?.photoUrl}
+                size={80}
+                backgroundColor="rgba(255,255,255,0.2)"
+              />
+              <View style={styles.avatarEditBadge}>
+                {updatePhoto.isPending ? (
+                  <ActivityIndicator size="small" color={Colors.white} />
+                ) : (
+                  <Ionicons name="camera" size={14} color={Colors.white} />
+                )}
+              </View>
+            </View>
+          </TouchableOpacity>
           <Text style={styles.heroName}>{user?.name ?? ''}</Text>
           <Text style={styles.heroTitle}>{user?.title ?? ''}</Text>
           <Text style={styles.heroSchool}>{tenantName}</Text>
+
+          {pickerOpen && (
+            <View style={styles.photoPickerRow}>
+              <TouchableOpacity
+                style={styles.photoPickerBtn}
+                onPress={() => handlePickPhoto('library')}
+                disabled={updatePhoto.isPending}
+              >
+                <Ionicons name="images-outline" size={16} color={Colors.white} />
+                <Text style={styles.photoPickerBtnText}>Library</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.photoPickerBtn}
+                onPress={() => handlePickPhoto('camera')}
+                disabled={updatePhoto.isPending}
+              >
+                <Ionicons name="camera-outline" size={16} color={Colors.white} />
+                <Text style={styles.photoPickerBtnText}>Camera</Text>
+              </TouchableOpacity>
+              {user?.photoUrl && (
+                <TouchableOpacity
+                  style={styles.photoPickerBtn}
+                  onPress={handleRemovePhoto}
+                  disabled={updatePhoto.isPending}
+                >
+                  <Ionicons name="trash-outline" size={16} color={Colors.white} />
+                  <Text style={styles.photoPickerBtnText}>Remove</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+          {photoError && <Text style={styles.photoErrorText}>{photoError}</Text>}
         </Animated.View>
 
         {/* Stats row */}
@@ -191,6 +272,45 @@ const styles = StyleSheet.create({
   heroContent: {
     alignItems: 'center',
     marginBottom: 24,
+  },
+  avatarEditBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.9)',
+  },
+  photoPickerRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginTop: 14,
+  },
+  photoPickerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: Radii.full,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+  },
+  photoPickerBtnText: {
+    fontFamily: FontFamily.medium,
+    fontSize: 12,
+    color: Colors.white,
+  },
+  photoErrorText: {
+    fontFamily: FontFamily.medium,
+    fontSize: 12,
+    color: Colors.coral,
+    marginTop: 8,
+    textAlign: 'center',
   },
   heroName: {
     fontFamily: FontFamily.extraBold,
