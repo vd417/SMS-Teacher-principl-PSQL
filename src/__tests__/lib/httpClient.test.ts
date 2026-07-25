@@ -52,6 +52,38 @@ describe('httpClient', () => {
     expect(headers['X-Tenant-Id']).toBeUndefined();
   });
 
+  it('omits auth/tenant headers on pre-authentication endpoints even when a stale session is held', async () => {
+    // A stale accessToken/tenantId pair left over in memory (e.g. from an earlier
+    // session in the same tab) must not ride along on login/OTP/forgot-password —
+    // it can carry a tenant that disagrees with the token's own claim and trip
+    // the backend's TenantResolutionMiddleware 403 before login even runs.
+    const fetchMock = jest
+      .fn()
+      .mockReturnValue(jsonResponse({ data: { access_token: 'new' } }, 200));
+    const http = createHttpClient({
+      baseUrl: 'https://api.test',
+      getAuth: () => ({ accessToken: 'stale-token', tenantId: 'stale-tenant' }),
+      fetchImpl: fetchMock,
+    });
+    await http.post('/auth/login', { email: 'a@b.com', password: 'x' });
+    const headers = fetchMock.mock.calls[0][1].headers as Record<string, string>;
+    expect(headers.Authorization).toBeUndefined();
+    expect(headers['X-Tenant-Id']).toBeUndefined();
+  });
+
+  it('still attaches auth/tenant headers on non-anonymous endpoints', async () => {
+    const fetchMock = jest.fn().mockReturnValue(jsonResponse({ data: {} }, 200));
+    const http = createHttpClient({
+      baseUrl: 'https://api.test',
+      getAuth: () => ({ accessToken: 'tok', tenantId: 'school1' }),
+      fetchImpl: fetchMock,
+    });
+    await http.post('/me/switch-school', { tenant_id: 't2' });
+    const headers = fetchMock.mock.calls[0][1].headers as Record<string, string>;
+    expect(headers.Authorization).toBe('Bearer tok');
+    expect(headers['X-Tenant-Id']).toBe('school1');
+  });
+
   it('appends query params, skipping null/undefined', async () => {
     const fetchMock = jest.fn().mockReturnValue(jsonResponse({ data: [] }, 200));
     const http = createHttpClient({

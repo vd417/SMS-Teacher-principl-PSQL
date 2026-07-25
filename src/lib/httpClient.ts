@@ -39,6 +39,20 @@ function toQuery(params?: Record<string, unknown>): string {
   return s ? `?${s}` : '';
 }
 
+// Pre-authentication endpoints: no session exists yet (or the one being
+// replaced doesn't matter), so a stale accessToken/tenantId pair left over in
+// memory from an earlier session in the same tab must never ride along. A
+// leftover token's tenant claim can disagree with a leftover X-Tenant-Id header
+// from a *different* prior session, tripping the backend's
+// TenantResolutionMiddleware 403 before these calls even run.
+const ANONYMOUS_AUTH_PATHS = new Set([
+  '/auth/login',
+  '/auth/otp/request',
+  '/auth/otp/verify',
+  '/auth/password/forgot',
+  '/auth/password/reset',
+]);
+
 export function createHttpClient(config: HttpClientConfig): HttpClient {
   const doFetch = config.fetchImpl ?? fetch;
   const isRefreshPath = (path: string) => path === '/auth/refresh';
@@ -49,10 +63,12 @@ export function createHttpClient(config: HttpClientConfig): HttpClient {
     body?: unknown,
     opts?: RequestOptions
   ): Promise<Response> {
-    const { accessToken, tenantId } = config.getAuth();
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
-    if (tenantId) headers['X-Tenant-Id'] = tenantId;
+    if (!ANONYMOUS_AUTH_PATHS.has(path)) {
+      const { accessToken, tenantId } = config.getAuth();
+      if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
+      if (tenantId) headers['X-Tenant-Id'] = tenantId;
+    }
     try {
       return await doFetch(`${config.baseUrl}${path}${toQuery(opts?.params)}`, {
         method,
