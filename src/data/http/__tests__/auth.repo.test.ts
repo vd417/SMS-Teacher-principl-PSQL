@@ -26,7 +26,10 @@ function recordingHttp() {
       return undefined;
     },
     put: async () => undefined,
-    patch: async () => undefined,
+    patch: async (path: string, body: unknown) => {
+      calls.push({ path, body });
+      return undefined;
+    },
     delete: async () => undefined,
   } as unknown as HttpClient;
   return { http, calls };
@@ -78,6 +81,21 @@ test('listMySchools maps the paginated /me/schools rows to id/name/logoUrl', asy
     { id: 't1', name: 'School One', logoUrl: 'https://cdn.example.com/one.png' },
     { id: 't2', name: 'School Two', logoUrl: null },
   ]);
+});
+
+test('updatePhoto patches /me/photo with photo_url', async () => {
+  const { http, calls } = recordingHttp();
+  await httpAuth(http).updatePhoto('https://cdn.example.com/a.png');
+  expect(calls[0]).toEqual({
+    path: '/me/photo',
+    body: { photo_url: 'https://cdn.example.com/a.png' },
+  });
+});
+
+test('updatePhoto with null clears the photo', async () => {
+  const { http, calls } = recordingHttp();
+  await httpAuth(http).updatePhoto(null);
+  expect(calls[0]).toEqual({ path: '/me/photo', body: { photo_url: null } });
 });
 
 test('switchSchool posts tenant_id and resolves a full session via /auth/me', async () => {

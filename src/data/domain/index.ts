@@ -27,6 +27,7 @@ export interface User {
   role: Role;
   /** Backend signals the account has no password yet → force a set-password screen. */
   mustSetPassword: boolean;
+  photoUrl: string | null;
 }
 export interface Session {
   accessToken: string;

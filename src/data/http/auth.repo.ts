@@ -90,5 +90,8 @@ export function httpAuth(http: HttpClient): AuthRepository {
         throw err;
       }
     },
+    updatePhoto: async (photoUrl) => {
+      await http.patch('/me/photo', { photo_url: photoUrl });
+    },
   };
 }

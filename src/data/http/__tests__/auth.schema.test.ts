@@ -125,3 +125,23 @@ test('schoolChoiceSchema defaults logoUrl to null when the row has none', () => 
   const school = schoolChoiceSchema.parse({ id: 't2', name: 'No Logo School' });
   expect(school).toEqual({ id: 't2', name: 'No Logo School', logoUrl: null });
 });
+
+test('toUserFromMe maps photo_url (present, null, and absent)', () => {
+  const withPhoto = toUserFromMe(
+    meSchema.parse({
+      id: 'u1',
+      tenant_id: 't1',
+      roles: ['teacher'],
+      photo_url: 'https://cdn.example.com/a.png',
+    })
+  );
+  expect(withPhoto.photoUrl).toBe('https://cdn.example.com/a.png');
+
+  const explicitNull = toUserFromMe(
+    meSchema.parse({ id: 'u2', tenant_id: 't1', roles: ['teacher'], photo_url: null })
+  );
+  expect(explicitNull.photoUrl).toBeNull();
+
+  const absent = toUserFromMe(meSchema.parse({ id: 'u3', tenant_id: 't1', roles: ['teacher'] }));
+  expect(absent.photoUrl).toBeNull();
+});

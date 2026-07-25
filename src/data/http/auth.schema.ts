@@ -23,6 +23,7 @@ export const meSchema = z.object({
   joined: z.string().nullable().optional(),
   tenant_name: z.string().nullable().optional(),
   must_set_password: z.boolean().nullable().optional(),
+  photo_url: z.string().nullable().optional(),
 });
 export type MeWire = z.infer<typeof meSchema>;
 
@@ -69,6 +70,7 @@ export function toUserFromMe(me: MeWire): User {
     joined: me.joined ?? '',
     role: pickRole(me.roles),
     mustSetPassword: me.must_set_password ?? false,
+    photoUrl: me.photo_url ?? null,
   };
 }
 

@@ -92,6 +92,7 @@ export interface AuthRepository {
   // switchSchool reissues tokens scoped to one specific row/tenant.
   listMySchools(): Promise<SchoolChoice[]>;
   switchSchool(tenantId: string): Promise<Session>;
+  updatePhoto(photoUrl: string | null): Promise<void>;
 }
 export interface ClassesRepository {
   list(): Promise<Class[]>;
