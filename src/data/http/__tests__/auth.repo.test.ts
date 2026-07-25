@@ -169,3 +169,41 @@ describe('switchSchool against the real httpClient (tenant header resolution)', 
     expect(authSnapshot.get()).toEqual({ accessToken: 'old-token', tenantId: 't1' });
   });
 });
+
+// A stale tenantId left over from a *previous* session in the same browser tab
+// (e.g. a prior sign-in that was never fully signed out) must not ride along
+// on a brand-new login's /auth/me follow-up — that stale tenant can disagree
+// with the new token's own claim and 403 the sign-in itself.
+describe('login/verifyOtp against the real httpClient (stale tenant must not leak in)', () => {
+  afterEach(() => authSnapshot.clear());
+
+  function jsonResponse(body: unknown, status = 200): Response {
+    return { ok: status < 400, status, statusText: '', json: async () => body } as Response;
+  }
+
+  test('the /auth/me follow-up after login carries no X-Tenant-Id, even with a stale one in the snapshot', async () => {
+    authSnapshot.set({ accessToken: 'old-token', tenantId: 'stale-tenant' });
+    const fetchMock = jest.fn(async (url: string, _init?: RequestInit) => {
+      if (url.endsWith('/auth/login')) {
+        return jsonResponse({ data: { access_token: 'new-token', refresh_token: 'r2' } });
+      }
+      if (url.endsWith('/auth/me')) {
+        return jsonResponse({ data: { id: 'u1', tenant_id: 't2', roles: ['teacher'] } });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    const http = createHttpClient({
+      baseUrl: '',
+      getAuth: () => authSnapshot.get(),
+      fetchImpl: fetchMock as unknown as typeof fetch,
+    });
+
+    const session = await httpAuth(http).login('asha@x.com', 'secret123');
+
+    const meCall = fetchMock.mock.calls.find(([url]) => url.endsWith('/auth/me'));
+    expect(meCall).toBeTruthy();
+    const headers = (meCall![1] as unknown as { headers: Record<string, string> }).headers;
+    expect(headers['X-Tenant-Id']).toBeUndefined();
+    expect(session.tenant.id).toBe('t2');
+  });
+});

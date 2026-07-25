@@ -17,16 +17,18 @@ export function httpAuth(http: HttpClient): AuthRepository {
   // `tenantIdOverride` is used only by switchSchool: the new access token already
   // carries the *target* tenant in its JWT claim, and the backend's tenant
   // resolution middleware 403s any request whose X-Tenant-Id header disagrees
-  // with that claim. login/verifyOtp have no target tenant yet, so they keep
-  // whatever tenant was already in the snapshot (typically none) until /auth/me
-  // resolves the real one.
+  // with that claim. login/verifyOtp have no target tenant yet — a fresh sign-in
+  // must NOT carry forward whatever tenant happened to be left in the snapshot
+  // from a previous session in the same tab (that stale tenant can disagree
+  // with the brand-new token's own claim and 403 this very /auth/me call), so
+  // they always start from no tenant header at all until /auth/me resolves it.
   const sessionFromTokens = async (
     t: { accessToken: string; refreshToken: string },
     tenantIdOverride?: string
   ) => {
     authSnapshot.set({
       accessToken: t.accessToken,
-      tenantId: tenantIdOverride ?? authSnapshot.get().tenantId,
+      tenantId: tenantIdOverride ?? null,
     });
     const me = meSchema.parse(await http.get('/auth/me'));
     authSnapshot.set({ accessToken: t.accessToken, tenantId: me.tenant_id });
