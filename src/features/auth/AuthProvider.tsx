@@ -12,6 +12,17 @@ import { useRepositories } from '@/data/repositories/RepositoryContext';
 // Together they rehydrate a full Session across app restarts.
 const SESSION_KEY = 'sd.session';
 
+// photoUrl can be a data URI up to ~400,000 characters (see ImageUrlValidation
+// on the backend) — too large to persist safely on every sign-in (web's
+// AsyncStorage polyfill is backed by localStorage, which throws
+// QuotaExceededError well before that). It's also redundant to persist:
+// startup rehydration always re-fetches the live value from repos.auth.me()
+// a moment later. Store null here; the in-memory `session.user.photoUrl` is
+// untouched, so display isn't affected within the running session.
+function forStorage(s: Session): Session {
+  return { ...s, user: { ...s.user, photoUrl: null } };
+}
+
 type Status = 'loading' | 'authenticated' | 'unauthenticated' | 'selecting-school';
 interface AuthValue {
   status: Status;
@@ -61,7 +72,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const establishSession = useCallback(async (s: Session) => {
     await tokenStore.save({ accessToken: s.accessToken, refreshToken: s.refreshToken });
-    await writeJson<Session>(SESSION_KEY, s);
+    await writeJson<Session>(SESSION_KEY, forStorage(s));
     authSnapshot.set({ accessToken: s.accessToken, tenantId: s.tenant.id });
     setSession(s);
     setStatus('authenticated');

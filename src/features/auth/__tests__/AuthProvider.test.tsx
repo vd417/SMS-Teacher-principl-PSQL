@@ -1,6 +1,7 @@
 import React from 'react';
 import { Text, TouchableOpacity } from 'react-native';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AuthProvider, useAuth } from '../AuthProvider';
 import { RepositoryProvider } from '@/data/repositories/RepositoryContext';
 import type { Repositories } from '@/data/repositories/types';
@@ -356,4 +357,66 @@ test('updatePhoto calls the repo and patches session.user.photoUrl in place', as
   fireEvent.press(screen.getByText('set-photo'));
   await waitFor(() => expect(screen.getByText('photo:https://cdn.example.com/a.png')).toBeTruthy());
   expect(mockUpdatePhoto).toHaveBeenCalledWith('https://cdn.example.com/a.png');
+});
+
+test('establishSession never persists photoUrl to AsyncStorage (web localStorage quota)', async () => {
+  // A data-URI photo can be up to ~400,000 characters; persisting the full
+  // session on every sign-in would risk QuotaExceededError on web (AsyncStorage
+  // is backed by localStorage there). photoUrl must stay in-memory only —
+  // rehydration re-fetches the live value from repos.auth.me() anyway.
+  const bigPhoto = `data:image/png;base64,${'a'.repeat(400_000)}`;
+  const mockLogin = jest.fn(async () => ({
+    accessToken: 'a',
+    refreshToken: 'r',
+    user: {
+      id: 'u1',
+      name: '',
+      initials: '—',
+      title: '',
+      email: '',
+      phone: '',
+      employee: '',
+      classroom: '',
+      joined: '',
+      role: 'teacher' as const,
+      mustSetPassword: false,
+      photoUrl: bigPhoto,
+    },
+    tenant: { id: 't1', name: 'School One' },
+  }));
+  const mockListSchools = jest.fn(async () => [{ id: 't1', name: 'School One', logoUrl: null }]);
+  const fakeRepos3 = {
+    auth: { login: mockLogin, listMySchools: mockListSchools },
+  } as unknown as Repositories;
+
+  const Probe3 = () => {
+    const { status, session, signIn } = useAuth();
+    return (
+      <>
+        <Text>{`status:${status}`}</Text>
+        <Text>{`photo:${session?.user.photoUrl ?? 'none'}`}</Text>
+        <TouchableOpacity onPress={() => signIn('asha@x.com', 'secret123')}>
+          <Text>signin</Text>
+        </TouchableOpacity>
+      </>
+    );
+  };
+
+  render(
+    <RepositoryProvider repositories={fakeRepos3}>
+      <AuthProvider>
+        <Probe3 />
+      </AuthProvider>
+    </RepositoryProvider>
+  );
+  await waitFor(() => expect(screen.getByText('status:unauthenticated')).toBeTruthy());
+  fireEvent.press(screen.getByText('signin'));
+  await waitFor(() => expect(screen.getByText('status:authenticated')).toBeTruthy());
+
+  // In-memory session keeps the real photo...
+  expect(screen.getByText(`photo:${bigPhoto}`)).toBeTruthy();
+  // ...but what got persisted to storage does not.
+  const stored = await AsyncStorage.getItem('sd.session');
+  const parsed = JSON.parse(stored as string);
+  expect(parsed.user.photoUrl).toBeNull();
 });
