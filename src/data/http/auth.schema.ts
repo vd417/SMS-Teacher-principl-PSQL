@@ -26,6 +26,15 @@ export const meSchema = z.object({
 });
 export type MeWire = z.infer<typeof meSchema>;
 
+// GET /me/schools returns full ClientResponse rows (id, name, slug, plan info,
+// counts, ...) — we only need id/name for the picker. zod strips unknown keys
+// by default, so parsing with this narrow schema is safe against the fuller shape.
+export const schoolChoiceSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+});
+export type SchoolChoiceWire = z.infer<typeof schoolChoiceSchema>;
+
 // ─── Mapping ─────────────────────────────────────────────────────────────────
 // Backend authz uses namespaced roles (`school.principal` / `school.teacher`, see
 // sms-backend Policies.cs); unqualified `principal` / `teacher` are also accepted.

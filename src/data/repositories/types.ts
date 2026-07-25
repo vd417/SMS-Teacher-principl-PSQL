@@ -70,6 +70,11 @@ export interface OtpChallenge {
   destination: string; // masked, e.g. "••••0118" or "a••@westbrook.edu"
 }
 
+export interface SchoolChoice {
+  id: string;
+  name: string;
+}
+
 export interface AuthRepository {
   login(identifier: string, password: string): Promise<Session>;
   // The backend returns tokens only; identity is fetched separately via me().
@@ -81,6 +86,11 @@ export interface AuthRepository {
   forgotPassword(identifier: string): Promise<void>;
   resetPassword(identifier: string, code: string, password: string): Promise<void>;
   setPassword(password: string): Promise<void>;
+  // A signed-in identity can own more than one Users row (invited to several
+  // schools under the same email/phone). listMySchools lists all of them;
+  // switchSchool reissues tokens scoped to one specific row/tenant.
+  listMySchools(): Promise<SchoolChoice[]>;
+  switchSchool(tenantId: string): Promise<Session>;
 }
 export interface ClassesRepository {
   list(): Promise<Class[]>;

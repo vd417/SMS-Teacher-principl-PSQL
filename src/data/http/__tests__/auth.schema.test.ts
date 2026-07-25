@@ -1,6 +1,7 @@
 import {
   pickRole,
   meSchema,
+  schoolChoiceSchema,
   toSessionFromMe,
   toUserFromMe,
   initialsFrom,
@@ -91,4 +92,26 @@ test('toUserFromMe maps must_set_password (defaults to false when absent)', () =
     meSchema.parse({ id: 'u2', tenant_id: 't1', roles: ['teacher'] })
   );
   expect(withoutFlag.mustSetPassword).toBe(false);
+});
+
+test('schoolChoiceSchema extracts id/name and strips the rest of a full ClientResponse row', () => {
+  const fullClientResponseRow = {
+    id: 't1',
+    name: 'Westbrook Academy',
+    slug: 'westbrook',
+    country: 'IN',
+    status: 'active',
+    plan_id: 'p1',
+    plan_name: 'Gold',
+    tier: 'gold',
+    mrr: 50000,
+    students_count: 340,
+    staff_count: 28,
+    storage_gb: 4.2,
+    limits: { students: 500, staff: 50 },
+    created: '2024-01-01T00:00:00Z',
+    health_score: 88,
+  };
+  const school = schoolChoiceSchema.parse(fullClientResponseRow);
+  expect(school).toEqual({ id: 't1', name: 'Westbrook Academy' });
 });
