@@ -124,7 +124,7 @@ export const HomeScreen: React.FC = () => {
             <Text style={styles.subtitle}>{tenantName}</Text>
           </View>
           <TouchableOpacity onPress={() => navigation.navigate('MoreScreen' as never)}>
-            <Avatar initials={user?.initials ?? '?'} size={50} />
+            <Avatar initials={user?.initials ?? '?'} photoUri={user?.photoUrl} size={50} />
           </TouchableOpacity>
         </Animated.View>
 
