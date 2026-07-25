@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -112,9 +112,17 @@ export const SchoolPickerScreen: React.FC = () => {
                   disabled={disabled}
                   activeOpacity={0.7}
                 >
-                  <View style={styles.rowIconWrap}>
-                    <Ionicons name="school-outline" size={20} color={Colors.primary} />
-                  </View>
+                  {school.logoUrl ? (
+                    <Image
+                      source={{ uri: school.logoUrl }}
+                      style={styles.rowLogo}
+                      testID={`school-logo-${school.id}`}
+                    />
+                  ) : (
+                    <View style={styles.rowIconWrap} testID={`school-logo-fallback-${school.id}`}>
+                      <Ionicons name="school-outline" size={20} color={Colors.primary} />
+                    </View>
+                  )}
                   <Text style={styles.rowLabel}>{school.name}</Text>
                   {isCurrent && <Text style={styles.currentBadge}>Current</Text>}
                   {isPicking ? (
@@ -203,6 +211,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+  },
+  rowLogo: {
+    width: 36,
+    height: 36,
+    borderRadius: Radii.sm,
+    marginRight: 12,
+    backgroundColor: Colors.primarySoft,
   },
   rowLabel: {
     fontFamily: FontFamily.semiBold,

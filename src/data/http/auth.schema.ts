@@ -27,12 +27,16 @@ export const meSchema = z.object({
 export type MeWire = z.infer<typeof meSchema>;
 
 // GET /me/schools returns full ClientResponse rows (id, name, slug, plan info,
-// counts, ...) — we only need id/name for the picker. zod strips unknown keys
-// by default, so parsing with this narrow schema is safe against the fuller shape.
-export const schoolChoiceSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-});
+// counts, ...) — we only need id/name/logo for the picker. zod strips unknown
+// keys by default, so parsing with this narrow schema is safe against the
+// fuller shape.
+export const schoolChoiceSchema = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    logo_url: z.string().nullable().optional(),
+  })
+  .transform((row) => ({ id: row.id, name: row.name, logoUrl: row.logo_url ?? null }));
 export type SchoolChoiceWire = z.infer<typeof schoolChoiceSchema>;
 
 // ─── Mapping ─────────────────────────────────────────────────────────────────

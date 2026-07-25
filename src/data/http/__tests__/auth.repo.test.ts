@@ -13,7 +13,7 @@ function recordingHttp() {
       path === '/me/schools'
         ? {
             items: [
-              { id: 't1', name: 'School One' },
+              { id: 't1', name: 'School One', logo_url: 'https://cdn.example.com/one.png' },
               { id: 't2', name: 'School Two' },
             ],
             nextCursor: null,
@@ -71,12 +71,12 @@ test('setPassword posts only the new password', async () => {
   expect(calls[0]).toEqual({ path: '/auth/set-password', body: { password: 'newpass12' } });
 });
 
-test('listMySchools maps the paginated /me/schools rows to id/name', async () => {
+test('listMySchools maps the paginated /me/schools rows to id/name/logoUrl', async () => {
   const { http } = recordingHttp();
   const schools = await httpAuth(http).listMySchools();
   expect(schools).toEqual([
-    { id: 't1', name: 'School One' },
-    { id: 't2', name: 'School Two' },
+    { id: 't1', name: 'School One', logoUrl: 'https://cdn.example.com/one.png' },
+    { id: 't2', name: 'School Two', logoUrl: null },
   ]);
 });
 

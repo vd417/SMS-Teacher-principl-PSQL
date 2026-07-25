@@ -73,6 +73,7 @@ export interface OtpChallenge {
 export interface SchoolChoice {
   id: string;
   name: string;
+  logoUrl: string | null;
 }
 
 export interface AuthRepository {

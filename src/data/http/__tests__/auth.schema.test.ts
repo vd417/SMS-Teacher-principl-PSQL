@@ -94,7 +94,7 @@ test('toUserFromMe maps must_set_password (defaults to false when absent)', () =
   expect(withoutFlag.mustSetPassword).toBe(false);
 });
 
-test('schoolChoiceSchema extracts id/name and strips the rest of a full ClientResponse row', () => {
+test('schoolChoiceSchema extracts id/name/logoUrl and strips the rest of a full ClientResponse row', () => {
   const fullClientResponseRow = {
     id: 't1',
     name: 'Westbrook Academy',
@@ -111,7 +111,17 @@ test('schoolChoiceSchema extracts id/name and strips the rest of a full ClientRe
     limits: { students: 500, staff: 50 },
     created: '2024-01-01T00:00:00Z',
     health_score: 88,
+    logo_url: 'https://cdn.example.com/westbrook-logo.png',
   };
   const school = schoolChoiceSchema.parse(fullClientResponseRow);
-  expect(school).toEqual({ id: 't1', name: 'Westbrook Academy' });
+  expect(school).toEqual({
+    id: 't1',
+    name: 'Westbrook Academy',
+    logoUrl: 'https://cdn.example.com/westbrook-logo.png',
+  });
+});
+
+test('schoolChoiceSchema defaults logoUrl to null when the row has none', () => {
+  const school = schoolChoiceSchema.parse({ id: 't2', name: 'No Logo School' });
+  expect(school).toEqual({ id: 't2', name: 'No Logo School', logoUrl: null });
 });

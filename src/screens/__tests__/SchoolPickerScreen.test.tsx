@@ -84,8 +84,8 @@ describe('SchoolPickerScreen — login-gate entry (pendingSchools set directly)'
       tenant: { id: 't1', name: 'School One' },
     }));
     const mockListSchools = jest.fn(async () => [
-      { id: 't1', name: 'School One' },
-      { id: 't2', name: 'School Two' },
+      { id: 't1', name: 'School One', logoUrl: 'https://cdn.example.com/one.png' },
+      { id: 't2', name: 'School Two', logoUrl: null },
     ]);
     const mockSwitchSchool = jest.fn(async (tenantId: string) => ({
       accessToken: 'a2',
@@ -115,6 +115,12 @@ describe('SchoolPickerScreen — login-gate entry (pendingSchools set directly)'
     expect(screen.getByText('School Two')).toBeTruthy();
     expect(screen.getByTestId('school-picker-sign-out')).toBeTruthy();
     expect(screen.queryByTestId('school-picker-back')).toBeNull();
+    // School One has a logo_url: renders its image, not the fallback icon.
+    expect(screen.getByTestId('school-logo-t1')).toBeTruthy();
+    expect(screen.queryByTestId('school-logo-fallback-t1')).toBeNull();
+    // School Two has no logo: falls back to the generic icon.
+    expect(screen.getByTestId('school-logo-fallback-t2')).toBeTruthy();
+    expect(screen.queryByTestId('school-logo-t2')).toBeNull();
 
     fireEvent.press(screen.getByText('School Two'));
     await waitFor(() => expect(mockSwitchSchool).toHaveBeenCalledWith('t2'));
