@@ -21,6 +21,7 @@ import { deriveColorSet } from '@/theme/derive';
 import { Skeleton } from '@/ui/state/Skeleton';
 import { ErrorState } from '@/ui/state/ErrorState';
 import { pickImageFromLibrary, takePhotoFromCamera } from '@/lib/pickImage';
+import { authErrorMessage } from '@/features/auth/authErrors';
 import type { HomeStackParamList } from '../navigation/types';
 
 type StudentRoute = RouteProp<HomeStackParamList, 'StudentScreen'>;
@@ -29,7 +30,7 @@ export const StudentScreen: React.FC = () => {
   const route = useRoute<StudentRoute>();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
-  const { studentId } = route.params;
+  const { studentId, classId } = route.params;
 
   const {
     data: student,
@@ -48,8 +49,8 @@ export const StudentScreen: React.FC = () => {
       if (!uri) return;
       await updatePhoto.mutateAsync(uri);
       setPickerOpen(false);
-    } catch {
-      setPhotoError('Could not update the photo. Check permissions and try again.');
+    } catch (err) {
+      setPhotoError(authErrorMessage(err, 'Could not update the photo. Try again.'));
     }
   };
 
@@ -58,8 +59,8 @@ export const StudentScreen: React.FC = () => {
     try {
       await updatePhoto.mutateAsync(null);
       setPickerOpen(false);
-    } catch {
-      setPhotoError('Could not remove the photo. Try again.');
+    } catch (err) {
+      setPhotoError(authErrorMessage(err, 'Could not remove the photo. Try again.'));
     }
   };
   const {
@@ -67,7 +68,7 @@ export const StudentScreen: React.FC = () => {
     isLoading: clsLoading,
     isError: clsError,
     refetch: refetchCls,
-  } = useClass(student?.classId ?? '');
+  } = useClass(classId);
 
   const isLoading = studentLoading || clsLoading;
   const isError = studentError || clsError;

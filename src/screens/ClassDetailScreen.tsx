@@ -86,7 +86,9 @@ export const ClassDetailScreen: React.FC = () => {
     >
       <TouchableOpacity
         style={styles.studentRow}
-        onPress={() => navigation.navigate('StudentScreen', { studentId: student.id })}
+        onPress={() =>
+          navigation.navigate('StudentScreen', { studentId: student.id, classId: cls.id })
+        }
       >
         <Avatar initials={student.initials} size={44} backgroundColor={cs.color} />
         <View style={styles.studentInfo}>

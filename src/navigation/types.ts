@@ -16,7 +16,7 @@ export type HomeStackParamList = {
   AttendanceScreen: { classId: string };
   MarksPickClass: undefined;
   MarksEntryScreen: { examId: string };
-  StudentScreen: { studentId: string };
+  StudentScreen: { studentId: string; classId: string };
   ExamsScreen: undefined;
   ExamDetail: { examId: string };
   ExamNew: undefined;
@@ -35,7 +35,7 @@ export type HomeStackParamList = {
 export type ClassesStackParamList = {
   ClassesScreen: undefined;
   ClassDetailScreen: { classId: string };
-  StudentScreen: { studentId: string };
+  StudentScreen: { studentId: string; classId: string };
   AttendanceScreen: { classId: string };
 };
 

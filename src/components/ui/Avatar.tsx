@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, Image } from 'react-native';
 import { Colors, Radii } from '../../theme';
 import { FontFamily } from '../../theme/typography';
@@ -20,6 +20,11 @@ export const Avatar: React.FC<AvatarProps> = ({
   textColor = Colors.white,
   fontSize,
 }) => {
+  // Tracks the last photoUri that failed to load, so a dead/corrupt image falls
+  // back to initials instead of an empty tinted circle. Reset automatically when
+  // photoUri changes (e.g. the user picks a new photo) since erroredUri no longer
+  // matches it.
+  const [erroredUri, setErroredUri] = useState<string | null>(null);
   const computedFontSize = fontSize ?? Math.floor(size * 0.36);
   const containerStyle = [
     styles.container,
@@ -31,12 +36,14 @@ export const Avatar: React.FC<AvatarProps> = ({
     },
   ];
 
-  if (photoUri) {
+  if (photoUri && photoUri !== erroredUri) {
     return (
       <Image
         source={{ uri: photoUri }}
         style={[containerStyle, styles.photo]}
+        onError={() => setErroredUri(photoUri)}
         testID="avatar-photo"
+        accessibilityLabel="Profile photo"
       />
     );
   }

@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen } from '@testing-library/react-native';
+import { render, screen, fireEvent } from '@testing-library/react-native';
 import { Avatar } from '../Avatar';
 
 test('renders initials when no photoUri is given', () => {
@@ -16,6 +16,13 @@ test('renders the photo and hides initials when photoUri is set', () => {
 
 test('falls back to initials when photoUri is explicitly null', () => {
   render(<Avatar initials="AR" photoUri={null} />);
+  expect(screen.getByText('AR')).toBeTruthy();
+  expect(screen.queryByTestId('avatar-photo')).toBeNull();
+});
+
+test('falls back to initials when the image fails to load', () => {
+  render(<Avatar initials="AR" photoUri="https://cdn.example.com/dead.png" />);
+  fireEvent(screen.getByTestId('avatar-photo'), 'error');
   expect(screen.getByText('AR')).toBeTruthy();
   expect(screen.queryByTestId('avatar-photo')).toBeNull();
 });

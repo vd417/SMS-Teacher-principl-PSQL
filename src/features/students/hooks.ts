@@ -49,6 +49,10 @@ export function useUpdateStudentPhoto(studentId: string) {
     mutationFn: (photoUrl: string | null) => repos.students.updatePhoto(studentId, photoUrl),
     onSuccess: (updated) => {
       qc.setQueryData(queryKeys.student(tenantId, studentId), updated);
+      // Roster caches (class detail, attendance, marks entry) carry their own
+      // cached copy of this student's photoUrl — invalidate every roster query
+      // for this tenant rather than tracking which class(es) this student is in.
+      qc.invalidateQueries({ queryKey: ['students', tenantId] });
     },
   });
 }

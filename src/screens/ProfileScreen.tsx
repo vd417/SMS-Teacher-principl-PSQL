@@ -21,6 +21,7 @@ import { useLogout, useUpdatePhoto } from '@/features/auth/hooks';
 import { useDashboardStats } from '@/features/dashboard/hooks';
 import { useMySchools } from '@/features/auth/useMySchools';
 import { pickImageFromLibrary, takePhotoFromCamera } from '@/lib/pickImage';
+import { authErrorMessage } from '@/features/auth/authErrors';
 import type { ProfileStackParamList } from '../navigation/types';
 
 type ProfileNav = NativeStackNavigationProp<ProfileStackParamList, 'ProfileScreen'>;
@@ -78,8 +79,8 @@ export const ProfileScreen: React.FC = () => {
       if (!uri) return;
       await updatePhoto.mutateAsync(uri);
       setPickerOpen(false);
-    } catch {
-      setPhotoError('Could not update your photo. Check permissions and try again.');
+    } catch (err) {
+      setPhotoError(authErrorMessage(err, 'Could not update your photo. Try again.'));
     }
   };
 
@@ -88,8 +89,8 @@ export const ProfileScreen: React.FC = () => {
     try {
       await updatePhoto.mutateAsync(null);
       setPickerOpen(false);
-    } catch {
-      setPhotoError('Could not remove your photo. Try again.');
+    } catch (err) {
+      setPhotoError(authErrorMessage(err, 'Could not remove your photo. Try again.'));
     }
   };
   const { data: mySchools } = useMySchools();
