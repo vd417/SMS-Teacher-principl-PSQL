@@ -272,9 +272,8 @@ Create `src/screens/__tests__/AttendancePickClassScreen.test.tsx`:
 ```tsx
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { queryClient } from '@/lib/queryClient';
 import { AttendancePickClassScreen } from '../AttendancePickClassScreen';
 import { AuthProvider } from '@/features/auth/AuthProvider';
 import { RepositoryProvider } from '@/data/repositories/RepositoryContext';
@@ -316,6 +315,11 @@ function makeStudents(n: number, classId: string): Student[] {
 }
 
 function renderScreen(repos: Repositories) {
+  // A fresh QueryClient per render — reusing the app's shared singleton across
+  // tests in this file would serve one test's cached query results to the next.
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: 0 } },
+  });
   return render(
     <SafeAreaProvider
       initialMetrics={{
@@ -621,9 +625,8 @@ Create `src/screens/__tests__/AttendanceScreen.test.tsx`:
 ```tsx
 import React from 'react';
 import { render, screen, fireEvent, waitFor, act } from '@testing-library/react-native';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { queryClient } from '@/lib/queryClient';
 import { AttendanceScreen } from '../AttendanceScreen';
 import { AuthProvider } from '@/features/auth/AuthProvider';
 import { RepositoryProvider } from '@/data/repositories/RepositoryContext';
@@ -673,6 +676,11 @@ const student: Student = {
 };
 
 function renderScreen(repos: Repositories) {
+  // A fresh QueryClient per render — reusing the app's shared singleton across
+  // tests in this file would serve one test's cached query results to the next.
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: 0 } },
+  });
   return render(
     <SafeAreaProvider
       initialMetrics={{
