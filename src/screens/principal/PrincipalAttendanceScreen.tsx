@@ -130,15 +130,21 @@ export const PrincipalAttendanceScreen: React.FC = () => {
                       </View>
                     </View>
 
-                    <View style={styles.cardAttRow}>
-                      <Text style={styles.cardCount}>
-                        {g.present}/{g.total} present
-                      </Text>
-                      <Text style={styles.cardPct}>{g.pct}%</Text>
-                    </View>
-                    <View style={styles.cardBarTrack}>
-                      <View style={[styles.cardBarFill, { width: `${g.pct}%` }]} />
-                    </View>
+                    {g.total === 0 ? (
+                      <Text style={styles.cardCount}>No students</Text>
+                    ) : (
+                      <>
+                        <View style={styles.cardAttRow}>
+                          <Text style={styles.cardCount}>
+                            Present {g.present}/{g.total}
+                          </Text>
+                          <Text style={styles.cardPct}>{g.pct}%</Text>
+                        </View>
+                        <View style={styles.cardBarTrack}>
+                          <View style={[styles.cardBarFill, { width: `${g.pct}%` }]} />
+                        </View>
+                      </>
+                    )}
                   </TouchableOpacity>
                 </Animated.View>
               );
