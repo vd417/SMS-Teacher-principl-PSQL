@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,8 +8,9 @@ import { Colors, Radii } from '../../theme';
 import { FontFamily } from '../../theme/typography';
 import { ScreenHeader } from '../../components';
 import { useClass } from '@/features/classes/hooks';
-import { usePrincipalOverview } from '@/features/principal/hooks';
+import { useTimetable } from '@/features/timetable/hooks';
 import { deriveColorSet } from '@/theme/derive';
+import { ErrorState } from '@/ui/state/ErrorState';
 import type { WeekDay } from '@/data/domain';
 import type { PrincipalTimetableStackParamList } from '../../navigation/types';
 
@@ -31,7 +32,7 @@ const periodEnd = (p: number) => fmt(periodStartMin(p) + PERIOD_MIN);
 
 type ClassTimetableRoute = RouteProp<PrincipalTimetableStackParamList, 'ClassTimetableScreen'>;
 type Row = { type: 'period'; period: number } | { type: 'lunch' };
-type Lesson = { subject: string; teacher: string };
+type Lesson = { subject: string; room: string };
 
 export const ClassTimetableScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
@@ -39,23 +40,14 @@ export const ClassTimetableScreen: React.FC = () => {
   const { classId } = route.params;
 
   const { data: cls } = useClass(classId);
-  const { data: overview, isLoading } = usePrincipalOverview();
+  const { data: timetable = [], isLoading, isError, refetch } = useTimetable();
 
-  // Teaching roster (subject + teacher name) from staff.
-  const roster: Lesson[] = (overview?.staff ?? [])
-    .filter((s) => s.subject && !s.role)
-    .map((s) => ({ subject: s.subject, teacher: s.name }));
-
-  // Per-class rotation offset so each class gets a distinct full routine.
-  const baseRot = useMemo(() => {
-    let h = 0;
-    for (let i = 0; i < classId.length; i++) h = (h * 31 + classId.charCodeAt(i)) >>> 0;
-    return h;
-  }, [classId]);
+  // Real published slots for this class only.
+  const classSlots = timetable.filter((t) => t.classId === classId);
 
   const lessonAt = (dayIdx: number, period: number): Lesson | null => {
-    if (roster.length === 0) return null;
-    return roster[(baseRot + dayIdx * PERIODS + (period - 1)) % roster.length];
+    const slot = classSlots.find((t) => t.day === DAYS[dayIdx] && t.period === period);
+    return slot ? { subject: slot.subject, room: slot.room } : null;
   };
 
   const rows: Row[] = [];
@@ -81,7 +73,9 @@ export const ClassTimetableScreen: React.FC = () => {
 
         {isLoading ? (
           <ActivityIndicator color={Colors.primary} style={{ marginTop: 40 }} />
-        ) : roster.length === 0 ? (
+        ) : isError ? (
+          <ErrorState onRetry={refetch} />
+        ) : classSlots.length === 0 ? (
           <View style={styles.empty}>
             <Ionicons name="calendar-clear-outline" size={44} color={Colors.inkMuted} />
             <Text style={styles.emptyText}>No timetable published for this class</Text>
@@ -137,12 +131,11 @@ export const ClassTimetableScreen: React.FC = () => {
                           <Text style={[styles.cellSubject, { color: cs.color }]} numberOfLines={2}>
                             {lesson.subject}
                           </Text>
-                          <View style={styles.teacherRow}>
-                            <Ionicons name="person" size={10} color={Colors.inkMuted} />
-                            <Text style={styles.cellTeacher} numberOfLines={1}>
-                              {lesson.teacher}
+                          {!!lesson.room && (
+                            <Text style={styles.cellRoom} numberOfLines={1}>
+                              {lesson.room}
                             </Text>
-                          </View>
+                          )}
                         </View>
                       );
                     })}
@@ -176,8 +169,7 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   cellSubject: { fontFamily: FontFamily.bold, fontSize: 12 },
-  teacherRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  cellTeacher: { fontFamily: FontFamily.medium, fontSize: 11, color: Colors.inkMuted, flex: 1 },
+  cellRoom: { fontFamily: FontFamily.regular, fontSize: 10, color: Colors.inkMuted },
   emptyCell: {
     minHeight: 62,
     borderRadius: Radii.md,
