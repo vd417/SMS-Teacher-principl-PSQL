@@ -13,9 +13,9 @@ export function httpPrincipal(http: HttpClient): PrincipalRepository {
       http
         .get('/principal/overview')
         .then((x) => toPrincipalOverview(principalOverviewSchema.parse(x))),
-    attendance: () =>
+    attendance: (date) =>
       http
-        .get('/principal/attendance')
+        .get('/principal/attendance', { params: { date } })
         .then((x) => toSchoolAttendance(schoolAttendanceSchema.parse(x))),
   };
 }

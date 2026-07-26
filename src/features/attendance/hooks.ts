@@ -31,6 +31,12 @@ export function useMarkAttendance(classId: string, date: string) {
     onError: (_e, _v, ctx) => {
       if (ctx?.prev !== undefined) qc.setQueryData(key, ctx.prev);
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: key }),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: key });
+      // Cross-screen freshness: the principal's school-wide attendance summary
+      // aggregates the same underlying records, keyed by this same date.
+      qc.invalidateQueries({ queryKey: queryKeys.principalAttendance(tenantId, date) });
+      qc.invalidateQueries({ queryKey: queryKeys.principalOverview(tenantId) });
+    },
   });
 }

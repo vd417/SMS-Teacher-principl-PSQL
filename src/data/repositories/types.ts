@@ -165,7 +165,7 @@ export interface DashboardRepository {
 }
 export interface PrincipalRepository {
   overview(): Promise<PrincipalOverview>;
-  attendance(): Promise<SchoolAttendance>;
+  attendance(date: string): Promise<SchoolAttendance>;
 }
 export interface BusRepository {
   assignedBus(): Promise<Bus>;
