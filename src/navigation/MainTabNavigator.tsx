@@ -18,6 +18,7 @@ import { LeaveScreen } from '../screens/LeaveScreen';
 import { ChangePasswordScreen } from '../screens/ChangePasswordScreen';
 import { SchoolPickerScreen } from '../screens/SchoolPickerScreen';
 import { AttendancePickClassScreen } from '../screens/AttendancePickClassScreen';
+import { AttendancePickSectionScreen } from '../screens/AttendancePickSectionScreen';
 import { MarksPickClassScreen } from '../screens/MarksPickClassScreen';
 import { MarksEntryScreen } from '../screens/MarksEntryScreen';
 import { ExamsScreen } from '../screens/ExamsScreen';
@@ -46,6 +47,7 @@ const HomeStackNavigator = () => (
   <HomeStack.Navigator screenOptions={{ headerShown: false }}>
     <HomeStack.Screen name="HomeScreen" component={HomeScreen} />
     <HomeStack.Screen name="AttendancePickClass" component={AttendancePickClassScreen} />
+    <HomeStack.Screen name="AttendancePickSection" component={AttendancePickSectionScreen} />
     <HomeStack.Screen name="AttendanceScreen" component={AttendanceScreen} />
     <HomeStack.Screen name="MarksPickClass" component={MarksPickClassScreen} />
     <HomeStack.Screen name="MarksEntryScreen" component={MarksEntryScreen} />

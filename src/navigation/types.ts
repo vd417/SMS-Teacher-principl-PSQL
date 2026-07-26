@@ -13,6 +13,7 @@ export type MainTabParamList = {
 export type HomeStackParamList = {
   HomeScreen: undefined;
   AttendancePickClass: undefined;
+  AttendancePickSection: { gradeName: string };
   AttendanceScreen: { classId: string };
   MarksPickClass: undefined;
   MarksEntryScreen: { examId: string };
