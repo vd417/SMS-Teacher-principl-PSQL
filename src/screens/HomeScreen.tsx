@@ -13,12 +13,14 @@ import { useClasses } from '@/features/classes/hooks';
 import { useDashboardStats } from '@/features/dashboard/hooks';
 import { useAnnouncements } from '@/features/announcements/hooks';
 import { useMyAttendanceToday, usePunch } from '@/features/teacherAttendance/hooks';
+import { useAttendance } from '@/features/attendance/hooks';
 import { useExams } from '@/features/exams/hooks';
 import { todayISO, formatLongDate, greeting } from '@/lib/date';
 import { isAppError } from '@/lib/errors';
 import { deriveColorSet } from '@/theme/derive';
 import { Skeleton } from '@/ui/state/Skeleton';
 import { classLabel } from '@/lib/classLabel';
+import type { Class } from '@/data/domain';
 import type { HomeStackParamList } from '../navigation/types';
 
 type HomeNav = NativeStackNavigationProp<HomeStackParamList>;
@@ -54,6 +56,45 @@ const QUICK_ACTIONS = [
     soft: Colors.lateSoft,
   },
 ] as const;
+
+const ClassCard: React.FC<{
+  cls: Class;
+  today: string;
+  index: number;
+  onPress: () => void;
+}> = ({ cls, today, index, onPress }) => {
+  const cs = deriveColorSet(cls.id);
+  const { data: attendanceRecords } = useAttendance(cls.id, today);
+  const markedToday = !!attendanceRecords?.length;
+
+  return (
+    <Animated.View
+      entering={FadeInRight.delay(280 + index * 60).springify()}
+      style={[styles.classCard, { backgroundColor: cs.color }]}
+    >
+      <TouchableOpacity onPress={onPress} style={styles.classCardInner} activeOpacity={0.85}>
+        <View style={[styles.classIconWrap, { backgroundColor: 'rgba(255,255,255,0.2)' }]}>
+          <Ionicons name="school-outline" size={20} color={Colors.white} />
+        </View>
+        <Text style={styles.classCardName}>{classLabel(cls.name, cls.section)}</Text>
+        <Text style={styles.classCardSubject}>{cls.subject}</Text>
+        <View style={styles.classCardFooter}>
+          <View style={styles.classCardBadge}>
+            <Ionicons name="people" size={11} color={cs.color} />
+            <Text style={[styles.classCardBadgeText, { color: cs.color }]}>{cls.studentCount}</Text>
+          </View>
+          <Text style={styles.classCardRoom}>{cls.room.replace('Room ', 'R-')}</Text>
+        </View>
+        {markedToday && (
+          <View style={styles.classCardMarked}>
+            <Ionicons name="checkmark-circle" size={11} color={Colors.white} />
+            <Text style={styles.classCardMarkedText}>Attendance marked</Text>
+          </View>
+        )}
+      </TouchableOpacity>
+    </Animated.View>
+  );
+};
 
 export const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeNav>();
@@ -233,44 +274,20 @@ export const HomeScreen: React.FC = () => {
             </View>
           ) : (
             <View style={styles.classGrid}>
-              {classes.map((cls, i) => {
-                const cs = deriveColorSet(cls.id);
-                return (
-                  <Animated.View
-                    key={cls.id}
-                    entering={FadeInRight.delay(280 + i * 60).springify()}
-                    style={[styles.classCard, { backgroundColor: cs.color }]}
-                  >
-                    <TouchableOpacity
-                      onPress={() =>
-                        navTab.navigate('Classes', {
-                          screen: 'ClassDetailScreen',
-                          params: { classId: cls.id },
-                        })
-                      }
-                      style={styles.classCardInner}
-                      activeOpacity={0.85}
-                    >
-                      <View
-                        style={[styles.classIconWrap, { backgroundColor: 'rgba(255,255,255,0.2)' }]}
-                      >
-                        <Ionicons name="school-outline" size={20} color={Colors.white} />
-                      </View>
-                      <Text style={styles.classCardName}>{classLabel(cls.name, cls.section)}</Text>
-                      <Text style={styles.classCardSubject}>{cls.subject}</Text>
-                      <View style={styles.classCardFooter}>
-                        <View style={styles.classCardBadge}>
-                          <Ionicons name="people" size={11} color={cs.color} />
-                          <Text style={[styles.classCardBadgeText, { color: cs.color }]}>
-                            {cls.studentCount}
-                          </Text>
-                        </View>
-                        <Text style={styles.classCardRoom}>{cls.room.replace('Room ', 'R-')}</Text>
-                      </View>
-                    </TouchableOpacity>
-                  </Animated.View>
-                );
-              })}
+              {classes.map((cls, i) => (
+                <ClassCard
+                  key={cls.id}
+                  cls={cls}
+                  today={today}
+                  index={i}
+                  onPress={() =>
+                    navTab.navigate('Classes', {
+                      screen: 'ClassDetailScreen',
+                      params: { classId: cls.id },
+                    })
+                  }
+                />
+              ))}
             </View>
           )}
         </Animated.View>
@@ -565,6 +582,17 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.medium,
     fontSize: 11,
     color: 'rgba(255,255,255,0.7)',
+  },
+  classCardMarked: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 8,
+  },
+  classCardMarkedText: {
+    fontFamily: FontFamily.medium,
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.85)',
   },
   qaGrid: {
     flexDirection: 'row',

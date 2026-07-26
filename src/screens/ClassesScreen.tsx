@@ -9,20 +9,90 @@ import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { ScreenHeader, SearchField } from '../components';
 import { useClasses } from '@/features/classes/hooks';
+import { useAttendance } from '@/features/attendance/hooks';
 import { deriveColorSet } from '@/theme/derive';
 import { Skeleton } from '@/ui/state/Skeleton';
 import { ErrorState } from '@/ui/state/ErrorState';
 import { EmptyState } from '@/ui/state/EmptyState';
 import { classLabel } from '@/lib/classLabel';
+import { todayISO } from '@/lib/date';
+import type { Class } from '@/data/domain';
 import type { ClassesStackParamList } from '../navigation/types';
 
 type ClassesNav = NativeStackNavigationProp<ClassesStackParamList, 'ClassesScreen'>;
+
+const ClassCard: React.FC<{
+  cls: Class;
+  index: number;
+  today: string;
+  onOpenClass: () => void;
+  onOpenAttendance: () => void;
+}> = ({ cls, index, today, onOpenClass, onOpenAttendance }) => {
+  const cs = deriveColorSet(cls.id);
+  const { data: attendanceRecords } = useAttendance(cls.id, today);
+  const markedToday = !!attendanceRecords?.length;
+
+  return (
+    <Animated.View entering={FadeInDown.delay(140 + index * 60).springify()}>
+      <TouchableOpacity
+        style={[styles.classCard, { backgroundColor: cs.color }]}
+        onPress={onOpenClass}
+        activeOpacity={0.88}
+      >
+        <View style={styles.cardHeader}>
+          <View>
+            <Text style={styles.className}>{classLabel(cls.name, cls.section, ' – ')}</Text>
+            <Text style={styles.classSubject}>{cls.subject}</Text>
+          </View>
+          <View style={styles.iconBadge}>
+            <Ionicons name="school" size={22} color={cs.color} />
+          </View>
+        </View>
+
+        <View style={styles.cardInfo}>
+          <View style={styles.infoItem}>
+            <Ionicons name="people-outline" size={14} color="rgba(255,255,255,0.8)" />
+            <Text style={styles.infoText}>{cls.studentCount} Students</Text>
+          </View>
+          <View style={styles.infoItem}>
+            <Ionicons name="location-outline" size={14} color="rgba(255,255,255,0.8)" />
+            <Text style={styles.infoText}>{cls.room}</Text>
+          </View>
+          {cls.nextPeriod && (
+            <View style={styles.infoItem}>
+              <Ionicons name="time-outline" size={14} color="rgba(255,255,255,0.8)" />
+              <Text style={styles.infoText}>{cls.nextPeriod}</Text>
+            </View>
+          )}
+          {markedToday && (
+            <View style={styles.infoItem}>
+              <Ionicons name="checkmark-circle" size={14} color="rgba(255,255,255,0.9)" />
+              <Text style={styles.infoText}>Attendance marked</Text>
+            </View>
+          )}
+        </View>
+
+        <View style={styles.cardActions}>
+          <TouchableOpacity style={styles.actionBtn} onPress={onOpenAttendance}>
+            <Ionicons name="checkmark-done" size={14} color={cs.color} />
+            <Text style={[styles.actionBtnText, { color: cs.color }]}>Attendance</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionBtn} onPress={onOpenClass}>
+            <Ionicons name="people" size={14} color={cs.color} />
+            <Text style={[styles.actionBtnText, { color: cs.color }]}>Students</Text>
+          </TouchableOpacity>
+        </View>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+};
 
 export const ClassesScreen: React.FC = () => {
   const navigation = useNavigation<ClassesNav>();
   const insets = useSafeAreaInsets();
   const [search, setSearch] = useState('');
   const { data: classes = [], isLoading, isError, refetch } = useClasses();
+  const today = todayISO();
 
   const filtered = classes.filter(
     (c) =>
@@ -47,62 +117,16 @@ export const ClassesScreen: React.FC = () => {
     if (filtered.length === 0) {
       return <EmptyState label="No classes yet" />;
     }
-    return filtered.map((cls, i) => {
-      const cs = deriveColorSet(cls.id);
-      return (
-        <Animated.View key={cls.id} entering={FadeInDown.delay(140 + i * 60).springify()}>
-          <TouchableOpacity
-            style={[styles.classCard, { backgroundColor: cs.color }]}
-            onPress={() => navigation.navigate('ClassDetailScreen', { classId: cls.id })}
-            activeOpacity={0.88}
-          >
-            <View style={styles.cardHeader}>
-              <View>
-                <Text style={styles.className}>{classLabel(cls.name, cls.section, ' – ')}</Text>
-                <Text style={styles.classSubject}>{cls.subject}</Text>
-              </View>
-              <View style={styles.iconBadge}>
-                <Ionicons name="school" size={22} color={cs.color} />
-              </View>
-            </View>
-
-            <View style={styles.cardInfo}>
-              <View style={styles.infoItem}>
-                <Ionicons name="people-outline" size={14} color="rgba(255,255,255,0.8)" />
-                <Text style={styles.infoText}>{cls.studentCount} Students</Text>
-              </View>
-              <View style={styles.infoItem}>
-                <Ionicons name="location-outline" size={14} color="rgba(255,255,255,0.8)" />
-                <Text style={styles.infoText}>{cls.room}</Text>
-              </View>
-              {cls.nextPeriod && (
-                <View style={styles.infoItem}>
-                  <Ionicons name="time-outline" size={14} color="rgba(255,255,255,0.8)" />
-                  <Text style={styles.infoText}>{cls.nextPeriod}</Text>
-                </View>
-              )}
-            </View>
-
-            <View style={styles.cardActions}>
-              <TouchableOpacity
-                style={styles.actionBtn}
-                onPress={() => navigation.navigate('AttendanceScreen', { classId: cls.id })}
-              >
-                <Ionicons name="checkmark-done" size={14} color={cs.color} />
-                <Text style={[styles.actionBtnText, { color: cs.color }]}>Attendance</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.actionBtn}
-                onPress={() => navigation.navigate('ClassDetailScreen', { classId: cls.id })}
-              >
-                <Ionicons name="people" size={14} color={cs.color} />
-                <Text style={[styles.actionBtnText, { color: cs.color }]}>Students</Text>
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        </Animated.View>
-      );
-    });
+    return filtered.map((cls, i) => (
+      <ClassCard
+        key={cls.id}
+        cls={cls}
+        index={i}
+        today={today}
+        onOpenClass={() => navigation.navigate('ClassDetailScreen', { classId: cls.id })}
+        onOpenAttendance={() => navigation.navigate('AttendanceScreen', { classId: cls.id })}
+      />
+    ));
   };
 
   return (
