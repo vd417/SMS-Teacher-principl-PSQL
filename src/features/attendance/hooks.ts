@@ -1,8 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueries, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRepositories } from '@/data/repositories/RepositoryContext';
 import { useTenantId } from '@/features/auth/AuthProvider';
 import { queryKeys } from '@/lib/queryClient';
 import type { AttendanceRecord } from '@/data/domain';
+import { countPresent, type SectionAttendance } from './gradeSummary';
 
 export function useAttendance(classId: string, date: string) {
   const repos = useRepositories();
@@ -12,6 +13,53 @@ export function useAttendance(classId: string, date: string) {
     queryFn: () => repos.attendance.forClass(classId, date),
     enabled: classId !== '' && date !== '',
   });
+}
+
+export interface SectionAttendanceSummaries {
+  /** Per-section {total, present}, keyed by classId. */
+  bySection: Record<string, SectionAttendance>;
+  isLoading: boolean;
+}
+
+/**
+ * Fetches each section's roster + today's attendance in parallel and returns
+ * a per-section {total, present} map keyed by classId. Screens combine these
+ * with `aggregateSections` (see gradeSummary.ts) to get a grade-level summary.
+ */
+export function useSectionAttendanceSummaries(
+  classIds: string[],
+  date: string
+): SectionAttendanceSummaries {
+  const repos = useRepositories();
+  const tenantId = useTenantId();
+
+  const rosterResults = useQueries({
+    queries: classIds.map((id) => ({
+      queryKey: queryKeys.studentsByClass(tenantId, id),
+      queryFn: () => repos.students.listByClass(id, { limit: 200 }),
+      enabled: id !== '',
+    })),
+  });
+
+  const attendanceResults = useQueries({
+    queries: classIds.map((id) => ({
+      queryKey: queryKeys.attendance(tenantId, id, date),
+      queryFn: () => repos.attendance.forClass(id, date),
+      enabled: id !== '' && date !== '',
+    })),
+  });
+
+  const isLoading =
+    rosterResults.some((r) => r.isLoading) || attendanceResults.some((r) => r.isLoading);
+
+  const bySection: Record<string, SectionAttendance> = {};
+  classIds.forEach((id, i) => {
+    const roster = rosterResults[i]?.data?.items ?? [];
+    const records = attendanceResults[i]?.data;
+    bySection[id] = { total: roster.length, present: countPresent(records) };
+  });
+
+  return { bySection, isLoading };
 }
 
 export function useMarkAttendance(classId: string, date: string) {
