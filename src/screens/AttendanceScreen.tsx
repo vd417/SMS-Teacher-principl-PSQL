@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,7 @@ import Animated, {
   useAnimatedStyle,
   withSpring,
 } from 'react-native-reanimated';
-import { useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
@@ -89,8 +89,17 @@ const StatusBadge: React.FC<{ status: AttendanceStatus; onPress: () => void }> =
 
 export const AttendanceScreen: React.FC = () => {
   const route = useRoute<AttRoute>();
+  const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { classId } = route.params;
+  const goBackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (goBackTimer.current) clearTimeout(goBackTimer.current);
+    },
+    []
+  );
 
   const [date, setDate] = useState<string>(() => todayISO());
   const today = todayISO();
@@ -185,7 +194,10 @@ export const AttendanceScreen: React.FC = () => {
       date,
     }));
     mutation.mutate(records, {
-      onSuccess: () => setToastVisible(true),
+      onSuccess: () => {
+        setToastVisible(true);
+        goBackTimer.current = setTimeout(() => navigation.goBack(), 1000);
+      },
       onError: () => setErrorToastVisible(true),
     });
   };
