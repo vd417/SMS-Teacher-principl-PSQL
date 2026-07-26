@@ -17,6 +17,8 @@ import { FontFamily } from '../theme/typography';
 import { ScreenHeader, SectionPickerModal } from '../components';
 import type { SectionOption } from '../components';
 import { useClasses } from '@/features/classes/hooks';
+import { useSectionAttendanceSummaries } from '@/features/attendance/hooks';
+import { aggregateSections } from '@/features/attendance/gradeSummary';
 import { deriveColorSet } from '@/theme/derive';
 import { todayISO, formatLongDate } from '@/lib/date';
 import { gradeLabel } from '@/lib/classLabel';
@@ -30,22 +32,38 @@ export const AttendancePickClassScreen: React.FC = () => {
   const navigation = useNavigation<AttPickNav>();
   const insets = useSafeAreaInsets();
 
+  const today = todayISO();
   const { data: classes = [], isLoading, isError } = useClasses();
-  const [picker, setPicker] = useState<GradeGroup | null>(null);
+  const { bySection, isLoading: summariesLoading } = useSectionAttendanceSummaries(
+    classes.map((c) => c.id),
+    today
+  );
+  const [pickerGradeName, setPickerGradeName] = useState<string | null>(null);
 
   // Group classes by grade name so the user picks a class, then a section.
+  // Section subtitles use the real fetched roster count, not the backend's
+  // Class.studentCount field (confirmed stubbed to always return 0).
   const grades = useMemo<GradeGroup[]>(() => {
     const map = new Map<string, SectionOption[]>();
     for (const c of classes) {
       const arr = map.get(c.name) ?? [];
-      arr.push({ id: c.id, section: c.section, subtitle: `${c.studentCount} students` });
+      const total = bySection[c.id]?.total;
+      arr.push({
+        id: c.id,
+        section: c.section,
+        subtitle: total !== undefined ? `${total} student${total === 1 ? '' : 's'}` : undefined,
+      });
       map.set(c.name, arr);
     }
     return [...map.entries()].map(([name, sections]) => ({ name, sections }));
-  }, [classes]);
+  }, [classes, bySection]);
+
+  // Derived (not stored) so the modal's subtitle counts stay live if bySection
+  // resolves while the picker is already open.
+  const picker = grades.find((g) => g.name === pickerGradeName) ?? null;
 
   const openAttendance = (classId: string) => {
-    setPicker(null);
+    setPickerGradeName(null);
     navigation.navigate('AttendanceScreen', { classId });
   };
 
@@ -61,7 +79,7 @@ export const AttendancePickClassScreen: React.FC = () => {
 
       <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.dateCard}>
         <Ionicons name="calendar" size={18} color={Colors.primary} />
-        <Text style={styles.dateText}>{formatLongDate(todayISO())}</Text>
+        <Text style={styles.dateText}>{formatLongDate(today)}</Text>
       </Animated.View>
 
       {isLoading && (
@@ -88,7 +106,7 @@ export const AttendancePickClassScreen: React.FC = () => {
           <Animated.View key={g.name} entering={FadeInDown.delay(140 + i * 60).springify()}>
             <TouchableOpacity
               style={styles.gradeCard}
-              onPress={() => setPicker(g)}
+              onPress={() => setPickerGradeName(g.name)}
               activeOpacity={0.85}
             >
               <View style={[styles.gradeIcon, { backgroundColor: cs.color }]}>
@@ -99,6 +117,18 @@ export const AttendancePickClassScreen: React.FC = () => {
                 <Text style={styles.gradeMeta}>
                   {g.sections.length} section{g.sections.length > 1 ? 's' : ''} · tap to choose
                 </Text>
+                {(() => {
+                  const summary = aggregateSections(
+                    g.sections.map((s) => bySection[s.id] ?? { total: 0, present: 0 })
+                  );
+                  if (summariesLoading) return <Text style={styles.gradeSummary}>…</Text>;
+                  if (summary.total === 0) return <Text style={styles.gradeSummary}>No students</Text>;
+                  return (
+                    <Text style={styles.gradeSummary}>
+                      Present {summary.present}/{summary.total} · {summary.pct}%
+                    </Text>
+                  );
+                })()}
               </View>
               <Ionicons name="chevron-forward" size={20} color={Colors.inkSoft} />
             </TouchableOpacity>
@@ -111,7 +141,7 @@ export const AttendancePickClassScreen: React.FC = () => {
         gradeName={picker ? gradeLabel(picker.name) : null}
         sections={picker?.sections ?? []}
         onSelect={openAttendance}
-        onClose={() => setPicker(null)}
+        onClose={() => setPickerGradeName(null)}
       />
     </ScrollView>
   );
@@ -170,6 +200,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.inkMuted,
     marginTop: 3,
+  },
+  gradeSummary: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 12,
+    color: Colors.primary,
+    marginTop: 4,
   },
   center: {
     paddingVertical: 40,
