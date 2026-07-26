@@ -18,6 +18,7 @@ import { todayISO, formatLongDate } from '@/lib/date';
 import { isAppError } from '@/lib/errors';
 import { deriveColorSet } from '@/theme/derive';
 import { Skeleton } from '@/ui/state/Skeleton';
+import { classLabel } from '@/lib/classLabel';
 import type { HomeStackParamList } from '../navigation/types';
 
 type HomeNav = NativeStackNavigationProp<HomeStackParamList>;
@@ -255,9 +256,7 @@ export const HomeScreen: React.FC = () => {
                       >
                         <Ionicons name="school-outline" size={20} color={Colors.white} />
                       </View>
-                      <Text style={styles.classCardName}>
-                        {cls.name}-{cls.section}
-                      </Text>
+                      <Text style={styles.classCardName}>{classLabel(cls.name, cls.section)}</Text>
                       <Text style={styles.classCardSubject}>{cls.subject}</Text>
                       <View style={styles.classCardFooter}>
                         <View style={styles.classCardBadge}>

@@ -25,6 +25,7 @@ import { useStudentsByClass } from '@/features/students/hooks';
 import { useAttendance, useMarkAttendance } from '@/features/attendance/hooks';
 import { deriveColorSet } from '@/theme/derive';
 import { todayISO, formatLongDate, addDays } from '@/lib/date';
+import { classLabel } from '@/lib/classLabel';
 import type { AttendanceStatus, AttendanceRecord } from '@/data/domain';
 import type { HomeStackParamList } from '../navigation/types';
 
@@ -226,7 +227,7 @@ export const AttendanceScreen: React.FC = () => {
       >
         <Animated.View entering={FadeInDown.delay(50).springify()}>
           <ScreenHeader
-            title={`${cls.name}-${cls.section}`}
+            title={classLabel(cls.name, cls.section)}
             subtitle={`Attendance · ${cls.subject}`}
             showBack
           />

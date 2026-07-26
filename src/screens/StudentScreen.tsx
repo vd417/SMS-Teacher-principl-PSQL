@@ -22,6 +22,7 @@ import { Skeleton } from '@/ui/state/Skeleton';
 import { ErrorState } from '@/ui/state/ErrorState';
 import { pickImageFromLibrary, takePhotoFromCamera } from '@/lib/pickImage';
 import { authErrorMessage } from '@/features/auth/authErrors';
+import { classLabel } from '@/lib/classLabel';
 import type { HomeStackParamList } from '../navigation/types';
 
 type StudentRoute = RouteProp<HomeStackParamList, 'StudentScreen'>;
@@ -133,7 +134,7 @@ export const StudentScreen: React.FC = () => {
         </TouchableOpacity>
         <Text style={styles.heroName}>{student.name}</Text>
         <Text style={styles.heroRole}>
-          {cls.name}-{cls.section} · Roll #{student.roll}
+          {classLabel(cls.name, cls.section)} · Roll #{student.roll}
         </Text>
         <Pill
           label={`Grade: ${student.grade}`}
@@ -234,7 +235,7 @@ export const StudentScreen: React.FC = () => {
           <Text style={styles.sectionTitle}>Academic Info</Text>
           <Card padding={0}>
             {[
-              { icon: 'school-outline', label: 'Class', value: `${cls.name}-${cls.section}` },
+              { icon: 'school-outline', label: 'Class', value: classLabel(cls.name, cls.section) },
               { icon: 'book-outline', label: 'Subject', value: cls.subject },
               { icon: 'ribbon-outline', label: 'Current Grade', value: student.grade },
               { icon: 'stats-chart-outline', label: 'Attendance', value: `${student.attendance}%` },

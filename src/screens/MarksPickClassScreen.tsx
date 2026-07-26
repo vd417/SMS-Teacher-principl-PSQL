@@ -18,6 +18,7 @@ import { ScreenHeader } from '../components';
 import { useClasses } from '@/features/classes/hooks';
 import { useExams } from '../features/exams/hooks';
 import { deriveColorSet } from '@/theme/derive';
+import { classLabel } from '@/lib/classLabel';
 import type { Exam } from '@/data/domain';
 import type { HomeStackParamList } from '../navigation/types';
 
@@ -73,9 +74,7 @@ export const MarksPickClassScreen: React.FC = () => {
                   <Ionicons name="create" size={22} color={Colors.white} />
                 </View>
                 <View style={styles.classInfo}>
-                  <Text style={styles.className}>
-                    {cls.name} – {cls.section}
-                  </Text>
+                  <Text style={styles.className}>{classLabel(cls.name, cls.section, ' – ')}</Text>
                   <Text style={styles.classMeta}>
                     {classExams.length} subject{classExams.length === 1 ? '' : 's'} · tap to choose
                   </Text>

@@ -20,6 +20,7 @@ import { ScreenHeader, Toast } from '../components';
 import { useClasses } from '../features/classes/hooks';
 import { useCreateExam } from '../features/exams/hooks';
 import { deriveColorSet } from '../theme/derive';
+import { classLabel } from '@/lib/classLabel';
 import { examSchema, ExamSchemaType } from '../validation/schemas';
 
 export const ExamNewScreen: React.FC = () => {
@@ -139,7 +140,7 @@ export const ExamNewScreen: React.FC = () => {
                   onPress={() => setValue('classId', cls.id)}
                 >
                   <Text style={[styles.classChipText, isSelected && { color: Colors.white }]}>
-                    {cls.name}-{cls.section}
+                    {classLabel(cls.name, cls.section)}
                   </Text>
                 </TouchableOpacity>
               );

@@ -13,6 +13,7 @@ import { deriveColorSet } from '@/theme/derive';
 import { Skeleton } from '@/ui/state/Skeleton';
 import { ErrorState } from '@/ui/state/ErrorState';
 import { EmptyState } from '@/ui/state/EmptyState';
+import { classLabel } from '@/lib/classLabel';
 import type { ClassesStackParamList } from '../navigation/types';
 
 type ClassesNav = NativeStackNavigationProp<ClassesStackParamList, 'ClassesScreen'>;
@@ -57,9 +58,7 @@ export const ClassesScreen: React.FC = () => {
           >
             <View style={styles.cardHeader}>
               <View>
-                <Text style={styles.className}>
-                  {cls.name} – {cls.section}
-                </Text>
+                <Text style={styles.className}>{classLabel(cls.name, cls.section, ' – ')}</Text>
                 <Text style={styles.classSubject}>{cls.subject}</Text>
               </View>
               <View style={styles.iconBadge}>

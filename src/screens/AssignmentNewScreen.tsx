@@ -23,6 +23,7 @@ import { useCreateAssignment } from '../features/assignments/hooks';
 import { deriveColorSet } from '../theme/derive';
 import { assignmentSchema, AssignmentSchemaType } from '../validation/schemas';
 import { pickImageFromLibrary, takePhotoFromCamera } from '../lib/pickImage';
+import { classLabel } from '@/lib/classLabel';
 
 export const AssignmentNewScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -129,7 +130,7 @@ export const AssignmentNewScreen: React.FC = () => {
                   onPress={() => setValue('classId', cls.id)}
                 >
                   <Text style={[styles.classChipText, isSelected && { color: Colors.white }]}>
-                    {cls.name}-{cls.section}
+                    {classLabel(cls.name, cls.section)}
                   </Text>
                 </TouchableOpacity>
               );

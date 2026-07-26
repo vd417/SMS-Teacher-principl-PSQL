@@ -23,6 +23,7 @@ import { deriveColorSet } from '@/theme/derive';
 import { Skeleton } from '@/ui/state/Skeleton';
 import { ErrorState } from '@/ui/state/ErrorState';
 import { EmptyState } from '@/ui/state/EmptyState';
+import { classLabel } from '@/lib/classLabel';
 import type { ClassesStackParamList } from '../navigation/types';
 
 type ClassDetailNav = NativeStackNavigationProp<ClassesStackParamList, 'ClassDetailScreen'>;
@@ -143,9 +144,7 @@ export const ClassDetailScreen: React.FC = () => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={Colors.white} />
         </TouchableOpacity>
-        <Text style={styles.heroClass}>
-          {cls.name} – {cls.section}
-        </Text>
+        <Text style={styles.heroClass}>{classLabel(cls.name, cls.section, ' – ')}</Text>
         <Text style={styles.heroSubject}>{cls.subject}</Text>
         <View style={styles.heroMeta}>
           <View style={styles.heroMetaItem}>

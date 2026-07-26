@@ -11,6 +11,7 @@ import { useClass } from '@/features/classes/hooks';
 import { useTimetable } from '@/features/timetable/hooks';
 import { deriveColorSet } from '@/theme/derive';
 import { ErrorState } from '@/ui/state/ErrorState';
+import { classLabel } from '@/lib/classLabel';
 import type { WeekDay } from '@/data/domain';
 import type { PrincipalTimetableStackParamList } from '../../navigation/types';
 
@@ -65,7 +66,7 @@ export const ClassTimetableScreen: React.FC = () => {
       >
         <Animated.View entering={FadeInDown.delay(50).springify()}>
           <ScreenHeader
-            title={cls ? `${cls.name} – ${cls.section}` : 'Timetable'}
+            title={cls ? classLabel(cls.name, cls.section, ' – ') : 'Timetable'}
             subtitle="Weekly schedule"
             showBack
           />
