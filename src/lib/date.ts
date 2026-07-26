@@ -25,3 +25,10 @@ export function addDays(iso: string, n: number): string {
   d.setDate(d.getDate() + n);
   return todayISO(d);
 }
+
+export function greeting(d: Date = new Date()): string {
+  const h = d.getHours();
+  if (h < 12) return 'Good morning,';
+  if (h < 17) return 'Good afternoon,';
+  return 'Good evening,';
+}

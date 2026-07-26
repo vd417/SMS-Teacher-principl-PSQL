@@ -14,7 +14,7 @@ import { useDashboardStats } from '@/features/dashboard/hooks';
 import { useAnnouncements } from '@/features/announcements/hooks';
 import { useMyAttendanceToday, usePunch } from '@/features/teacherAttendance/hooks';
 import { useExams } from '@/features/exams/hooks';
-import { todayISO, formatLongDate } from '@/lib/date';
+import { todayISO, formatLongDate, greeting } from '@/lib/date';
 import { isAppError } from '@/lib/errors';
 import { deriveColorSet } from '@/theme/derive';
 import { Skeleton } from '@/ui/state/Skeleton';
@@ -120,7 +120,7 @@ export const HomeScreen: React.FC = () => {
         {/* Header */}
         <Animated.View entering={FadeInDown.delay(50).springify()} style={styles.header}>
           <View style={styles.headerLeft}>
-            <Text style={styles.greeting}>Good morning,</Text>
+            <Text style={styles.greeting}>{greeting()}</Text>
             <Text style={styles.teacherName}>{(user?.name ?? 'Teacher').split(' ')[0]} 👋</Text>
             <Text style={styles.subtitle}>{tenantName}</Text>
           </View>
@@ -200,7 +200,7 @@ export const HomeScreen: React.FC = () => {
                 <Skeleton height={80} width={80} radius={40} />
               ) : (
                 <Donut
-                  percentage={stats?.attendanceToday ?? 94}
+                  percentage={stats?.attendanceToday ?? 0}
                   size={80}
                   strokeWidth={8}
                   color={Colors.primary}

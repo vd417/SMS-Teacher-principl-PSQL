@@ -34,9 +34,10 @@ export function useMarkAttendance(classId: string, date: string) {
     onSettled: () => {
       qc.invalidateQueries({ queryKey: key });
       // Cross-screen freshness: the principal's school-wide attendance summary
-      // aggregates the same underlying records, keyed by this same date.
+      // and the teacher's Home dashboard both aggregate these same records.
       qc.invalidateQueries({ queryKey: queryKeys.principalAttendance(tenantId, date) });
       qc.invalidateQueries({ queryKey: queryKeys.principalOverview(tenantId) });
+      qc.invalidateQueries({ queryKey: queryKeys.dashboard(tenantId) });
     },
   });
 }

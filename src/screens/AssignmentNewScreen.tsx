@@ -45,7 +45,7 @@ export const AssignmentNewScreen: React.FC = () => {
     defaultValues: {
       title: '',
       classId: '',
-      dueDate: '2026-06-20',
+      dueDate: '',
       description: '',
       imageUri: undefined,
     },

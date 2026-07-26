@@ -43,8 +43,8 @@ export const ExamNewScreen: React.FC = () => {
     defaultValues: {
       title: '',
       classId: '',
-      date: '2026-05-20',
-      time: '9:00 AM',
+      date: '',
+      time: '',
       duration: 90,
       maxMarks: 100,
       topics: [],
