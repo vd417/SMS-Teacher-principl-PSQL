@@ -30,16 +30,24 @@ jest.mock('@react-navigation/native', () => ({
 const classList: Class[] = [
   { id: 'c1', name: 'IV', section: 'A', subject: 'Math', studentCount: 0, room: '101' },
   { id: 'c2', name: 'V', section: 'A', subject: 'Math', studentCount: 0, room: '102' },
+  { id: 'c3', name: 'VI', section: 'A', subject: 'Math', studentCount: 0, room: '103' },
 ];
 
+// A second populated grade (c3) is included so its percentage (90%) is
+// arithmetically distinct from the school-total card's percentage (93%,
+// computed from the sums across all three grades below). With only one
+// populated grade, that grade's own pct would equal the school average,
+// making a getByText assertion on the grade's percentage indistinguishable
+// from a match against the school-total card.
 const attendanceData: SchoolAttendance = {
   date: '2026-07-26',
-  presentTotal: 28,
-  studentTotal: 30,
+  presentTotal: 37,
+  studentTotal: 40,
   overallPct: 93,
   classes: [
     { classId: 'c1', className: 'IV-A', present: 28, total: 30, pct: 93 },
     { classId: 'c2', className: 'V-A', present: 0, total: 0, pct: 0 },
+    { classId: 'c3', className: 'VI-A', present: 9, total: 10, pct: 90 },
   ],
   staff: [],
 };
@@ -77,7 +85,9 @@ test('shows "Present X/Y" phrasing for a grade with students, and "No students" 
   renderScreen(repos);
 
   await waitFor(() => expect(screen.getByText('Present 28/30')).toBeTruthy());
-  expect(screen.getAllByText('93%').length).toBeGreaterThan(0);
+  // Asserts on grade c3's specific 90% — distinct from the school-total
+  // card's 93%, so this is falsifiable (see comment on the fixture above).
+  expect(screen.getByText('90%')).toBeTruthy();
 
   expect(screen.getByText('No students')).toBeTruthy();
   expect(screen.queryByText('Present 0/0')).toBeNull();
