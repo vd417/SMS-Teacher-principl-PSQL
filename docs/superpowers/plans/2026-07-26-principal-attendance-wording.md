@@ -142,26 +142,26 @@ Modify `src/screens/principal/PrincipalAttendanceScreen.tsx`. Replace:
                     </View>
 ```
 
-with:
+with (note: fenced as plain text, not `tsx`, so the markdown formatter
+doesn't rewrite this JSX-expression-container snippet into an invalid
+statement — copy it verbatim, it is valid JSX in context):
 
-```tsx
-{
-  g.total === 0 ? (
-    <Text style={styles.cardCount}>No students</Text>
-  ) : (
-    <>
-      <View style={styles.cardAttRow}>
-        <Text style={styles.cardCount}>
-          Present {g.present}/{g.total}
-        </Text>
-        <Text style={styles.cardPct}>{g.pct}%</Text>
-      </View>
-      <View style={styles.cardBarTrack}>
-        <View style={[styles.cardBarFill, { width: `${g.pct}%` }]} />
-      </View>
-    </>
-  );
-}
+```text
+                    {g.total === 0 ? (
+                      <Text style={styles.cardCount}>No students</Text>
+                    ) : (
+                      <>
+                        <View style={styles.cardAttRow}>
+                          <Text style={styles.cardCount}>
+                            Present {g.present}/{g.total}
+                          </Text>
+                          <Text style={styles.cardPct}>{g.pct}%</Text>
+                        </View>
+                        <View style={styles.cardBarTrack}>
+                          <View style={[styles.cardBarFill, { width: `${g.pct}%` }]} />
+                        </View>
+                      </>
+                    )}
 ```
 
 - [ ] **Step 4: Run the test to verify it passes**
