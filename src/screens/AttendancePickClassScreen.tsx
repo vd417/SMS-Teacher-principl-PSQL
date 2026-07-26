@@ -51,12 +51,14 @@ export const AttendancePickClassScreen: React.FC = () => {
       arr.push({
         id: c.id,
         section: c.section,
-        subtitle: total !== undefined ? `${total} student${total === 1 ? '' : 's'}` : undefined,
+        subtitle: summariesLoading
+          ? undefined
+          : `${total ?? 0} student${(total ?? 0) === 1 ? '' : 's'}`,
       });
       map.set(c.name, arr);
     }
     return [...map.entries()].map(([name, sections]) => ({ name, sections }));
-  }, [classes, bySection]);
+  }, [classes, bySection, summariesLoading]);
 
   // Derived (not stored) so the modal's subtitle counts stay live if bySection
   // resolves while the picker is already open.

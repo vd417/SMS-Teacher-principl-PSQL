@@ -54,8 +54,14 @@ export function useSectionAttendanceSummaries(
 
   const bySection: Record<string, SectionAttendance> = {};
   classIds.forEach((id, i) => {
-    const roster = rosterResults[i]?.data?.items ?? [];
-    const records = attendanceResults[i]?.data;
+    const rosterResult = rosterResults[i];
+    const attendanceResult = attendanceResults[i];
+    if (rosterResult?.isError || attendanceResult?.isError) {
+      bySection[id] = { total: 0, present: 0 };
+      return;
+    }
+    const roster = rosterResult?.data?.items ?? [];
+    const records = attendanceResult?.data;
     bySection[id] = { total: roster.length, present: countPresent(records) };
   });
 

@@ -106,6 +106,87 @@ test("shows a Present/Total/% summary aggregated across a grade's sections, and 
   expect(screen.getByText('3 students')).toBeTruthy();
 });
 
+test('does not show "0 students" in the section picker while summaries are still loading', async () => {
+  const classes: Class[] = [
+    { id: 'c1', name: 'IV', section: 'A', subject: 'Math', studentCount: 0, room: '101' },
+  ];
+
+  let resolveRoster!: (v: { items: Student[]; nextCursor: null }) => void;
+  let resolveAttendance!: (v: AttendanceRecord[]) => void;
+  const rosterPromise = new Promise<{ items: Student[]; nextCursor: null }>((resolve) => {
+    resolveRoster = resolve;
+  });
+  const attendancePromise = new Promise<AttendanceRecord[]>((resolve) => {
+    resolveAttendance = resolve;
+  });
+
+  const repos = {
+    classes: { list: jest.fn(async () => classes) },
+    students: {
+      listByClass: jest.fn(() => rosterPromise),
+    },
+    attendance: {
+      forClass: jest.fn(() => attendancePromise),
+    },
+  } as unknown as Repositories;
+
+  renderScreen(repos);
+
+  await waitFor(() => expect(screen.getByText('IV')).toBeTruthy());
+  fireEvent.press(screen.getByText('IV'));
+
+  // Modal is open (section badge/label rendered) but roster + attendance are
+  // still in flight, so the subtitle must not show a stubbed-looking "0 students".
+  await waitFor(() => expect(screen.getByText('Section A')).toBeTruthy());
+  expect(screen.queryByText('0 students')).toBeNull();
+  expect(screen.queryByText('2 students')).toBeNull();
+
+  resolveRoster({ items: makeStudents(2, 'c1'), nextCursor: null });
+  resolveAttendance([]);
+
+  await waitFor(() => expect(screen.getByText('2 students')).toBeTruthy());
+});
+
+test('excludes a section from the aggregate (not counted as unmarked) when its attendance fetch fails', async () => {
+  const classes: Class[] = [
+    { id: 'c1', name: 'IV', section: 'A', subject: 'Math', studentCount: 0, room: '101' },
+    { id: 'c2', name: 'IV', section: 'B', subject: 'Math', studentCount: 0, room: '102' },
+  ];
+  const rosters: Record<string, Student[]> = {
+    c1: makeStudents(4, 'c1'),
+    c2: makeStudents(3, 'c2'),
+  };
+  // c1's roster succeeds but its attendance fetch fails; c2 is marked with 2 present.
+  const attendance: Record<string, AttendanceRecord[]> = {
+    c2: [
+      { studentId: 'c2-s0', status: 'P', date: '2026-07-26' },
+      { studentId: 'c2-s1', status: 'P', date: '2026-07-26' },
+      { studentId: 'c2-s2', status: 'A', date: '2026-07-26' },
+    ],
+  };
+
+  const repos = {
+    classes: { list: jest.fn(async () => classes) },
+    students: {
+      listByClass: jest.fn(async (classId: string) => ({
+        items: rosters[classId] ?? [],
+        nextCursor: null,
+      })),
+    },
+    attendance: {
+      forClass: jest.fn(async (classId: string) => {
+        if (classId === 'c1') throw new Error('network error');
+        return attendance[classId] ?? [];
+      }),
+    },
+  } as unknown as Repositories;
+
+  renderScreen(repos);
+
+  // c1 is fully excluded (0/0), so the aggregate is just c2's 2/3, not (2)/(4+3).
+  await waitFor(() => expect(screen.getByText('Present 2/3 · 67%')).toBeTruthy());
+});
+
 test('shows "No students" when a grade has no students in any section', async () => {
   const classes: Class[] = [
     { id: 'c3', name: 'V', section: 'A', subject: 'Math', studentCount: 0, room: '103' },
