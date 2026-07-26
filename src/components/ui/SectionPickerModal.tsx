@@ -5,12 +5,7 @@ import Animated, { FadeInUp } from 'react-native-reanimated';
 import { Colors, Radii, Shadows } from '../../theme';
 import { FontFamily } from '../../theme/typography';
 import { deriveColorSet } from '../../theme/derive';
-
-/** "A" -> "Section A". Some sections are already stored with the word folded
- * in (e.g. "Sec A"), so prepending "Section" again would read "Section Sec A". */
-function sectionLabel(section: string): string {
-  return /\bsec(tion)?\b/i.test(section) ? section : `Section ${section}`;
-}
+import { sectionLabel } from '../../lib/classLabel';
 
 export interface SectionOption {
   /** classId to open attendance for */

@@ -15,3 +15,9 @@ export function classLabel(name: string, section: string, separator = '-'): stri
 export function gradeLabel(name: string): string {
   return /^\d+$/.test(name.trim()) ? `Class ${name.trim()}` : name;
 }
+
+/** "A" -> "Section A". Some sections are already stored with the word folded
+ * in (e.g. "Sec A"), so prepending "Section" again would read "Section Sec A". */
+export function sectionLabel(section: string): string {
+  return /\bsec(tion)?\b/i.test(section) ? section : `Section ${section}`;
+}
