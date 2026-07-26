@@ -113,6 +113,7 @@ export const AttendanceScreen: React.FC = () => {
 
   const [attendance, setAttendance] = useState<StudentAttendance>({});
   const [toastVisible, setToastVisible] = useState(false);
+  const [errorToastVisible, setErrorToastVisible] = useState(false);
 
   // Sync local state when attendance records arrive
   useEffect(() => {
@@ -153,6 +154,7 @@ export const AttendanceScreen: React.FC = () => {
     }));
     mutation.mutate(records, {
       onSuccess: () => setToastVisible(true),
+      onError: () => setErrorToastVisible(true),
     });
   };
 
@@ -286,6 +288,12 @@ export const AttendanceScreen: React.FC = () => {
         message="Attendance submitted successfully!"
         type="success"
         onHide={() => setToastVisible(false)}
+      />
+      <Toast
+        visible={errorToastVisible}
+        message="Failed to save attendance. Please try again."
+        type="error"
+        onHide={() => setErrorToastVisible(false)}
       />
     </View>
   );
