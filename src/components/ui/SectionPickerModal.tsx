@@ -6,6 +6,12 @@ import { Colors, Radii, Shadows } from '../../theme';
 import { FontFamily } from '../../theme/typography';
 import { deriveColorSet } from '../../theme/derive';
 
+/** "A" -> "Section A". Some sections are already stored with the word folded
+ * in (e.g. "Sec A"), so prepending "Section" again would read "Section Sec A". */
+function sectionLabel(section: string): string {
+  return /\bsec(tion)?\b/i.test(section) ? section : `Section ${section}`;
+}
+
 export interface SectionOption {
   /** classId to open attendance for */
   id: string;
@@ -56,7 +62,7 @@ export const SectionPickerModal: React.FC<SectionPickerModalProps> = ({
                       <Text style={styles.badgeText}>{s.section}</Text>
                     </View>
                     <Text style={[styles.optionLabel, { color: cs.color }]}>
-                      Section {s.section}
+                      {sectionLabel(s.section)}
                     </Text>
                     {s.subtitle ? <Text style={styles.optionSub}>{s.subtitle}</Text> : null}
                   </TouchableOpacity>

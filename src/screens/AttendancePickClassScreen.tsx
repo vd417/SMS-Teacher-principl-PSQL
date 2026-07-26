@@ -18,6 +18,7 @@ import { ScreenHeader, SectionPickerModal } from '../components';
 import type { SectionOption } from '../components';
 import { useClasses } from '@/features/classes/hooks';
 import { deriveColorSet } from '@/theme/derive';
+import { todayISO, formatLongDate } from '@/lib/date';
 import type { HomeStackParamList } from '../navigation/types';
 
 type AttPickNav = NativeStackNavigationProp<HomeStackParamList, 'AttendancePickClass'>;
@@ -59,7 +60,7 @@ export const AttendancePickClassScreen: React.FC = () => {
 
       <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.dateCard}>
         <Ionicons name="calendar" size={18} color={Colors.primary} />
-        <Text style={styles.dateText}>Monday, 27 April 2026</Text>
+        <Text style={styles.dateText}>{formatLongDate(todayISO())}</Text>
       </Animated.View>
 
       {isLoading && (
