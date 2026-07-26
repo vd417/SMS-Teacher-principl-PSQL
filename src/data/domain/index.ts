@@ -72,6 +72,7 @@ export interface TimetableSlot {
   room: string;
   startTime: string;
   endTime: string;
+  teacherName: string;
 }
 export interface Exam {
   id: string;

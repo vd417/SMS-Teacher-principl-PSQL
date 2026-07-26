@@ -32,7 +32,7 @@ const periodEnd = (p: number) => fmt(periodStartMin(p) + PERIOD_MIN);
 
 type ClassTimetableRoute = RouteProp<PrincipalTimetableStackParamList, 'ClassTimetableScreen'>;
 type Row = { type: 'period'; period: number } | { type: 'lunch' };
-type Lesson = { subject: string; room: string };
+type Lesson = { subject: string; room: string; teacherName: string };
 
 export const ClassTimetableScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
@@ -47,7 +47,7 @@ export const ClassTimetableScreen: React.FC = () => {
 
   const lessonAt = (dayIdx: number, period: number): Lesson | null => {
     const slot = classSlots.find((t) => t.day === DAYS[dayIdx] && t.period === period);
-    return slot ? { subject: slot.subject, room: slot.room } : null;
+    return slot ? { subject: slot.subject, room: slot.room, teacherName: slot.teacherName } : null;
   };
 
   const rows: Row[] = [];
@@ -131,6 +131,14 @@ export const ClassTimetableScreen: React.FC = () => {
                           <Text style={[styles.cellSubject, { color: cs.color }]} numberOfLines={2}>
                             {lesson.subject}
                           </Text>
+                          {!!lesson.teacherName && (
+                            <View style={styles.teacherRow}>
+                              <Ionicons name="person" size={10} color={Colors.inkMuted} />
+                              <Text style={styles.cellTeacher} numberOfLines={1}>
+                                {lesson.teacherName}
+                              </Text>
+                            </View>
+                          )}
                           {!!lesson.room && (
                             <Text style={styles.cellRoom} numberOfLines={1}>
                               {lesson.room}
@@ -169,6 +177,8 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   cellSubject: { fontFamily: FontFamily.bold, fontSize: 12 },
+  teacherRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  cellTeacher: { fontFamily: FontFamily.medium, fontSize: 11, color: Colors.inkMuted, flex: 1 },
   cellRoom: { fontFamily: FontFamily.regular, fontSize: 10, color: Colors.inkMuted },
   emptyCell: {
     minHeight: 62,

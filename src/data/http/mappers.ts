@@ -106,6 +106,7 @@ export const timetableSlotSchema = z.object({
   room: z.string().nullish(),
   start_time: z.string().nullish(),
   end_time: z.string().nullish(),
+  teacher_name: z.string().nullish(),
 });
 export type TimetableSlotDTO = z.infer<typeof timetableSlotSchema>;
 export const toTimetableSlot = (d: TimetableSlotDTO): TimetableSlot => ({
@@ -118,6 +119,7 @@ export const toTimetableSlot = (d: TimetableSlotDTO): TimetableSlot => ({
   room: d.room ?? '',
   startTime: d.start_time ?? '',
   endTime: d.end_time ?? '',
+  teacherName: d.teacher_name ?? '',
 });
 
 // ─── Assignments ─────────────────────────────────────────────────────────────

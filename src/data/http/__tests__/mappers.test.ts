@@ -9,6 +9,8 @@ import {
   toApprovalRequest,
   leaveResponseSchema,
   toLeaveRequest,
+  timetableSlotSchema,
+  toTimetableSlot,
 } from '../mappers';
 
 test('toStudent injects classId, stringifies roll, derives initials', () => {
@@ -97,4 +99,32 @@ test('toLeaveRequest normalizes dates and keeps the wire type', () => {
   expect(l.from).toBe('2026-07-01');
   expect(l.type).toBe('sick');
   expect(l.status).toBe('approved');
+});
+
+test('toTimetableSlot maps teacher_name to teacherName', () => {
+  const dto = timetableSlotSchema.parse({
+    id: 't1',
+    day: 'Mon',
+    period: 1,
+    subject: 'Science',
+    class_id: 'c1',
+    class_name: 'IX-A',
+    room: '101',
+    start_time: '08:00',
+    end_time: '08:45',
+    teacher_name: 'Asha Rao',
+  });
+  const slot = toTimetableSlot(dto);
+  expect(slot.teacherName).toBe('Asha Rao');
+});
+
+test('toTimetableSlot defaults teacherName to empty string when the subject has no assigned teacher', () => {
+  const dto = timetableSlotSchema.parse({
+    id: 't2',
+    day: 'Tue',
+    period: 2,
+    subject: 'Unassigned Subject',
+  });
+  const slot = toTimetableSlot(dto);
+  expect(slot.teacherName).toBe('');
 });
