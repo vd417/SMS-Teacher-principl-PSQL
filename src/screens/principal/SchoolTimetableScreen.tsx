@@ -18,6 +18,7 @@ import { SectionPickerModal } from '../../components';
 import type { SectionOption } from '../../components';
 import { useClasses } from '@/features/classes/hooks';
 import { deriveColorSet } from '@/theme/derive';
+import { gradeLabel } from '@/lib/classLabel';
 import type { PrincipalTimetableStackParamList } from '../../navigation/types';
 
 type TimetableNav = NativeStackNavigationProp<
@@ -71,7 +72,7 @@ export const SchoolTimetableScreen: React.FC = () => {
                   onPress={() => setPicker(g)}
                 >
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.cardClassName}>{g.name}</Text>
+                    <Text style={styles.cardClassName}>{gradeLabel(g.name)}</Text>
                     <Text style={styles.cardSubject}>
                       {g.sections.length} section{g.sections.length > 1 ? 's' : ''} · tap to choose
                     </Text>
@@ -88,7 +89,7 @@ export const SchoolTimetableScreen: React.FC = () => {
 
       <SectionPickerModal
         visible={!!picker}
-        gradeName={picker?.name ?? null}
+        gradeName={picker ? gradeLabel(picker.name) : null}
         sections={picker?.sections ?? []}
         onSelect={openTimetable}
         onClose={() => setPicker(null)}

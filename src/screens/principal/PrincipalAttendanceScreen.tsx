@@ -19,6 +19,7 @@ import type { SectionOption } from '../../components';
 import { usePrincipalAttendance } from '@/features/principal/hooks';
 import { useClasses } from '@/features/classes/hooks';
 import { deriveColorSet } from '@/theme/derive';
+import { gradeLabel } from '@/lib/classLabel';
 import type { PrincipalAttendanceStackParamList } from '../../navigation/types';
 
 type PAttendanceNav = NativeStackNavigationProp<
@@ -118,7 +119,7 @@ export const PrincipalAttendanceScreen: React.FC = () => {
                   >
                     <View style={styles.cardHeader}>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.cardClassName}>{g.name}</Text>
+                        <Text style={styles.cardClassName}>{gradeLabel(g.name)}</Text>
                         <Text style={styles.cardSubject}>
                           {g.options.length} section{g.options.length > 1 ? 's' : ''} · tap to
                           choose
@@ -187,7 +188,7 @@ export const PrincipalAttendanceScreen: React.FC = () => {
 
       <SectionPickerModal
         visible={!!picker}
-        gradeName={picker?.name ?? null}
+        gradeName={picker ? gradeLabel(picker.name) : null}
         sections={picker?.options ?? []}
         onSelect={openAttendance}
         onClose={() => setPicker(null)}

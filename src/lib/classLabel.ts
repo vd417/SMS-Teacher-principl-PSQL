@@ -8,3 +8,10 @@ export function classLabel(name: string, section: string, separator = '-'): stri
   if (!section || name.endsWith(section)) return name;
   return `${name}${separator}${section}`;
 }
+
+/** "1" -> "Class 1". Some schools store a class's grade as a bare number
+ * ("1".."12") rather than a label ("Class 1", "IV") — prefix it so a grade
+ * group heading doesn't render as a lone, meaningless digit. */
+export function gradeLabel(name: string): string {
+  return /^\d+$/.test(name.trim()) ? `Class ${name.trim()}` : name;
+}

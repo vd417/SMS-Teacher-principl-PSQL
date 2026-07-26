@@ -19,6 +19,7 @@ import type { SectionOption } from '../components';
 import { useClasses } from '@/features/classes/hooks';
 import { deriveColorSet } from '@/theme/derive';
 import { todayISO, formatLongDate } from '@/lib/date';
+import { gradeLabel } from '@/lib/classLabel';
 import type { HomeStackParamList } from '../navigation/types';
 
 type AttPickNav = NativeStackNavigationProp<HomeStackParamList, 'AttendancePickClass'>;
@@ -94,7 +95,7 @@ export const AttendancePickClassScreen: React.FC = () => {
                 <Ionicons name="school" size={22} color={Colors.white} />
               </View>
               <View style={styles.gradeInfo}>
-                <Text style={styles.gradeName}>{g.name}</Text>
+                <Text style={styles.gradeName}>{gradeLabel(g.name)}</Text>
                 <Text style={styles.gradeMeta}>
                   {g.sections.length} section{g.sections.length > 1 ? 's' : ''} · tap to choose
                 </Text>
@@ -107,7 +108,7 @@ export const AttendancePickClassScreen: React.FC = () => {
 
       <SectionPickerModal
         visible={!!picker}
-        gradeName={picker?.name ?? null}
+        gradeName={picker ? gradeLabel(picker.name) : null}
         sections={picker?.sections ?? []}
         onSelect={openAttendance}
         onClose={() => setPicker(null)}
