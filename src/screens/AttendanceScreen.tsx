@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
@@ -114,6 +115,13 @@ export const AttendanceScreen: React.FC = () => {
   const [attendance, setAttendance] = useState<StudentAttendance>({});
   const [toastVisible, setToastVisible] = useState(false);
   const [errorToastVisible, setErrorToastVisible] = useState(false);
+  // Gate the first edit of an already-saved day behind one confirmation, so a stray
+  // tap doesn't silently start changing a day that was already submitted.
+  const [editUnlocked, setEditUnlocked] = useState(false);
+
+  useEffect(() => {
+    setEditUnlocked(false);
+  }, [date]);
 
   // Sync local state when attendance records arrive
   useEffect(() => {
@@ -130,12 +138,35 @@ export const AttendanceScreen: React.FC = () => {
     setAttendance(map);
   }, [attendanceRecords, classStudents]);
 
+  const requestEdit = (apply: () => void) => {
+    if (attendanceRecords?.length && !editUnlocked) {
+      Alert.alert(
+        'Edit saved attendance?',
+        `Attendance for ${formatLongDate(date)} is already saved. Editing will let you change it and resubmit.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Edit',
+            onPress: () => {
+              setEditUnlocked(true);
+              apply();
+            },
+          },
+        ]
+      );
+      return;
+    }
+    apply();
+  };
+
   const cycleStatus = (studentId: string) => {
-    setAttendance((prev) => {
-      const current = prev[studentId] ?? 'P';
-      const idx = STATUS_CYCLE.indexOf(current);
-      const next = STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length];
-      return { ...prev, [studentId]: next };
+    requestEdit(() => {
+      setAttendance((prev) => {
+        const current = prev[studentId] ?? 'P';
+        const idx = STATUS_CYCLE.indexOf(current);
+        const next = STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length];
+        return { ...prev, [studentId]: next };
+      });
     });
   };
 
@@ -159,11 +190,13 @@ export const AttendanceScreen: React.FC = () => {
   };
 
   const markAllPresent = () => {
-    const newState: StudentAttendance = {};
-    for (const s of classStudents) {
-      newState[s.id] = 'P';
-    }
-    setAttendance(newState);
+    requestEdit(() => {
+      const newState: StudentAttendance = {};
+      for (const s of classStudents) {
+        newState[s.id] = 'P';
+      }
+      setAttendance(newState);
+    });
   };
 
   const { color: clsColor } = cls ? deriveColorSet(cls.id) : { color: Colors.primary };
