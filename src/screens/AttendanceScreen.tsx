@@ -207,7 +207,15 @@ export const AttendanceScreen: React.FC = () => {
           >
             <Ionicons name="chevron-back" size={18} color={Colors.primary} />
           </TouchableOpacity>
-          <Text style={styles.dateLabel}>{formatLongDate(date)}</Text>
+          <View style={styles.dateLabelWrap}>
+            <Text style={styles.dateLabel}>{formatLongDate(date)}</Text>
+            {!!attendanceRecords?.length && (
+              <View style={styles.savedPill}>
+                <Ionicons name="checkmark-circle" size={11} color={Colors.present} />
+                <Text style={styles.savedPillText}>Already marked</Text>
+              </View>
+            )}
+          </View>
           <TouchableOpacity
             onPress={goNextDay}
             disabled={date >= today}
@@ -274,7 +282,9 @@ export const AttendanceScreen: React.FC = () => {
             <ActivityIndicator color={Colors.white} />
           ) : (
             <>
-              <Text style={styles.fabText}>Submit Attendance</Text>
+              <Text style={styles.fabText}>
+                {attendanceRecords?.length ? 'Update Attendance' : 'Submit Attendance'}
+              </Text>
               <View style={styles.fabBadge}>
                 <Text style={styles.fabBadgeText}>{classStudents.length}</Text>
               </View>
@@ -315,7 +325,18 @@ const styles = StyleSheet.create({
   },
   dateNav: { padding: 8, borderRadius: 999, backgroundColor: Colors.primarySoft2 },
   dateNavDisabled: { opacity: 0.35 },
+  dateLabelWrap: { alignItems: 'center', gap: 3 },
   dateLabel: { fontFamily: FontFamily.semiBold, fontSize: 14, color: Colors.ink },
+  savedPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: Colors.presentSoft,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  savedPillText: { fontFamily: FontFamily.medium, fontSize: 10, color: Colors.present },
   statsBar: {
     flexDirection: 'row',
     gap: 8,
