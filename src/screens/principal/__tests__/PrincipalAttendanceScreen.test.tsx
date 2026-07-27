@@ -28,9 +28,9 @@ jest.mock('@react-navigation/native', () => ({
 }));
 
 const classList: Class[] = [
-  { id: 'c1', name: 'IV', section: 'A', subject: 'Math', studentCount: 0, room: '101' },
-  { id: 'c2', name: 'V', section: 'A', subject: 'Math', studentCount: 0, room: '102' },
-  { id: 'c3', name: 'VI', section: 'A', subject: 'Math', studentCount: 0, room: '103' },
+  { id: 'c1', name: 'IV', grade: '', section: 'A', subject: 'Math', studentCount: 0, room: '101' },
+  { id: 'c2', name: 'V', grade: '', section: 'A', subject: 'Math', studentCount: 0, room: '102' },
+  { id: 'c3', name: 'VI', grade: '', section: 'A', subject: 'Math', studentCount: 0, room: '103' },
 ];
 
 // A second populated grade (c3) is included so its percentage (90%) is
@@ -92,4 +92,50 @@ test('shows "Present X/Y" phrasing for a grade with students, and "No students" 
   expect(screen.getByText('No students')).toBeTruthy();
   expect(screen.queryByText('Present 0/0')).toBeNull();
   expect(screen.queryByText('0%')).toBeNull();
+});
+
+test('groups two classes that share a grade but have different names into one grade card', async () => {
+  const gradedClassList: Class[] = [
+    {
+      id: 'c1',
+      name: 'I-A',
+      grade: 'I',
+      section: 'A',
+      subject: 'Math',
+      studentCount: 0,
+      room: '101',
+    },
+    {
+      id: 'c2',
+      name: 'I-B',
+      grade: 'I',
+      section: 'B',
+      subject: 'Math',
+      studentCount: 0,
+      room: '102',
+    },
+  ];
+  const gradedAttendance: SchoolAttendance = {
+    date: '2026-07-26',
+    presentTotal: 5,
+    studentTotal: 5,
+    overallPct: 100,
+    classes: [
+      { classId: 'c1', className: 'I-A', present: 2, total: 2, pct: 100 },
+      { classId: 'c2', className: 'I-B', present: 3, total: 3, pct: 100 },
+    ],
+    staff: [],
+  };
+
+  const repos = {
+    principal: { attendance: jest.fn(async () => gradedAttendance) },
+    classes: { list: jest.fn(async () => gradedClassList) },
+  } as unknown as Repositories;
+
+  renderScreen(repos);
+
+  // A single "I" grade card renders, aggregating both sections: total = 2 + 3 = 5.
+  await waitFor(() => expect(screen.getByText('Present 5/5')).toBeTruthy());
+  expect(screen.queryByText('I-A')).toBeNull();
+  expect(screen.queryByText('I-B')).toBeNull();
 });

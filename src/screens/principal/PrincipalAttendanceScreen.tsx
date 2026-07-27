@@ -19,7 +19,7 @@ import type { SectionOption } from '../../components';
 import { usePrincipalAttendance } from '@/features/principal/hooks';
 import { useClasses } from '@/features/classes/hooks';
 import { deriveColorSet } from '@/theme/derive';
-import { gradeLabel } from '@/lib/classLabel';
+import { gradeLabel, classGroupKey } from '@/lib/classLabel';
 import type { PrincipalAttendanceStackParamList } from '../../navigation/types';
 
 type PAttendanceNav = NativeStackNavigationProp<
@@ -56,13 +56,14 @@ export const PrincipalAttendanceScreen: React.FC = () => {
   const gradeGroups = useMemo<GradeGroup[]>(() => {
     const map = new Map<string, GradeGroup>();
     for (const c of data?.classes ?? []) {
-      const name = classById[c.classId]?.name ?? c.className;
+      const cls = classById[c.classId];
+      const name = cls ? classGroupKey(cls) : c.className;
       const g = map.get(name) ?? { name, present: 0, total: 0, pct: 0, options: [] };
       g.present += c.present;
       g.total += c.total;
       g.options.push({
         id: c.classId,
-        section: classById[c.classId]?.section ?? '?',
+        section: cls?.section ?? '?',
         subtitle: `${c.pct}% present`,
       });
       map.set(name, g);
