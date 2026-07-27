@@ -23,9 +23,14 @@ jest.mock('@expo/vector-icons', () => {
     Ionicons: (props: { name: string }) => ReactLib.createElement(Text, null, `icon:${props.name}`),
   };
 });
+const mockNavigate = jest.fn();
 jest.mock('@react-navigation/native', () => ({
-  useNavigation: () => ({ navigate: jest.fn() }),
+  useNavigation: () => ({ navigate: mockNavigate }),
 }));
+
+beforeEach(() => {
+  mockNavigate.mockClear();
+});
 
 function makeStudents(n: number, classId: string): Student[] {
   return Array.from({ length: n }, (_, i) => ({
@@ -102,49 +107,7 @@ test("shows a Present/Total/% summary aggregated across a grade's sections, and 
 
   fireEvent.press(screen.getByText('IV'));
 
-  await waitFor(() => expect(screen.getByText('2 students')).toBeTruthy());
-  expect(screen.getByText('3 students')).toBeTruthy();
-});
-
-test('does not show "0 students" in the section picker while summaries are still loading', async () => {
-  const classes: Class[] = [
-    { id: 'c1', name: 'IV', section: 'A', subject: 'Math', studentCount: 0, room: '101' },
-  ];
-
-  let resolveRoster!: (v: { items: Student[]; nextCursor: null }) => void;
-  let resolveAttendance!: (v: AttendanceRecord[]) => void;
-  const rosterPromise = new Promise<{ items: Student[]; nextCursor: null }>((resolve) => {
-    resolveRoster = resolve;
-  });
-  const attendancePromise = new Promise<AttendanceRecord[]>((resolve) => {
-    resolveAttendance = resolve;
-  });
-
-  const repos = {
-    classes: { list: jest.fn(async () => classes) },
-    students: {
-      listByClass: jest.fn(() => rosterPromise),
-    },
-    attendance: {
-      forClass: jest.fn(() => attendancePromise),
-    },
-  } as unknown as Repositories;
-
-  renderScreen(repos);
-
-  await waitFor(() => expect(screen.getByText('IV')).toBeTruthy());
-  fireEvent.press(screen.getByText('IV'));
-
-  // Modal is open (section badge/label rendered) but roster + attendance are
-  // still in flight, so the subtitle must not show a stubbed-looking "0 students".
-  await waitFor(() => expect(screen.getByText('Section A')).toBeTruthy());
-  expect(screen.queryByText('0 students')).toBeNull();
-  expect(screen.queryByText('2 students')).toBeNull();
-
-  resolveRoster({ items: makeStudents(2, 'c1'), nextCursor: null });
-  resolveAttendance([]);
-
-  await waitFor(() => expect(screen.getByText('2 students')).toBeTruthy());
+  expect(mockNavigate).toHaveBeenCalledWith('AttendancePickSection', { gradeName: 'IV' });
 });
 
 test('excludes a section from the aggregate (not counted as unmarked) when its attendance fetch fails', async () => {

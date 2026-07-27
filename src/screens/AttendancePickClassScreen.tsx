@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,8 +14,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
-import { ScreenHeader, SectionPickerModal } from '../components';
-import type { SectionOption } from '../components';
+import { ScreenHeader } from '../components';
 import { useClasses } from '@/features/classes/hooks';
 import { useSectionAttendanceSummaries } from '@/features/attendance/hooks';
 import { aggregateSections } from '@/features/attendance/gradeSummary';
@@ -26,7 +25,7 @@ import type { HomeStackParamList } from '../navigation/types';
 
 type AttPickNav = NativeStackNavigationProp<HomeStackParamList, 'AttendancePickClass'>;
 
-type GradeGroup = { name: string; sections: SectionOption[] };
+type GradeGroup = { name: string; sections: { id: string; section: string }[] };
 
 export const AttendancePickClassScreen: React.FC = () => {
   const navigation = useNavigation<AttPickNav>();
@@ -38,36 +37,17 @@ export const AttendancePickClassScreen: React.FC = () => {
     classes.map((c) => c.id),
     today
   );
-  const [pickerGradeName, setPickerGradeName] = useState<string | null>(null);
-
-  // Group classes by grade name so the user picks a class, then a section.
-  // Section subtitles use the real fetched roster count, not the backend's
-  // Class.studentCount field (confirmed stubbed to always return 0).
+  // Group classes by grade name so the user picks a class, then a section
+  // (on a dedicated page — see AttendancePickSectionScreen).
   const grades = useMemo<GradeGroup[]>(() => {
-    const map = new Map<string, SectionOption[]>();
+    const map = new Map<string, { id: string; section: string }[]>();
     for (const c of classes) {
       const arr = map.get(c.name) ?? [];
-      const total = bySection[c.id]?.total;
-      arr.push({
-        id: c.id,
-        section: c.section,
-        subtitle: summariesLoading
-          ? undefined
-          : `${total ?? 0} student${(total ?? 0) === 1 ? '' : 's'}`,
-      });
+      arr.push({ id: c.id, section: c.section });
       map.set(c.name, arr);
     }
     return [...map.entries()].map(([name, sections]) => ({ name, sections }));
-  }, [classes, bySection, summariesLoading]);
-
-  // Derived (not stored) so the modal's subtitle counts stay live if bySection
-  // resolves while the picker is already open.
-  const picker = grades.find((g) => g.name === pickerGradeName) ?? null;
-
-  const openAttendance = (classId: string) => {
-    setPickerGradeName(null);
-    navigation.navigate('AttendanceScreen', { classId });
-  };
+  }, [classes]);
 
   return (
     <ScrollView
@@ -108,7 +88,7 @@ export const AttendancePickClassScreen: React.FC = () => {
           <Animated.View key={g.name} entering={FadeInDown.delay(140 + i * 60).springify()}>
             <TouchableOpacity
               style={styles.gradeCard}
-              onPress={() => setPickerGradeName(g.name)}
+              onPress={() => navigation.navigate('AttendancePickSection', { gradeName: g.name })}
               activeOpacity={0.85}
             >
               <View style={[styles.gradeIcon, { backgroundColor: cs.color }]}>
@@ -124,7 +104,8 @@ export const AttendancePickClassScreen: React.FC = () => {
                     g.sections.map((s) => bySection[s.id] ?? { total: 0, present: 0 })
                   );
                   if (summariesLoading) return <Text style={styles.gradeSummary}>…</Text>;
-                  if (summary.total === 0) return <Text style={styles.gradeSummary}>No students</Text>;
+                  if (summary.total === 0)
+                    return <Text style={styles.gradeSummary}>No students</Text>;
                   return (
                     <Text style={styles.gradeSummary}>
                       Present {summary.present}/{summary.total} · {summary.pct}%
@@ -137,14 +118,6 @@ export const AttendancePickClassScreen: React.FC = () => {
           </Animated.View>
         );
       })}
-
-      <SectionPickerModal
-        visible={!!picker}
-        gradeName={picker ? gradeLabel(picker.name) : null}
-        sections={picker?.sections ?? []}
-        onSelect={openAttendance}
-        onClose={() => setPickerGradeName(null)}
-      />
     </ScrollView>
   );
 };
