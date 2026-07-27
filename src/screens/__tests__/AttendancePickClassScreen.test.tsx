@@ -69,7 +69,7 @@ function renderScreen(repos: Repositories) {
   );
 }
 
-test("shows a Present/Total/% summary aggregated across a grade's sections, and real (non-zero) student counts in the section picker", async () => {
+test("shows a Present/Total/% summary aggregated across a grade's sections, and navigates to the section page on tap", async () => {
   const classes: Class[] = [
     { id: 'c1', name: 'IV', section: 'A', subject: 'Math', studentCount: 0, room: '101' },
     { id: 'c2', name: 'IV', section: 'B', subject: 'Math', studentCount: 0, room: '102' },
