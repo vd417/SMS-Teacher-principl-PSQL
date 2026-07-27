@@ -32,6 +32,7 @@ jest.mock('@react-navigation/native', () => ({
 const cls: Class = {
   id: 'c1',
   name: 'IV',
+  grade: '',
   section: 'A',
   subject: 'Math',
   studentCount: 0,

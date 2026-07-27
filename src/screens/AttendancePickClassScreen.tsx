@@ -20,7 +20,7 @@ import { useSectionAttendanceSummaries } from '@/features/attendance/hooks';
 import { aggregateSections } from '@/features/attendance/gradeSummary';
 import { deriveColorSet } from '@/theme/derive';
 import { todayISO, formatLongDate } from '@/lib/date';
-import { gradeLabel } from '@/lib/classLabel';
+import { gradeLabel, classGroupKey } from '@/lib/classLabel';
 import type { HomeStackParamList } from '../navigation/types';
 
 type AttPickNav = NativeStackNavigationProp<HomeStackParamList, 'AttendancePickClass'>;
@@ -37,14 +37,16 @@ export const AttendancePickClassScreen: React.FC = () => {
     classes.map((c) => c.id),
     today
   );
-  // Group classes by grade name so the user picks a class, then a section
-  // (on a dedicated page — see AttendancePickSectionScreen).
+  // Group classes by their grade (falling back to name when a class has no
+  // grade set) so the user picks a class, then a section (on a dedicated
+  // page — see AttendancePickSectionScreen).
   const grades = useMemo<GradeGroup[]>(() => {
     const map = new Map<string, { id: string; section: string }[]>();
     for (const c of classes) {
-      const arr = map.get(c.name) ?? [];
+      const key = classGroupKey(c);
+      const arr = map.get(key) ?? [];
       arr.push({ id: c.id, section: c.section });
-      map.set(c.name, arr);
+      map.set(key, arr);
     }
     return [...map.entries()].map(([name, sections]) => ({ name, sections }));
   }, [classes]);

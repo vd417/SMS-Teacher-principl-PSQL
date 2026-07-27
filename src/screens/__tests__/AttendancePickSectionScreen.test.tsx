@@ -75,9 +75,25 @@ beforeEach(() => {
 
 test("shows only the requested grade's sections with real (non-zero) student counts, and navigates to AttendanceScreen on tap", async () => {
   const classes: Class[] = [
-    { id: 'c1', name: 'IV', section: 'A', subject: 'Math', studentCount: 0, room: '101' },
-    { id: 'c2', name: 'IV', section: 'B', subject: 'Math', studentCount: 0, room: '102' },
-    { id: 'c3', name: 'V', section: 'A', subject: 'Math', studentCount: 0, room: '103' },
+    {
+      id: 'c1',
+      name: 'IV',
+      grade: '',
+      section: 'A',
+      subject: 'Math',
+      studentCount: 0,
+      room: '101',
+    },
+    {
+      id: 'c2',
+      name: 'IV',
+      grade: '',
+      section: 'B',
+      subject: 'Math',
+      studentCount: 0,
+      room: '102',
+    },
+    { id: 'c3', name: 'V', grade: '', section: 'A', subject: 'Math', studentCount: 0, room: '103' },
   ];
   const rosters: Record<string, Student[]> = {
     c1: makeStudents(2, 'c1'),
@@ -107,9 +123,76 @@ test("shows only the requested grade's sections with real (non-zero) student cou
   expect(mockNavigate).toHaveBeenCalledWith('AttendanceScreen', { classId: 'c1' });
 });
 
+test("selects classes by the grade route param, not by name, when a class's name differs from its grade", async () => {
+  mockGradeName = 'I';
+  const classes: Class[] = [
+    {
+      id: 'c1',
+      name: 'I-A',
+      grade: 'I',
+      section: 'A',
+      subject: 'Math',
+      studentCount: 0,
+      room: '101',
+    },
+    {
+      id: 'c2',
+      name: 'I-B',
+      grade: 'I',
+      section: 'B',
+      subject: 'Math',
+      studentCount: 0,
+      room: '102',
+    },
+    {
+      id: 'c3',
+      name: 'II-A',
+      grade: 'II',
+      section: 'A',
+      subject: 'Math',
+      studentCount: 0,
+      room: '103',
+    },
+  ];
+  const rosters: Record<string, Student[]> = {
+    c1: makeStudents(2, 'c1'),
+    c2: makeStudents(3, 'c2'),
+  };
+
+  const repos = {
+    classes: { list: jest.fn(async () => classes) },
+    students: {
+      listByClass: jest.fn(async (classId: string) => ({
+        items: rosters[classId] ?? [],
+        nextCursor: null,
+      })),
+    },
+    attendance: { forClass: jest.fn(async () => []) },
+  } as unknown as Repositories;
+
+  renderScreen(repos);
+
+  // Both grade-I sections (c1, c2) render; grade-II's c3 is excluded.
+  await waitFor(() => expect(screen.getByText('Section A')).toBeTruthy());
+  expect(screen.getByText('Section B')).toBeTruthy();
+  expect(screen.getByText('2 students')).toBeTruthy();
+  expect(screen.getByText('3 students')).toBeTruthy();
+
+  fireEvent.press(screen.getByText('Section A'));
+  expect(mockNavigate).toHaveBeenCalledWith('AttendanceScreen', { classId: 'c1' });
+});
+
 test('does not show "0 students" while summaries are still loading', async () => {
   const classes: Class[] = [
-    { id: 'c1', name: 'IV', section: 'A', subject: 'Math', studentCount: 0, room: '101' },
+    {
+      id: 'c1',
+      name: 'IV',
+      grade: '',
+      section: 'A',
+      subject: 'Math',
+      studentCount: 0,
+      room: '101',
+    },
   ];
 
   let resolveRoster!: (v: { items: Student[]; nextCursor: null }) => void;

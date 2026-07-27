@@ -71,8 +71,24 @@ function renderScreen(repos: Repositories) {
 
 test("shows a Present/Total/% summary aggregated across a grade's sections, and navigates to the section page on tap", async () => {
   const classes: Class[] = [
-    { id: 'c1', name: 'IV', section: 'A', subject: 'Math', studentCount: 0, room: '101' },
-    { id: 'c2', name: 'IV', section: 'B', subject: 'Math', studentCount: 0, room: '102' },
+    {
+      id: 'c1',
+      name: 'IV',
+      grade: '',
+      section: 'A',
+      subject: 'Math',
+      studentCount: 0,
+      room: '101',
+    },
+    {
+      id: 'c2',
+      name: 'IV',
+      grade: '',
+      section: 'B',
+      subject: 'Math',
+      studentCount: 0,
+      room: '102',
+    },
   ];
   const rosters: Record<string, Student[]> = {
     c1: makeStudents(2, 'c1'),
@@ -110,10 +126,76 @@ test("shows a Present/Total/% summary aggregated across a grade's sections, and 
   expect(mockNavigate).toHaveBeenCalledWith('AttendancePickSection', { gradeName: 'IV' });
 });
 
+test('groups two classes that share a grade but have different names into one grade card', async () => {
+  const classes: Class[] = [
+    {
+      id: 'c1',
+      name: 'I-A',
+      grade: 'I',
+      section: 'A',
+      subject: 'Math',
+      studentCount: 0,
+      room: '101',
+    },
+    {
+      id: 'c2',
+      name: 'I-B',
+      grade: 'I',
+      section: 'B',
+      subject: 'Math',
+      studentCount: 0,
+      room: '102',
+    },
+  ];
+  const rosters: Record<string, Student[]> = {
+    c1: makeStudents(2, 'c1'),
+    c2: makeStudents(3, 'c2'),
+  };
+
+  const repos = {
+    classes: { list: jest.fn(async () => classes) },
+    students: {
+      listByClass: jest.fn(async (classId: string) => ({
+        items: rosters[classId] ?? [],
+        nextCursor: null,
+      })),
+    },
+    attendance: { forClass: jest.fn(async () => []) },
+  } as unknown as Repositories;
+
+  renderScreen(repos);
+
+  // A single "I" grade card renders (not two "I-A"/"I-B" cards), aggregating
+  // both sections: total = 2 + 3 = 5.
+  await waitFor(() => expect(screen.getByText('Present 0/5 · 0%')).toBeTruthy());
+  expect(screen.queryByText('I-A')).toBeNull();
+  expect(screen.queryByText('I-B')).toBeNull();
+
+  fireEvent.press(screen.getByText('I'));
+
+  expect(mockNavigate).toHaveBeenCalledWith('AttendancePickSection', { gradeName: 'I' });
+});
+
 test('excludes a section from the aggregate (not counted as unmarked) when its attendance fetch fails', async () => {
   const classes: Class[] = [
-    { id: 'c1', name: 'IV', section: 'A', subject: 'Math', studentCount: 0, room: '101' },
-    { id: 'c2', name: 'IV', section: 'B', subject: 'Math', studentCount: 0, room: '102' },
+    {
+      id: 'c1',
+      name: 'IV',
+      grade: '',
+      section: 'A',
+      subject: 'Math',
+      studentCount: 0,
+      room: '101',
+    },
+    {
+      id: 'c2',
+      name: 'IV',
+      grade: '',
+      section: 'B',
+      subject: 'Math',
+      studentCount: 0,
+      room: '102',
+    },
   ];
   const rosters: Record<string, Student[]> = {
     c1: makeStudents(4, 'c1'),
@@ -152,7 +234,7 @@ test('excludes a section from the aggregate (not counted as unmarked) when its a
 
 test('shows "No students" when a grade has no students in any section', async () => {
   const classes: Class[] = [
-    { id: 'c3', name: 'V', section: 'A', subject: 'Math', studentCount: 0, room: '103' },
+    { id: 'c3', name: 'V', grade: '', section: 'A', subject: 'Math', studentCount: 0, room: '103' },
   ];
   const repos = {
     classes: { list: jest.fn(async () => classes) },

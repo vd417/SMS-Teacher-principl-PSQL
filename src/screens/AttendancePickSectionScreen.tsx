@@ -18,7 +18,7 @@ import { useClasses } from '@/features/classes/hooks';
 import { useSectionAttendanceSummaries } from '@/features/attendance/hooks';
 import { deriveColorSet } from '@/theme/derive';
 import { todayISO } from '@/lib/date';
-import { gradeLabel, sectionLabel } from '@/lib/classLabel';
+import { gradeLabel, sectionLabel, classGroupKey } from '@/lib/classLabel';
 import type { HomeStackParamList } from '../navigation/types';
 
 type AttPickSectionNav = NativeStackNavigationProp<HomeStackParamList, 'AttendancePickSection'>;
@@ -32,7 +32,10 @@ export const AttendancePickSectionScreen: React.FC = () => {
 
   const today = todayISO();
   const { data: classes = [], isLoading, isError } = useClasses();
-  const sections = useMemo(() => classes.filter((c) => c.name === gradeName), [classes, gradeName]);
+  const sections = useMemo(
+    () => classes.filter((c) => classGroupKey(c) === gradeName),
+    [classes, gradeName]
+  );
   const { bySection, isLoading: summariesLoading } = useSectionAttendanceSummaries(
     sections.map((c) => c.id),
     today
