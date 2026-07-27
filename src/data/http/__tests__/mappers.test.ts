@@ -11,6 +11,8 @@ import {
   toLeaveRequest,
   timetableSlotSchema,
   toTimetableSlot,
+  classSchema,
+  toClass,
 } from '../mappers';
 
 test('toStudent injects classId, stringifies roll, derives initials', () => {
@@ -127,4 +129,31 @@ test('toTimetableSlot defaults teacherName to empty string when the subject has 
   });
   const slot = toTimetableSlot(dto);
   expect(slot.teacherName).toBe('');
+});
+
+test('toClass reads the backend grade field separately from name', () => {
+  const dto = classSchema.parse({
+    id: 'c1',
+    name: 'I-A',
+    grade: 'I',
+    section: 'A',
+    subject: 'Math',
+    room: '101',
+  });
+  const c = toClass(dto);
+  expect(c.name).toBe('I-A');
+  expect(c.grade).toBe('I');
+  expect(c.section).toBe('A');
+});
+
+test('toClass defaults grade to an empty string when the backend omits it', () => {
+  const dto = classSchema.parse({
+    id: 'c1',
+    name: 'C1',
+    section: 'A',
+    subject: 'Math',
+    room: '101',
+  });
+  const c = toClass(dto);
+  expect(c.grade).toBe('');
 });

@@ -51,6 +51,7 @@ function dayCount(from?: string | null, to?: string | null): number {
 export const classSchema = z.object({
   id: z.string(),
   name: z.string(),
+  grade: z.string().nullish(),
   section: z.string().nullish(),
   subject: z.string().nullish(),
   room: z.string().nullish(),
@@ -61,6 +62,7 @@ export type ClassDTO = z.infer<typeof classSchema>;
 export const toClass = (d: ClassDTO): Class => ({
   id: d.id,
   name: d.name,
+  grade: d.grade ?? '',
   section: d.section ?? '',
   subject: d.subject ?? '',
   studentCount: d.student_count ?? 0,

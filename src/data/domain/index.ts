@@ -39,6 +39,10 @@ export interface Session {
 export interface Class {
   id: string;
   name: string;
+  /** The class's atomic grade (e.g. "I", "IX"), separate from `name` — some
+   * backends populate `name` as the combined "Grade-Section" label instead
+   * (e.g. "I-A"). Empty string when the backend has no grade set. */
+  grade: string;
   section: string;
   subject: string;
   studentCount: number;
