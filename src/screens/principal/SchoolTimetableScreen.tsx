@@ -18,7 +18,7 @@ import { SectionPickerModal } from '../../components';
 import type { SectionOption } from '../../components';
 import { useClasses } from '@/features/classes/hooks';
 import { deriveColorSet } from '@/theme/derive';
-import { gradeLabel } from '@/lib/classLabel';
+import { gradeLabel, classGroupKey } from '@/lib/classLabel';
 import type { PrincipalTimetableStackParamList } from '../../navigation/types';
 
 type TimetableNav = NativeStackNavigationProp<
@@ -34,13 +34,15 @@ export const SchoolTimetableScreen: React.FC = () => {
   const { data: classes = [], isLoading } = useClasses();
   const [picker, setPicker] = useState<GradeGroup | null>(null);
 
-  // Group classes by grade so the principal picks a class, then a section (popup).
+  // Group classes by grade (falling back to name when a class has no grade
+  // set) so the principal picks a class, then a section (popup).
   const grades = useMemo<GradeGroup[]>(() => {
     const map = new Map<string, SectionOption[]>();
     for (const c of classes) {
-      const arr = map.get(c.name) ?? [];
+      const key = classGroupKey(c);
+      const arr = map.get(key) ?? [];
       arr.push({ id: c.id, section: c.section, subtitle: c.room });
-      map.set(c.name, arr);
+      map.set(key, arr);
     }
     return [...map.entries()].map(([name, sections]) => ({ name, sections }));
   }, [classes]);
