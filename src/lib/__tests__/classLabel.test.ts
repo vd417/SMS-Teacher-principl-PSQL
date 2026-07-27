@@ -1,4 +1,4 @@
-import { classLabel, gradeLabel, sectionLabel } from '../classLabel';
+import { classLabel, gradeLabel, sectionLabel, classGroupKey } from '../classLabel';
 
 test('appends the section to the name', () => {
   expect(classLabel('IV', 'B')).toBe('IV-B');
@@ -33,4 +33,12 @@ test('sectionLabel prefixes a bare letter with "Section "', () => {
 test('sectionLabel leaves a section that already says "Section" or "Sec" unchanged', () => {
   expect(sectionLabel('Section A')).toBe('Section A');
   expect(sectionLabel('Sec A')).toBe('Sec A');
+});
+
+test('classGroupKey prefers grade over name when grade is set', () => {
+  expect(classGroupKey({ grade: 'I', name: 'I-A' })).toBe('I');
+});
+
+test('classGroupKey falls back to name when grade is empty', () => {
+  expect(classGroupKey({ grade: '', name: 'C1' })).toBe('C1');
 });

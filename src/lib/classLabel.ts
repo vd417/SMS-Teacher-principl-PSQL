@@ -21,3 +21,10 @@ export function gradeLabel(name: string): string {
 export function sectionLabel(section: string): string {
   return /\bsec(tion)?\b/i.test(section) ? section : `Section ${section}`;
 }
+
+/** Prefer the atomic `grade` field for grouping classes into "grade cards";
+ * fall back to `name` when a class has no grade set (e.g. legacy/free-text
+ * names like "C1" or "Homeroom"), matching that class into its own group. */
+export function classGroupKey(c: { grade: string; name: string }): string {
+  return c.grade || c.name;
+}
