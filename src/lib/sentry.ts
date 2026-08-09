@@ -15,6 +15,9 @@ export function initSentry(): boolean {
     tracesSampleRate: 0.1,
   });
   initialized = true;
+  if (env.configError) {
+    Sentry.captureMessage(`App config error: ${env.configError}`, 'error');
+  }
   return true;
 }
 
