@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { loadEnv } from '@/config/env';
 
 const PLACEHOLDER = 'https://api.schooldesk.local/v1';
@@ -46,5 +48,16 @@ describe('loadEnv', () => {
     expect(out.GOOGLE_MAPS_API_KEY).toBe('k');
     expect(out.SENTRY_DSN).toBe('d');
     expect(out.configError).toBeNull();
+  });
+});
+
+describe('env.ts source (regression guard for Expo env-var inlining)', () => {
+  it('references EXPO_PUBLIC_API_BASE_URL as a literal process.env member expression', () => {
+    const source = fs.readFileSync(path.join(__dirname, '../../config/env.ts'), 'utf8');
+    // Expo's babel transform (babel-preset-expo's expoInlineEnvVars) only inlines
+    // EXPO_PUBLIC_* vars when the source contains this literal MemberExpression
+    // pattern. Passing `process.env` as a whole object anywhere instead defeats
+    // the transform silently, in every build. This guards against that regression.
+    expect(source).toMatch(/process\.env\.EXPO_PUBLIC_API_BASE_URL/);
   });
 });

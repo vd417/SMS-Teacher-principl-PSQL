@@ -4,6 +4,7 @@
 module.exports = {
   init: () => {},
   captureException: () => {},
+  captureMessage: () => {},
   addBreadcrumb: () => {},
   wrap: (c) => c,
 };

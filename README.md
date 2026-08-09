@@ -27,8 +27,10 @@ See `eas.json` for what each profile sets, and the `apk` npm script
 Do **not** use `npx expo export` on its own to produce a build for testing
 or distribution. `expo export` only bundles the JS/assets — it does not
 apply `eas.json`'s per-profile `env` values, so the resulting bundle has no
-valid `EXPO_PUBLIC_API_BASE_URL` and will crash on startup in production
-mode with an error telling you to use `eas build` instead.
+valid `EXPO_PUBLIC_API_BASE_URL`. In production mode the app will still
+start, but every request will fail and a generic connection banner will
+show; the actionable diagnostic (telling you to use `eas build` instead) is
+reported to Sentry, not shown on screen.
 
 ## Testing
 
