@@ -37,4 +37,11 @@ export function loadEnv(raw: Record<string, string | undefined>, isDev: boolean)
   };
 }
 
-export const env: AppEnv = loadEnv(process.env, __DEV__);
+export const env: AppEnv = loadEnv(
+  {
+    EXPO_PUBLIC_API_BASE_URL: process.env.EXPO_PUBLIC_API_BASE_URL,
+    EXPO_PUBLIC_GOOGLE_MAPS_API_KEY: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY,
+    EXPO_PUBLIC_SENTRY_DSN: process.env.EXPO_PUBLIC_SENTRY_DSN,
+  },
+  __DEV__
+);
