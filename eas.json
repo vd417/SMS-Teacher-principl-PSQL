@@ -14,13 +14,25 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://staging-api.schooldesk.app/v1"
+        "EXPO_PUBLIC_API_BASE_URL": "https://staging-api.schooldesk.app/v1",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
         "EXPO_PUBLIC_API_BASE_URL": "https://api.schooldesk.app/v1"
+      }
+    },
+    "production-apk": {
+      "distribution": "internal",
+      "autoIncrement": true,
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.schooldesk.app/v1",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       }
     }
   },
