@@ -17,6 +17,7 @@ import { AppProviders } from './src/providers/AppProviders';
 import { initSentry, wrapWithSentry } from './src/lib/sentry';
 import { AppErrorBoundary } from './src/components/AppErrorBoundary';
 import { OfflineBanner } from './src/components/OfflineBanner';
+import { ConfigErrorBanner } from './src/components/ConfigErrorBanner';
 import { Colors } from './src/theme';
 
 initSentry();
@@ -50,6 +51,7 @@ function App() {
               <NavigationContainer>
                 <StatusBar style="auto" />
                 <OfflineBanner />
+                <ConfigErrorBanner />
                 <RootNavigator />
               </NavigationContainer>
             </AppProviders>
