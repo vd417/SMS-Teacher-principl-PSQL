@@ -13,12 +13,21 @@ export interface AppEnv {
 export function loadEnv(raw: Record<string, string | undefined>, isDev: boolean): AppEnv {
   const url = raw.EXPO_PUBLIC_API_BASE_URL;
 
+  const EAS_BUILD_HINT =
+    "Build with 'eas build --profile production' (or 'production-apk'/'preview') — " +
+    "eas.json env values are not applied by 'expo export' alone.";
+
   if (!isDev) {
-    if (!url) throw new Error('EXPO_PUBLIC_API_BASE_URL is required in production builds.');
+    if (!url)
+      throw new Error(
+        `EXPO_PUBLIC_API_BASE_URL is required in production builds. ${EAS_BUILD_HINT}`
+      );
     if (url === PLACEHOLDER)
-      throw new Error(`EXPO_PUBLIC_API_BASE_URL is still the placeholder (${PLACEHOLDER}).`);
+      throw new Error(
+        `EXPO_PUBLIC_API_BASE_URL is still the placeholder (${PLACEHOLDER}). ${EAS_BUILD_HINT}`
+      );
     if (!url.startsWith('https://'))
-      throw new Error('EXPO_PUBLIC_API_BASE_URL must use https in production.');
+      throw new Error(`EXPO_PUBLIC_API_BASE_URL must use https in production. ${EAS_BUILD_HINT}`);
   }
 
   return {
