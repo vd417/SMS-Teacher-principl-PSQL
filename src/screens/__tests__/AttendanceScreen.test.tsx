@@ -50,6 +50,14 @@ const student: Student = {
   parentPhone: '',
   photoUrl: null,
 };
+const allowedRollCall = {
+  canMark: true,
+  period: 2,
+  subject: 'Math',
+  teacherName: 'Ravi Kumar',
+  reason: 'period_teacher',
+  marked: false,
+};
 
 function renderScreen(repos: Repositories) {
   // A fresh QueryClient per render — reusing the app's shared singleton across
@@ -79,6 +87,37 @@ beforeEach(() => {
   mockGoBack.mockClear();
 });
 
+test('stays on screen after updating saved attendance', async () => {
+  jest.useFakeTimers();
+  const repos = {
+    classes: { get: jest.fn(async () => cls) },
+    students: {
+      listByClass: jest.fn(async () => ({ items: [student], nextCursor: null })),
+    },
+    attendance: {
+      forClass: jest.fn(async () => [
+        { studentId: 's1', status: 'A' as const, date: '2026-07-29' },
+      ]),
+      rollCall: jest.fn(async () => allowedRollCall),
+      save: jest.fn(async () => undefined),
+    },
+  } as unknown as Repositories;
+
+  renderScreen(repos);
+
+  await waitFor(() => expect(screen.getByText('Asha')).toBeTruthy());
+  fireEvent.press(screen.getByText('A'));
+  fireEvent.press(screen.getByText(/Update Attendance/));
+
+  await waitFor(() => expect(repos.attendance.save).toHaveBeenCalled());
+  await act(async () => {
+    jest.advanceTimersByTime(2000);
+  });
+  expect(mockGoBack).not.toHaveBeenCalled();
+
+  jest.useRealTimers();
+});
+
 test('navigates back ~1s after a successful save', async () => {
   jest.useFakeTimers();
   const repos = {
@@ -88,6 +127,7 @@ test('navigates back ~1s after a successful save', async () => {
     },
     attendance: {
       forClass: jest.fn(async () => []),
+      rollCall: jest.fn(async () => allowedRollCall),
       save: jest.fn(async () => undefined),
     },
   } as unknown as Repositories;
@@ -95,6 +135,7 @@ test('navigates back ~1s after a successful save', async () => {
   renderScreen(repos);
 
   await waitFor(() => expect(screen.getByText('Asha')).toBeTruthy());
+  fireEvent.press(screen.getByText('Mark All Present'));
   fireEvent.press(screen.getByText(/Submit Attendance/));
 
   await waitFor(() => expect(repos.attendance.save).toHaveBeenCalled());
@@ -117,6 +158,7 @@ test('stays on screen and does not navigate back when save fails', async () => {
     },
     attendance: {
       forClass: jest.fn(async () => []),
+      rollCall: jest.fn(async () => allowedRollCall),
       save: jest.fn(async () => {
         throw new Error('network error');
       }),
@@ -126,6 +168,7 @@ test('stays on screen and does not navigate back when save fails', async () => {
   renderScreen(repos);
 
   await waitFor(() => expect(screen.getByText('Asha')).toBeTruthy());
+  fireEvent.press(screen.getByText('Mark All Present'));
   fireEvent.press(screen.getByText(/Submit Attendance/));
 
   await waitFor(() => expect(repos.attendance.save).toHaveBeenCalled());
@@ -136,4 +179,62 @@ test('stays on screen and does not navigate back when save fails', async () => {
   expect(mockGoBack).not.toHaveBeenCalled();
 
   jest.useRealTimers();
+});
+
+test('shows the roll-call banner and requires every student to be marked before submit', async () => {
+  const repos = {
+    classes: { get: jest.fn(async () => cls) },
+    students: {
+      listByClass: jest.fn(async () => ({ items: [student], nextCursor: null })),
+    },
+    attendance: {
+      forClass: jest.fn(async () => []),
+      rollCall: jest.fn(async () => allowedRollCall),
+      save: jest.fn(async () => undefined),
+    },
+  } as unknown as Repositories;
+
+  renderScreen(repos);
+
+  await waitFor(() => expect(screen.getByText('P2 Math · Ravi Kumar')).toBeTruthy());
+  expect(screen.getByText('—')).toBeTruthy();
+
+  fireEvent.press(screen.getByText(/Submit Attendance/));
+  expect(repos.attendance.save).not.toHaveBeenCalled();
+
+  fireEvent.press(screen.getByText('—'));
+  fireEvent.press(screen.getByText(/Submit Attendance/));
+  await waitFor(() =>
+    expect(repos.attendance.save).toHaveBeenCalledWith('c1', expect.any(String), [
+      { studentId: 's1', status: 'P', date: expect.any(String) },
+    ])
+  );
+});
+
+test('prevents marking when the roll-call permission is denied', async () => {
+  const repos = {
+    classes: { get: jest.fn(async () => cls) },
+    students: {
+      listByClass: jest.fn(async () => ({ items: [student], nextCursor: null })),
+    },
+    attendance: {
+      forClass: jest.fn(async () => [
+        { studentId: 's1', status: 'P' as const, date: '2026-07-29' },
+      ]),
+      rollCall: jest.fn(async () => ({ ...allowedRollCall, canMark: false })),
+      save: jest.fn(async () => undefined),
+    },
+  } as unknown as Repositories;
+
+  renderScreen(repos);
+
+  await waitFor(() =>
+    expect(screen.getByText('Only the class teacher or P2 teacher can mark today')).toBeTruthy()
+  );
+  expect(screen.queryByText('Mark All Present')).toBeNull();
+  expect(screen.queryByText(/Update Attendance/)).toBeNull();
+
+  fireEvent.press(screen.getByText('P'));
+  expect(screen.queryByText('A')).toBeNull();
+  expect(repos.attendance.save).not.toHaveBeenCalled();
 });

@@ -6,7 +6,6 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
@@ -22,11 +21,16 @@ import { FontFamily } from '../theme/typography';
 import { Avatar, ScreenHeader, Toast } from '../components';
 import { useClass } from '@/features/classes/hooks';
 import { useStudentsByClass } from '@/features/students/hooks';
-import { useAttendance, useMarkAttendance } from '@/features/attendance/hooks';
+import {
+  useAttendance,
+  useAttendanceRollCall,
+  useMarkAttendance,
+} from '@/features/attendance/hooks';
 import { deriveColorSet } from '@/theme/derive';
 import { todayISO, formatLongDate, addDays } from '@/lib/date';
 import { classLabel } from '@/lib/classLabel';
 import type { AttendanceStatus, AttendanceRecord } from '@/data/domain';
+import { isAppError } from '@/lib/errors';
 import type { HomeStackParamList } from '../navigation/types';
 
 type AttRoute = RouteProp<HomeStackParamList, 'AttendanceScreen'>;
@@ -53,16 +57,18 @@ const STATUS_SOFT: Record<AttendanceStatus, string> = {
   V: Colors.leaveSoft,
 };
 
-const StatusBadge: React.FC<{ status: AttendanceStatus; onPress: () => void }> = ({
-  status,
-  onPress,
-}) => {
+const StatusBadge: React.FC<{
+  status?: AttendanceStatus;
+  disabled: boolean;
+  onPress: () => void;
+}> = ({ status, disabled, onPress }) => {
   const scale = useSharedValue(1);
   const animStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
   }));
 
   const handlePress = () => {
+    if (disabled) return;
     scale.value = withSpring(0.8, { damping: 6, stiffness: 300 }, () => {
       scale.value = withSpring(1.1, { damping: 8, stiffness: 200 }, () => {
         scale.value = withSpring(1, { damping: 10, stiffness: 200 });
@@ -75,13 +81,21 @@ const StatusBadge: React.FC<{ status: AttendanceStatus; onPress: () => void }> =
     <Animated.View style={animStyle}>
       <TouchableOpacity
         onPress={handlePress}
+        disabled={disabled}
         style={[
           styles.statusBadge,
-          { backgroundColor: STATUS_SOFT[status], borderColor: STATUS_COLORS[status] },
+          status
+            ? { backgroundColor: STATUS_SOFT[status], borderColor: STATUS_COLORS[status] }
+            : { backgroundColor: Colors.paper2, borderColor: Colors.ruleSoft },
+          disabled && styles.statusBadgeDisabled,
         ]}
         activeOpacity={0.8}
       >
-        <Text style={[styles.statusText, { color: STATUS_COLORS[status] }]}>{status}</Text>
+        <Text
+          style={[styles.statusText, { color: status ? STATUS_COLORS[status] : Colors.inkMuted }]}
+        >
+          {status ?? '—'}
+        </Text>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -116,67 +130,48 @@ export const AttendanceScreen: React.FC = () => {
     data: attendanceRecords,
     isLoading: attLoading,
     isError: attError,
+    refetch: refetchAttendance,
   } = useAttendance(classId, date);
+  const {
+    data: rollCall,
+    isLoading: rollCallLoading,
+    isError: rollCallError,
+  } = useAttendanceRollCall(classId, date);
   const mutation = useMarkAttendance(classId, date);
 
-  const isLoading = clsLoading || studentsLoading || attLoading;
-  const isError = clsError || studentsError || attError;
+  const isLoading = clsLoading || studentsLoading || attLoading || rollCallLoading;
+  const isError = clsError || studentsError || attError || rollCallError;
 
   const [attendance, setAttendance] = useState<StudentAttendance>({});
+  const [dirty, setDirty] = useState(false);
   const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('Attendance saved!');
   const [errorToastVisible, setErrorToastVisible] = useState(false);
-  // Gate the first edit of an already-saved day behind one confirmation, so a stray
-  // tap doesn't silently start changing a day that was already submitted.
-  const [editUnlocked, setEditUnlocked] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('Failed to save attendance. Please try again.');
 
   useEffect(() => {
-    setEditUnlocked(false);
-  }, [date]);
+    setDirty(false);
+  }, [date, classId]);
 
-  // Sync local state when attendance records arrive
+  // Sync local state when attendance records arrive (skip while the teacher is editing).
   useEffect(() => {
-    if (!attendanceRecords || classStudents.length === 0) return;
+    if (dirty || !attendanceRecords || classStudents.length === 0) return;
     const map: StudentAttendance = {};
-    // Start with defaults for all students
-    for (const s of classStudents) {
-      map[s.id] = 'P';
-    }
-    // Override with loaded records
     for (const rec of attendanceRecords) {
       map[rec.studentId] = rec.status;
     }
     setAttendance(map);
-  }, [attendanceRecords, classStudents]);
-
-  const requestEdit = (apply: () => void) => {
-    if (attendanceRecords?.length && !editUnlocked) {
-      Alert.alert(
-        'Edit saved attendance?',
-        `Attendance for ${formatLongDate(date)} is already saved. Editing will let you change it and resubmit.`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Edit',
-            onPress: () => {
-              setEditUnlocked(true);
-              apply();
-            },
-          },
-        ]
-      );
-      return;
-    }
-    apply();
-  };
+  }, [attendanceRecords, classStudents, dirty]);
 
   const cycleStatus = (studentId: string) => {
-    requestEdit(() => {
-      setAttendance((prev) => {
-        const current = prev[studentId] ?? 'P';
-        const idx = STATUS_CYCLE.indexOf(current);
-        const next = STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length];
-        return { ...prev, [studentId]: next };
-      });
+    if (!rollCall?.canMark) return;
+    setDirty(true);
+    setAttendance((prev) => {
+      const current = prev[studentId];
+      if (!current) return { ...prev, [studentId]: 'P' };
+      const idx = STATUS_CYCLE.indexOf(current);
+      const next = STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length];
+      return { ...prev, [studentId]: next };
     });
   };
 
@@ -186,30 +181,48 @@ export const AttendanceScreen: React.FC = () => {
     L: Object.values(attendance).filter((s) => s === 'L').length,
     V: Object.values(attendance).filter((s) => s === 'V').length,
   };
+  const allStudentsMarked =
+    classStudents.length > 0 &&
+    classStudents.every((student) => attendance[student.id] !== undefined);
 
   const handleSubmit = () => {
+    if (!rollCall?.canMark || !allStudentsMarked) return;
+    const isUpdate = (attendanceRecords?.length ?? 0) > 0;
     const records: AttendanceRecord[] = classStudents.map((s) => ({
       studentId: s.id,
-      status: attendance[s.id] ?? 'P',
+      status: attendance[s.id]!,
       date,
     }));
     mutation.mutate(records, {
       onSuccess: () => {
+        setDirty(false);
+        setToastMessage(isUpdate ? 'Attendance updated!' : 'Attendance submitted successfully!');
         setToastVisible(true);
-        goBackTimer.current = setTimeout(() => navigation.goBack(), 1000);
+        void refetchAttendance();
+        if (!isUpdate) {
+          goBackTimer.current = setTimeout(() => navigation.goBack(), 1000);
+        }
       },
-      onError: () => setErrorToastVisible(true),
+      onError: (err) => {
+        setErrorMessage(
+          isAppError(err)
+            ? err.message
+            : err instanceof Error
+              ? err.message
+              : 'Failed to save attendance. Please try again.'
+        );
+        setErrorToastVisible(true);
+      },
     });
   };
 
   const markAllPresent = () => {
-    requestEdit(() => {
-      const newState: StudentAttendance = {};
-      for (const s of classStudents) {
-        newState[s.id] = 'P';
-      }
-      setAttendance(newState);
-    });
+    setDirty(true);
+    const newState: StudentAttendance = {};
+    for (const s of classStudents) {
+      newState[s.id] = 'P';
+    }
+    setAttendance(newState);
   };
 
   const { color: clsColor } = cls ? deriveColorSet(cls.id) : { color: Colors.primary };
@@ -245,6 +258,19 @@ export const AttendanceScreen: React.FC = () => {
           />
         </Animated.View>
 
+        {rollCall && (
+          <View style={styles.rollCallBanner}>
+            <Text style={styles.rollCallBannerText}>
+              P{rollCall.period} {rollCall.subject} · {rollCall.teacherName}
+            </Text>
+            {!rollCall.canMark && (
+              <Text style={styles.rollCallDeniedText}>
+                Only the class teacher or P{rollCall.period} teacher can mark today
+              </Text>
+            )}
+          </View>
+        )}
+
         <Animated.View entering={FadeInDown.delay(70).springify()} style={styles.dateBar}>
           <TouchableOpacity
             onPress={goPrevDay}
@@ -255,10 +281,10 @@ export const AttendanceScreen: React.FC = () => {
           </TouchableOpacity>
           <View style={styles.dateLabelWrap}>
             <Text style={styles.dateLabel}>{formatLongDate(date)}</Text>
-            {!!attendanceRecords?.length && (
+            {rollCall?.marked && (
               <View style={styles.savedPill}>
                 <Ionicons name="checkmark-circle" size={11} color={Colors.present} />
-                <Text style={styles.savedPillText}>Already marked</Text>
+                <Text style={styles.savedPillText}>Already marked · tap to edit</Text>
               </View>
             )}
           </View>
@@ -285,11 +311,13 @@ export const AttendanceScreen: React.FC = () => {
         </Animated.View>
 
         {/* Mark All Present */}
-        <Animated.View entering={FadeInDown.delay(140).springify()}>
-          <TouchableOpacity style={styles.markAllBtn} onPress={markAllPresent}>
-            <Text style={styles.markAllText}>Mark All Present</Text>
-          </TouchableOpacity>
-        </Animated.View>
+        {rollCall?.canMark && (
+          <Animated.View entering={FadeInDown.delay(140).springify()}>
+            <TouchableOpacity style={styles.markAllBtn} onPress={markAllPresent}>
+              <Text style={styles.markAllText}>Mark All Present</Text>
+            </TouchableOpacity>
+          </Animated.View>
+        )}
 
         {/* Empty state */}
         {classStudents.length === 0 && (
@@ -308,7 +336,8 @@ export const AttendanceScreen: React.FC = () => {
                 <Text style={styles.studentRoll}>Roll #{student.roll}</Text>
               </View>
               <StatusBadge
-                status={attendance[student.id] ?? 'P'}
+                status={attendance[student.id]}
+                disabled={!rollCall?.canMark}
                 onPress={() => cycleStatus(student.id)}
               />
             </View>
@@ -317,37 +346,39 @@ export const AttendanceScreen: React.FC = () => {
       </ScrollView>
 
       {/* Submit FAB */}
-      <View style={[styles.fab, { bottom: insets.bottom + 24 }]}>
-        <TouchableOpacity
-          style={styles.fabBtn}
-          onPress={handleSubmit}
-          activeOpacity={0.85}
-          disabled={mutation.isPending}
-        >
-          {mutation.isPending ? (
-            <ActivityIndicator color={Colors.white} />
-          ) : (
-            <>
-              <Text style={styles.fabText}>
-                {attendanceRecords?.length ? 'Update Attendance' : 'Submit Attendance'}
-              </Text>
-              <View style={styles.fabBadge}>
-                <Text style={styles.fabBadgeText}>{classStudents.length}</Text>
-              </View>
-            </>
-          )}
-        </TouchableOpacity>
-      </View>
+      {rollCall?.canMark && (
+        <View style={[styles.fab, { bottom: insets.bottom + 24 }]}>
+          <TouchableOpacity
+            style={[styles.fabBtn, !allStudentsMarked && styles.fabBtnDisabled]}
+            onPress={handleSubmit}
+            activeOpacity={0.85}
+            disabled={mutation.isPending || !allStudentsMarked}
+          >
+            {mutation.isPending ? (
+              <ActivityIndicator color={Colors.white} />
+            ) : (
+              <>
+                <Text style={styles.fabText}>
+                  {attendanceRecords?.length ? 'Update Attendance' : 'Submit Attendance'}
+                </Text>
+                <View style={styles.fabBadge}>
+                  <Text style={styles.fabBadgeText}>{classStudents.length}</Text>
+                </View>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
 
       <Toast
         visible={toastVisible}
-        message="Attendance submitted successfully!"
+        message={toastMessage}
         type="success"
         onHide={() => setToastVisible(false)}
       />
       <Toast
         visible={errorToastVisible}
-        message="Failed to save attendance. Please try again."
+        message={errorMessage}
         type="error"
         onHide={() => setErrorToastVisible(false)}
       />
@@ -373,6 +404,26 @@ const styles = StyleSheet.create({
   dateNavDisabled: { opacity: 0.35 },
   dateLabelWrap: { alignItems: 'center', gap: 3 },
   dateLabel: { fontFamily: FontFamily.semiBold, fontSize: 14, color: Colors.ink },
+  rollCallBanner: {
+    borderRadius: Radii.md,
+    backgroundColor: Colors.primarySoft,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginBottom: 4,
+  },
+  rollCallBannerText: {
+    fontFamily: FontFamily.bold,
+    fontSize: 14,
+    color: Colors.primary,
+    textAlign: 'center',
+  },
+  rollCallDeniedText: {
+    fontFamily: FontFamily.medium,
+    fontSize: 12,
+    color: Colors.inkMuted,
+    textAlign: 'center',
+    marginTop: 4,
+  },
   savedPill: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -452,6 +503,9 @@ const styles = StyleSheet.create({
     fontFamily: FontFamily.extraBold,
     fontSize: 16,
   },
+  statusBadgeDisabled: {
+    opacity: 0.55,
+  },
   fab: {
     position: 'absolute',
     left: 24,
@@ -466,6 +520,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
     ...Shadows.pop,
+  },
+  fabBtnDisabled: {
+    opacity: 0.45,
   },
   fabText: {
     fontFamily: FontFamily.bold,

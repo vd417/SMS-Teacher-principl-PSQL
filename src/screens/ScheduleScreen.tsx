@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Colors, Radii } from '../theme';
@@ -10,7 +11,7 @@ import { useTimetable } from '@/features/timetable/hooks';
 import { deriveColorSet } from '@/theme/derive';
 import { Skeleton } from '@/ui/state/Skeleton';
 import { ErrorState } from '@/ui/state/ErrorState';
-import type { WeekDay } from '@/data/domain';
+import type { TimetableSlot, WeekDay } from '@/data/domain';
 
 const DAYS: WeekDay[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 const PERIODS = 8; // P1..P8 — full day
@@ -31,32 +32,26 @@ const periodEnd = (p: number) => fmt(periodStartMin(p) + PERIOD_MIN);
 type Row = { type: 'period'; period: number } | { type: 'lunch' };
 type Lesson = { subject: string; className: string; room: string; classId: string };
 
+export function cellFor(timetable: TimetableSlot[], day: WeekDay, period: number): Lesson | null {
+  const slot = timetable.find((item) => item.day === day && item.period === period);
+  if (!slot) return null;
+  return {
+    subject: slot.subject,
+    className: slot.className,
+    room: slot.room,
+    classId: slot.classId,
+  };
+}
+
 export const ScheduleScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { data: timetable = [], isLoading, isError, refetch } = useTimetable();
 
-  // Distinct lessons (class+subject) used to fill any free periods into a full week.
-  const lessons: Lesson[] = [];
-  const seen = new Set<string>();
-  for (const t of timetable) {
-    const key = `${t.classId}-${t.subject}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    lessons.push({ subject: t.subject, className: t.className, room: t.room, classId: t.classId });
-  }
-
-  const cellFor = (dayIdx: number, period: number): Lesson | null => {
-    const real = timetable.find((t) => t.day === DAYS[dayIdx] && t.period === period);
-    if (real)
-      return {
-        subject: real.subject,
-        className: real.className,
-        room: real.room,
-        classId: real.classId,
-      };
-    if (lessons.length === 0) return null;
-    return lessons[(dayIdx * PERIODS + (period - 1)) % lessons.length];
-  };
+  useFocusEffect(
+    useCallback(() => {
+      void refetch();
+    }, [refetch])
+  );
 
   const rows: Row[] = [];
   for (let p = 1; p <= PERIODS; p++) {
@@ -83,7 +78,7 @@ export const ScheduleScreen: React.FC = () => {
         </View>
       ) : isError ? (
         <ErrorState onRetry={refetch} />
-      ) : lessons.length === 0 ? (
+      ) : timetable.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyEmoji}>🎉</Text>
           <Text style={styles.emptyTitle}>No classes scheduled</Text>
@@ -123,7 +118,7 @@ export const ScheduleScreen: React.FC = () => {
                     <Text style={styles.periodTime}>{periodEnd(r.period)}</Text>
                   </View>
                   {DAYS.map((_d, di) => {
-                    const lesson = cellFor(di, r.period);
+                    const lesson = cellFor(timetable, DAYS[di], r.period);
                     if (!lesson) {
                       return <View key={di} style={[styles.emptyCell, { width: DAY_W }]} />;
                     }

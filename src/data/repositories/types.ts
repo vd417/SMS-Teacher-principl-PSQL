@@ -6,11 +6,13 @@ import type {
   AttendanceRecord,
   TimetableSlot,
   Exam,
+  ExamTerm,
   GradeEntry,
   Assignment,
   ChatContact,
   ChatMessage,
   Announcement,
+  AppNotification,
   CalendarEvent,
   LibraryBook,
   PayslipEntry,
@@ -27,6 +29,7 @@ import type {
   ApprovalRequest,
   PrincipalOverview,
   SchoolAttendance,
+  SchoolStaffMember,
 } from '@/data/domain';
 import type { Page } from '@/lib/envelope';
 
@@ -53,6 +56,7 @@ export interface NewLeaveInput {
   to: string;
   reason: string;
   substitute?: string;
+  attachmentUrls?: string[];
 }
 export interface NewAnnouncementInput {
   title: string;
@@ -80,7 +84,7 @@ export interface AuthRepository {
   login(identifier: string, password: string): Promise<Session>;
   // The backend returns tokens only; identity is fetched separately via me().
   refresh(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }>;
-  me(): Promise<User>;
+  me(): Promise<{ user: User; tenant: Tenant }>;
   logout(refreshToken: string): Promise<void>;
   requestOtp(identifier: string): Promise<OtpChallenge>;
   verifyOtp(identifier: string, code: string): Promise<Session>;
@@ -105,8 +109,17 @@ export interface StudentsRepository {
   // Teacher-driven, not self-service — students don't sign into this app.
   updatePhoto(studentId: string, photoUrl: string | null): Promise<Student>;
 }
+export interface AttendanceRollCall {
+  canMark: boolean;
+  period: number | null;
+  subject: string | null;
+  teacherName: string | null;
+  reason: string;
+  marked: boolean;
+}
 export interface AttendanceRepository {
   forClass(classId: string, date: string): Promise<AttendanceRecord[]>;
+  rollCall(classId: string, date: string): Promise<AttendanceRollCall>;
   save(classId: string, date: string, records: AttendanceRecord[]): Promise<void>;
 }
 export interface MyAttendanceRepository {
@@ -120,6 +133,7 @@ export interface TimetableRepository {
   list(): Promise<TimetableSlot[]>;
 }
 export interface ExamsRepository {
+  listTerms(): Promise<ExamTerm[]>;
   list(): Promise<Exam[]>;
   get(id: string): Promise<Exam>;
   create(input: NewExamInput): Promise<Exam>;
@@ -129,19 +143,32 @@ export interface ExamsRepository {
 export interface GradesRepository {
   listByExam(examId: string): Promise<GradeEntry[]>;
   upsert(input: GradeInput): Promise<GradeEntry>;
+  notifyPublished(examPaperId: string): Promise<NotifyMarksResult>;
+}
+
+export interface NotifyMarksResult {
+  parentReach: number;
+  studentReach: number;
+  emailsSent: number;
 }
 export interface AssignmentsRepository {
   list(): Promise<Assignment[]>;
   create(input: NewAssignmentInput): Promise<Assignment>;
 }
+export type ChatSendInput = { text?: string; imageUrl?: string };
+
 export interface ChatRepository {
   contacts(): Promise<ChatContact[]>;
   messages(contactId: string): Promise<ChatMessage[]>;
-  send(contactId: string, text: string): Promise<ChatMessage>;
+  send(contactId: string, input: ChatSendInput): Promise<ChatMessage>;
+  createThread(input: { name: string; role?: string }): Promise<ChatContact>;
 }
 export interface AnnouncementsRepository {
   list(): Promise<Announcement[]>;
   create(input: NewAnnouncementInput): Promise<Announcement>;
+}
+export interface NotificationsRepository {
+  list(): Promise<AppNotification[]>;
 }
 export interface CalendarRepository {
   list(): Promise<CalendarEvent[]>;
@@ -157,15 +184,27 @@ export interface LeaveRepository {
   create(input: NewLeaveInput): Promise<LeaveRequest>;
 }
 export interface ApprovalsRepository {
-  list(): Promise<ApprovalRequest[]>;
+  list(status?: ApprovalListStatus): Promise<ApprovalRequest[]>;
   decide(id: string, decision: 'approved' | 'rejected', note?: string): Promise<ApprovalRequest>;
 }
+
+export type ApprovalListStatus = 'pending' | 'approved' | 'rejected' | 'all';
 export interface DashboardRepository {
   stats(): Promise<DashboardStats>;
 }
 export interface PrincipalRepository {
   overview(): Promise<PrincipalOverview>;
   attendance(date: string): Promise<SchoolAttendance>;
+  transportFleet(): Promise<FleetBus[]>;
+  listTransportBuses(): Promise<TransportBusRow[]>;
+  assignBusTeacher(busId: string, teacherUserId: string): Promise<void>;
+  unassignBusTeacher(busId: string): Promise<void>;
+}
+export interface TeachersRepository {
+  list(): Promise<SchoolStaffMember[]>;
+}
+export interface StaffRepository {
+  list(): Promise<SchoolStaffMember[]>;
 }
 export interface BusRepository {
   assignedBus(): Promise<Bus>;
@@ -185,6 +224,7 @@ export interface Repositories {
   assignments: AssignmentsRepository;
   chat: ChatRepository;
   announcements: AnnouncementsRepository;
+  notifications: NotificationsRepository;
   calendar: CalendarRepository;
   library: LibraryRepository;
   payroll: PayrollRepository;
@@ -192,6 +232,8 @@ export interface Repositories {
   approvals: ApprovalsRepository;
   dashboard: DashboardRepository;
   principal: PrincipalRepository;
+  teachers: TeachersRepository;
+  staff: StaffRepository;
   bus: BusRepository;
   myAttendance: MyAttendanceRepository;
 }

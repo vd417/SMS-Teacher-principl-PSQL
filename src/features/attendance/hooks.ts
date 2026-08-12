@@ -15,6 +15,16 @@ export function useAttendance(classId: string, date: string) {
   });
 }
 
+export function useAttendanceRollCall(classId: string, date: string) {
+  const repos = useRepositories();
+  const tenantId = useTenantId();
+  return useQuery({
+    queryKey: ['attendance-roll-call', tenantId, classId, date],
+    queryFn: () => repos.attendance.rollCall(classId, date),
+    enabled: classId !== '' && date !== '',
+  });
+}
+
 export interface SectionAttendanceSummaries {
   /** Per-section {total, present}, keyed by classId. */
   bySection: Record<string, SectionAttendance>;
@@ -87,6 +97,9 @@ export function useMarkAttendance(classId: string, date: string) {
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: key });
+      qc.invalidateQueries({
+        queryKey: ['attendance-roll-call', tenantId, classId, date],
+      });
       // Cross-screen freshness: the principal's school-wide attendance summary
       // and the teacher's Home dashboard both aggregate these same records.
       qc.invalidateQueries({ queryKey: queryKeys.principalAttendance(tenantId, date) });
