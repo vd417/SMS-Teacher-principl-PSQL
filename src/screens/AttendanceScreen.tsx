@@ -261,11 +261,15 @@ export const AttendanceScreen: React.FC = () => {
         {rollCall && (
           <View style={styles.rollCallBanner}>
             <Text style={styles.rollCallBannerText}>
-              P{rollCall.period} {rollCall.subject} · {rollCall.teacherName}
+              {rollCall.period == null
+                ? 'Roll-call · not scheduled today'
+                : `P${rollCall.period} ${rollCall.subject ?? ''} · ${rollCall.teacherName ?? ''}`}
             </Text>
             {!rollCall.canMark && (
               <Text style={styles.rollCallDeniedText}>
-                Only the class teacher or P{rollCall.period} teacher can mark today
+                {rollCall.period == null
+                  ? 'Only the class teacher can mark today'
+                  : `Only the class teacher or P${rollCall.period} teacher can mark today`}
               </Text>
             )}
           </View>

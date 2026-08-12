@@ -211,6 +211,31 @@ test('shows the roll-call banner and requires every student to be marked before 
   );
 });
 
+test('shows a not-scheduled banner when roll-call has no teaching slot', async () => {
+  const repos = {
+    classes: { get: jest.fn(async () => cls) },
+    students: {
+      listByClass: jest.fn(async () => ({ items: [student], nextCursor: null })),
+    },
+    attendance: {
+      forClass: jest.fn(async () => []),
+      rollCall: jest.fn(async () => ({
+        ...allowedRollCall,
+        canMark: false,
+        period: null,
+        subject: null,
+        teacherName: null,
+      })),
+      save: jest.fn(async () => undefined),
+    },
+  } as unknown as Repositories;
+
+  renderScreen(repos);
+
+  await waitFor(() => expect(screen.getByText('Roll-call · not scheduled today')).toBeTruthy());
+  expect(screen.queryByText('Pnull null · null')).toBeNull();
+});
+
 test('prevents marking when the roll-call permission is denied', async () => {
   const repos = {
     classes: { get: jest.fn(async () => cls) },
