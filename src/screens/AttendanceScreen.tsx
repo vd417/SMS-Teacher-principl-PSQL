@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,12 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, {
-  FadeInDown,
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-} from 'react-native-reanimated';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Radii, Shadows } from '../theme';
@@ -22,14 +17,18 @@ import { Avatar, ScreenHeader, Toast } from '../components';
 import { useClass } from '@/features/classes/hooks';
 import { useStudentsByClass } from '@/features/students/hooks';
 import {
-  useAttendance,
-  useAttendanceRollCall,
-  useMarkAttendance,
+  useClassDayTimetable,
+  usePeriodAttendance,
+  useMarkPeriodAttendance,
 } from '@/features/attendance/hooks';
-import { deriveColorSet } from '@/theme/derive';
+import { deriveColorSet, deriveSubjectColorSet } from '@/theme/derive';
 import { todayISO, formatLongDate, addDays } from '@/lib/date';
+import { attendancePeriodRows, lunchTimeLabel, localMinutes } from '@/lib/attendancePeriods';
 import { classLabel } from '@/lib/classLabel';
+import { slotsTaughtByTeacher } from '@/lib/homeworkSubjects';
+import { useAuth } from '@/features/auth/AuthProvider';
 import type { AttendanceStatus, AttendanceRecord } from '@/data/domain';
+import type { ClassDayTimetableSlot } from '@/data/repositories/types';
 import { isAppError } from '@/lib/errors';
 import type { HomeStackParamList } from '../navigation/types';
 
@@ -37,7 +36,7 @@ type AttRoute = RouteProp<HomeStackParamList, 'AttendanceScreen'>;
 
 type StudentAttendance = Record<string, AttendanceStatus>;
 
-const STATUS_CYCLE: AttendanceStatus[] = ['P', 'A', 'L', 'V'];
+const STATUS_ORDER: AttendanceStatus[] = ['P', 'A', 'L', 'V'];
 const STATUS_LABELS: Record<AttendanceStatus, string> = {
   P: 'Present',
   A: 'Absent',
@@ -57,55 +56,84 @@ const STATUS_SOFT: Record<AttendanceStatus, string> = {
   V: Colors.leaveSoft,
 };
 
-const StatusBadge: React.FC<{
+export function statusChipColors(
+  code: AttendanceStatus,
+  selected: boolean
+): { backgroundColor: string; borderColor: string; color: string } {
+  if (selected) {
+    return {
+      backgroundColor: STATUS_COLORS[code],
+      borderColor: STATUS_COLORS[code],
+      color: Colors.white,
+    };
+  }
+  return {
+    backgroundColor: STATUS_SOFT[code],
+    borderColor: STATUS_COLORS[code],
+    color: STATUS_COLORS[code],
+  };
+}
+
+export function studentRowTint(status?: AttendanceStatus): string {
+  return status ? STATUS_SOFT[status] : Colors.card;
+}
+
+export function periodTitle(slot: ClassDayTimetableSlot): string {
+  return `P${slot.period} · ${slot.subject ?? '—'}`;
+}
+
+export function periodMeta(slot: ClassDayTimetableSlot): string {
+  const time = slot.startTime && slot.endTime ? `${slot.startTime}–${slot.endTime}` : '';
+  const teacher = slot.teacherName?.trim() ?? '';
+  return [time, teacher].filter(Boolean).join(' · ');
+}
+
+export function rollLabel(roll: string | number | null | undefined): string | null {
+  const trimmed = String(roll ?? '').trim();
+  if (!trimmed || trimmed === '0') return null;
+  return `Roll #${trimmed}`;
+}
+
+const StatusButtons: React.FC<{
+  studentName: string;
   status?: AttendanceStatus;
   disabled: boolean;
-  onPress: () => void;
-}> = ({ status, disabled, onPress }) => {
-  const scale = useSharedValue(1);
-  const animStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-  }));
-
-  const handlePress = () => {
-    if (disabled) return;
-    scale.value = withSpring(0.8, { damping: 6, stiffness: 300 }, () => {
-      scale.value = withSpring(1.1, { damping: 8, stiffness: 200 }, () => {
-        scale.value = withSpring(1, { damping: 10, stiffness: 200 });
-      });
-    });
-    onPress();
-  };
-
-  return (
-    <Animated.View style={animStyle}>
-      <TouchableOpacity
-        onPress={handlePress}
-        disabled={disabled}
-        style={[
-          styles.statusBadge,
-          status
-            ? { backgroundColor: STATUS_SOFT[status], borderColor: STATUS_COLORS[status] }
-            : { backgroundColor: Colors.paper2, borderColor: Colors.ruleSoft },
-          disabled && styles.statusBadgeDisabled,
-        ]}
-        activeOpacity={0.8}
-      >
-        <Text
-          style={[styles.statusText, { color: status ? STATUS_COLORS[status] : Colors.inkMuted }]}
+  onSelect: (status: AttendanceStatus) => void;
+}> = ({ studentName, status, disabled, onSelect }) => (
+  <View style={styles.statusRow}>
+    {STATUS_ORDER.map((code) => {
+      const selected = status === code;
+      const chip = statusChipColors(code, selected);
+      return (
+        <TouchableOpacity
+          key={code}
+          accessibilityLabel={`${studentName} ${STATUS_LABELS[code]}`}
+          onPress={() => onSelect(code)}
+          disabled={disabled}
+          style={[
+            styles.statusChip,
+            {
+              backgroundColor: chip.backgroundColor,
+              borderColor: chip.borderColor,
+            },
+            disabled && styles.statusChipDisabled,
+          ]}
+          activeOpacity={0.8}
         >
-          {status ?? '—'}
-        </Text>
-      </TouchableOpacity>
-    </Animated.View>
-  );
-};
+          <Text style={[styles.statusChipText, { color: chip.color }]}>{STATUS_LABELS[code]}</Text>
+        </TouchableOpacity>
+      );
+    })}
+  </View>
+);
 
 export const AttendanceScreen: React.FC = () => {
   const route = useRoute<AttRoute>();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const { classId } = route.params;
+  const { session } = useAuth();
+  const teacherName = session?.user.role === 'principal' ? null : session?.user.name;
   const goBackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(
@@ -127,20 +155,39 @@ export const AttendanceScreen: React.FC = () => {
     isError: studentsError,
   } = useStudentsByClass(classId);
   const {
+    data: slots = [],
+    isLoading: slotsLoading,
+    isError: slotsError,
+  } = useClassDayTimetable(classId, date);
+
+  const [selectedSlotId, setSelectedSlotId] = useState<string | null>(null);
+  useEffect(() => {
+    setSelectedSlotId(null);
+  }, [classId, date]);
+
+  const nowMinutes = date === today ? localMinutes() : null;
+  const mySlots = useMemo(() => slotsTaughtByTeacher(slots, teacherName), [slots, teacherName]);
+  const periodRows = attendancePeriodRows(mySlots, nowMinutes);
+
+  const selected = mySlots.find((s) => s.id === selectedSlotId) ?? null;
+  const {
     data: attendanceRecords,
     isLoading: attLoading,
     isError: attError,
     refetch: refetchAttendance,
-  } = useAttendance(classId, date);
-  const {
-    data: rollCall,
-    isLoading: rollCallLoading,
-    isError: rollCallError,
-  } = useAttendanceRollCall(classId, date);
-  const mutation = useMarkAttendance(classId, date);
+  } = usePeriodAttendance(classId, date, selected?.period ?? null, selected?.subject ?? null);
+  const mutation = useMarkPeriodAttendance(
+    classId,
+    date,
+    selected?.period ?? null,
+    selected?.subject ?? null,
+    selected?.subjectId,
+    selected?.id
+  );
 
-  const isLoading = clsLoading || studentsLoading || attLoading || rollCallLoading;
-  const isError = clsError || studentsError || attError || rollCallError;
+  const listLoading = clsLoading || slotsLoading;
+  const markLoading = Boolean(selected) && (studentsLoading || attLoading);
+  const isError = clsError || slotsError || (Boolean(selected) && (studentsError || attError));
 
   const [attendance, setAttendance] = useState<StudentAttendance>({});
   const [dirty, setDirty] = useState(false);
@@ -151,9 +198,8 @@ export const AttendanceScreen: React.FC = () => {
 
   useEffect(() => {
     setDirty(false);
-  }, [date, classId]);
+  }, [date, classId, selectedSlotId]);
 
-  // Sync local state when attendance records arrive (skip while the teacher is editing).
   useEffect(() => {
     if (dirty || !attendanceRecords || classStudents.length === 0) return;
     const map: StudentAttendance = {};
@@ -163,16 +209,12 @@ export const AttendanceScreen: React.FC = () => {
     setAttendance(map);
   }, [attendanceRecords, classStudents, dirty]);
 
-  const cycleStatus = (studentId: string) => {
-    if (!rollCall?.canMark) return;
+  const canMark = Boolean(selected?.canMark);
+
+  const setStatus = (studentId: string, status: AttendanceStatus) => {
+    if (!canMark) return;
     setDirty(true);
-    setAttendance((prev) => {
-      const current = prev[studentId];
-      if (!current) return { ...prev, [studentId]: 'P' };
-      const idx = STATUS_CYCLE.indexOf(current);
-      const next = STATUS_CYCLE[(idx + 1) % STATUS_CYCLE.length];
-      return { ...prev, [studentId]: next };
-    });
+    setAttendance((prev) => ({ ...prev, [studentId]: status }));
   };
 
   const counts = {
@@ -186,7 +228,7 @@ export const AttendanceScreen: React.FC = () => {
     classStudents.every((student) => attendance[student.id] !== undefined);
 
   const handleSubmit = () => {
-    if (!rollCall?.canMark || !allStudentsMarked) return;
+    if (!canMark || !allStudentsMarked || !selected?.subject) return;
     const isUpdate = (attendanceRecords?.length ?? 0) > 0;
     const records: AttendanceRecord[] = classStudents.map((s) => ({
       studentId: s.id,
@@ -217,6 +259,7 @@ export const AttendanceScreen: React.FC = () => {
   };
 
   const markAllPresent = () => {
+    if (!canMark) return;
     setDirty(true);
     const newState: StudentAttendance = {};
     for (const s of classStudents) {
@@ -226,8 +269,32 @@ export const AttendanceScreen: React.FC = () => {
   };
 
   const { color: clsColor } = cls ? deriveColorSet(cls.id) : { color: Colors.primary };
+  const heading = cls ? classLabel(cls.name, cls.section) : '';
 
-  if (isLoading) {
+  const dateBar = (
+    <Animated.View entering={FadeInDown.delay(70).springify()} style={styles.dateBar}>
+      <TouchableOpacity
+        onPress={goPrevDay}
+        style={styles.dateNav}
+        accessibilityLabel="Previous day"
+      >
+        <Ionicons name="chevron-back" size={18} color={Colors.primary} />
+      </TouchableOpacity>
+      <View style={styles.dateLabelWrap}>
+        <Text style={styles.dateLabel}>{formatLongDate(date)}</Text>
+      </View>
+      <TouchableOpacity
+        onPress={goNextDay}
+        disabled={date >= today}
+        style={[styles.dateNav, date >= today && styles.dateNavDisabled]}
+        accessibilityLabel="Next day"
+      >
+        <Ionicons name="chevron-forward" size={18} color={Colors.primary} />
+      </TouchableOpacity>
+    </Animated.View>
+  );
+
+  if (listLoading) {
     return (
       <View style={[styles.flex, styles.center]}>
         <ActivityIndicator color={Colors.primary} />
@@ -243,6 +310,118 @@ export const AttendanceScreen: React.FC = () => {
     );
   }
 
+  if (!selected) {
+    return (
+      <View style={styles.flex}>
+        <ScrollView
+          style={styles.screen}
+          contentContainerStyle={[
+            styles.scroll,
+            { paddingTop: insets.top + 16, paddingBottom: 40 },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
+          <Animated.View entering={FadeInDown.delay(50).springify()}>
+            <ScreenHeader title={heading} subtitle="Attendance" showBack />
+          </Animated.View>
+          {dateBar}
+          {mySlots.length === 0 ? (
+            <View style={styles.rollCallBanner}>
+              <Text style={styles.rollCallBannerText}>
+                {slots.length === 0
+                  ? 'No teaching periods for this class today (Mon–Sat). Publish this class timetable in CRM Academics → Timetable.'
+                  : 'No timetable periods assigned to you on this date.'}
+              </Text>
+            </View>
+          ) : (
+            periodRows.map((row, i) => {
+              if (row.kind === 'lunch') {
+                const time = lunchTimeLabel(row.startTime, row.endTime);
+                return (
+                  <Animated.View key="lunch" entering={FadeInDown.delay(80 + i * 30).springify()}>
+                    <View
+                      style={[styles.lunchCard, row.isCurrent && styles.lunchCardNow]}
+                      accessibilityLabel={time ? `Lunch break ${time}` : 'Lunch break'}
+                    >
+                      <Ionicons name="restaurant-outline" size={20} color={Colors.late} />
+                      <View style={styles.lunchCardText}>
+                        <Text style={styles.lunchTitle}>Lunch break</Text>
+                        {time ? <Text style={styles.lunchTime}>{time}</Text> : null}
+                      </View>
+                      {row.isCurrent ? (
+                        <View style={[styles.currentPill, { backgroundColor: Colors.late }]}>
+                          <Text style={styles.currentPillText}>NOW</Text>
+                        </View>
+                      ) : null}
+                    </View>
+                  </Animated.View>
+                );
+              }
+
+              const slot = row.slot;
+              const meta = periodMeta(slot);
+              const cs = deriveSubjectColorSet(slot.subject ?? '');
+              return (
+                <Animated.View key={slot.id} entering={FadeInDown.delay(80 + i * 30).springify()}>
+                  <TouchableOpacity
+                    onPress={() => setSelectedSlotId(slot.id)}
+                    style={[
+                      styles.periodCard,
+                      {
+                        backgroundColor: cs.colorSoft,
+                        borderColor: slot.isCurrent ? cs.color : cs.colorTint,
+                      },
+                      slot.isCurrent && styles.periodCardNow,
+                    ]}
+                    activeOpacity={0.85}
+                    accessibilityRole="button"
+                    accessibilityLabel={periodTitle(slot)}
+                  >
+                    <View style={[styles.periodAccent, { backgroundColor: cs.color }]} />
+                    <View style={styles.periodCardBody}>
+                      <View style={styles.periodCardTop}>
+                        <Text style={[styles.periodCardTitle, { color: cs.color }]}>
+                          {periodTitle(slot)}
+                        </Text>
+                        <View style={styles.periodCardBadges}>
+                          {slot.isCurrent ? (
+                            <View style={[styles.currentPill, { backgroundColor: cs.color }]}>
+                              <Text style={styles.currentPillText}>NOW</Text>
+                            </View>
+                          ) : null}
+                          {slot.marked ? (
+                            <Ionicons name="checkmark-circle" size={18} color={Colors.present} />
+                          ) : null}
+                        </View>
+                      </View>
+                      {meta ? <Text style={styles.periodCardMeta}>{meta}</Text> : null}
+                      {!slot.canMark ? <Text style={styles.periodCardHint}>View only</Text> : null}
+                    </View>
+                  </TouchableOpacity>
+                </Animated.View>
+              );
+            })
+          )}
+        </ScrollView>
+      </View>
+    );
+  }
+
+  if (markLoading) {
+    return (
+      <View style={[styles.flex, styles.center]}>
+        <ActivityIndicator color={Colors.primary} />
+      </View>
+    );
+  }
+
+  const markSubtitle = [
+    periodTitle(selected),
+    selected.startTime && selected.endTime ? `${selected.startTime}–${selected.endTime}` : '',
+  ]
+    .filter(Boolean)
+    .join(' · ');
+
   return (
     <View style={styles.flex}>
       <ScrollView
@@ -252,59 +431,28 @@ export const AttendanceScreen: React.FC = () => {
       >
         <Animated.View entering={FadeInDown.delay(50).springify()}>
           <ScreenHeader
-            title={classLabel(cls.name, cls.section)}
-            subtitle={`Attendance · ${cls.subject}`}
+            title={heading}
+            subtitle={markSubtitle}
             showBack
+            onBack={() => setSelectedSlotId(null)}
           />
         </Animated.View>
 
-        {rollCall && (
-          <View style={styles.rollCallBanner}>
-            <Text style={styles.rollCallBannerText}>
-              {rollCall.period == null
-                ? 'Roll-call · not scheduled today'
-                : `P${rollCall.period} ${rollCall.subject ?? ''} · ${rollCall.teacherName ?? ''}`}
-            </Text>
-            {!rollCall.canMark && (
-              <Text style={styles.rollCallDeniedText}>
-                {rollCall.period == null
-                  ? 'Only the class teacher can mark today'
-                  : `Only the class teacher or P${rollCall.period} teacher can mark today`}
-              </Text>
-            )}
+        {selected.marked && (
+          <View style={styles.savedPill}>
+            <Ionicons name="checkmark-circle" size={11} color={Colors.present} />
+            <Text style={styles.savedPillText}>Already marked · tap to edit</Text>
           </View>
         )}
 
-        <Animated.View entering={FadeInDown.delay(70).springify()} style={styles.dateBar}>
-          <TouchableOpacity
-            onPress={goPrevDay}
-            style={styles.dateNav}
-            accessibilityLabel="Previous day"
-          >
-            <Ionicons name="chevron-back" size={18} color={Colors.primary} />
-          </TouchableOpacity>
-          <View style={styles.dateLabelWrap}>
-            <Text style={styles.dateLabel}>{formatLongDate(date)}</Text>
-            {rollCall?.marked && (
-              <View style={styles.savedPill}>
-                <Ionicons name="checkmark-circle" size={11} color={Colors.present} />
-                <Text style={styles.savedPillText}>Already marked · tap to edit</Text>
-              </View>
-            )}
-          </View>
-          <TouchableOpacity
-            onPress={goNextDay}
-            disabled={date >= today}
-            style={[styles.dateNav, date >= today && styles.dateNavDisabled]}
-            accessibilityLabel="Next day"
-          >
-            <Ionicons name="chevron-forward" size={18} color={Colors.primary} />
-          </TouchableOpacity>
-        </Animated.View>
+        {!canMark && (
+          <Text style={styles.rollCallDeniedText}>
+            Only the period teacher, class teacher, or leadership can mark this period
+          </Text>
+        )}
 
-        {/* Stats Bar */}
         <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.statsBar}>
-          {(['P', 'A', 'L', 'V'] as AttendanceStatus[]).map((s) => (
+          {STATUS_ORDER.map((s) => (
             <View key={s} style={[styles.statItem, { backgroundColor: STATUS_SOFT[s] }]}>
               <Text style={[styles.statNum, { color: STATUS_COLORS[s] }]}>{counts[s]}</Text>
               <Text style={[styles.statLabel, { color: STATUS_COLORS[s] }]}>
@@ -314,8 +462,7 @@ export const AttendanceScreen: React.FC = () => {
           ))}
         </Animated.View>
 
-        {/* Mark All Present */}
-        {rollCall?.canMark && (
+        {canMark && (
           <Animated.View entering={FadeInDown.delay(140).springify()}>
             <TouchableOpacity style={styles.markAllBtn} onPress={markAllPresent}>
               <Text style={styles.markAllText}>Mark All Present</Text>
@@ -323,34 +470,42 @@ export const AttendanceScreen: React.FC = () => {
           </Animated.View>
         )}
 
-        {/* Empty state */}
         {classStudents.length === 0 && (
           <View style={styles.center}>
             <Text style={styles.emptyText}>No students in this class</Text>
           </View>
         )}
 
-        {/* Students */}
-        {classStudents.map((student, i) => (
-          <Animated.View key={student.id} entering={FadeInDown.delay(160 + i * 30).springify()}>
-            <View style={styles.studentRow}>
-              <Avatar initials={student.initials} size={44} backgroundColor={clsColor} />
-              <View style={styles.studentInfo}>
-                <Text style={styles.studentName}>{student.name}</Text>
-                <Text style={styles.studentRoll}>Roll #{student.roll}</Text>
+        {classStudents.map((student, i) => {
+          const roll = rollLabel(student.roll);
+          return (
+            <Animated.View key={student.id} entering={FadeInDown.delay(160 + i * 30).springify()}>
+              <View
+                style={[
+                  styles.studentRow,
+                  { backgroundColor: studentRowTint(attendance[student.id]) },
+                ]}
+              >
+                <View style={styles.studentHead}>
+                  <Avatar initials={student.initials} size={44} backgroundColor={clsColor} />
+                  <View style={styles.studentInfo}>
+                    <Text style={styles.studentName}>{student.name}</Text>
+                    {roll ? <Text style={styles.studentRoll}>{roll}</Text> : null}
+                  </View>
+                </View>
+                <StatusButtons
+                  studentName={student.name}
+                  status={attendance[student.id]}
+                  disabled={!canMark}
+                  onSelect={(status) => setStatus(student.id, status)}
+                />
               </View>
-              <StatusBadge
-                status={attendance[student.id]}
-                disabled={!rollCall?.canMark}
-                onPress={() => cycleStatus(student.id)}
-              />
-            </View>
-          </Animated.View>
-        ))}
+            </Animated.View>
+          );
+        })}
       </ScrollView>
 
-      {/* Submit FAB */}
-      {rollCall?.canMark && (
+      {canMark && (
         <View style={[styles.fab, { bottom: insets.bottom + 24 }]}>
           <TouchableOpacity
             style={[styles.fabBtn, !allStudentsMarked && styles.fabBtnDisabled]}
@@ -401,7 +556,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
+    marginBottom: 8,
     paddingHorizontal: 4,
   },
   dateNav: { padding: 8, borderRadius: 999, backgroundColor: Colors.primarySoft2 },
@@ -421,6 +576,96 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     textAlign: 'center',
   },
+  periodCard: {
+    flexDirection: 'row',
+    overflow: 'hidden',
+    backgroundColor: Colors.card,
+    borderRadius: Radii.md,
+    borderWidth: 1.5,
+    borderColor: Colors.ruleSoft,
+    ...Shadows.card,
+  },
+  periodCardNow: {
+    borderWidth: 2.5,
+    ...Shadows.pop,
+  },
+  lunchCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: Colors.lateSoft,
+    borderRadius: Radii.md,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderWidth: 1.5,
+    borderColor: Colors.late,
+  },
+  lunchCardNow: {
+    borderWidth: 2.5,
+    ...Shadows.pop,
+  },
+  lunchCardText: {
+    flex: 1,
+    gap: 2,
+  },
+  lunchTitle: {
+    fontFamily: FontFamily.bold,
+    fontSize: 15,
+    color: Colors.ink,
+  },
+  lunchTime: {
+    fontFamily: FontFamily.medium,
+    fontSize: 13,
+    color: Colors.inkMuted,
+  },
+  periodAccent: {
+    width: 6,
+  },
+  periodCardBody: {
+    flex: 1,
+    padding: 16,
+  },
+  periodCardTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  periodCardTitle: {
+    flex: 1,
+    fontFamily: FontFamily.bold,
+    fontSize: 16,
+    color: Colors.ink,
+  },
+  periodCardBadges: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  currentPill: {
+    backgroundColor: Colors.primary,
+    borderRadius: 999,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  currentPillText: {
+    fontFamily: FontFamily.bold,
+    fontSize: 10,
+    color: Colors.white,
+    letterSpacing: 0.4,
+  },
+  periodCardMeta: {
+    fontFamily: FontFamily.medium,
+    fontSize: 13,
+    color: Colors.inkMuted,
+    marginTop: 6,
+  },
+  periodCardHint: {
+    fontFamily: FontFamily.medium,
+    fontSize: 12,
+    color: Colors.inkMuted,
+    marginTop: 4,
+  },
   rollCallDeniedText: {
     fontFamily: FontFamily.medium,
     fontSize: 12,
@@ -429,6 +674,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   savedPill: {
+    alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
@@ -473,12 +719,15 @@ const styles = StyleSheet.create({
     color: Colors.primary,
   },
   studentRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: Colors.card,
     borderRadius: Radii.md,
     padding: 14,
+    gap: 12,
     ...Shadows.card,
+  },
+  studentHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   studentInfo: {
     flex: 1,
@@ -495,19 +744,27 @@ const styles = StyleSheet.create({
     color: Colors.inkMuted,
     marginTop: 2,
   },
-  statusBadge: {
-    width: 44,
-    height: 44,
-    borderRadius: Radii.md,
+  statusRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  statusChip: {
+    flexGrow: 1,
+    flexBasis: '22%',
+    minHeight: 36,
+    borderRadius: Radii.sm,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
+    paddingHorizontal: 6,
+    paddingVertical: 8,
   },
-  statusText: {
-    fontFamily: FontFamily.extraBold,
-    fontSize: 16,
+  statusChipText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 11,
   },
-  statusBadgeDisabled: {
+  statusChipDisabled: {
     opacity: 0.55,
   },
   fab: {

@@ -1,4 +1,13 @@
-import { todayISO, formatLongDate, addDays, greeting } from '@/lib/date';
+import {
+  todayISO,
+  formatLongDate,
+  addDays,
+  greeting,
+  parseApiInstant,
+  formatTimeOfDay,
+  toDateOnly,
+  weekdayShort,
+} from '@/lib/date';
 
 describe('date helpers', () => {
   it('todayISO formats a given local date as YYYY-MM-DD', () => {
@@ -22,5 +31,20 @@ describe('date helpers', () => {
     expect(greeting(new Date(2026, 3, 27, 8))).toBe('Good morning,');
     expect(greeting(new Date(2026, 3, 27, 14))).toBe('Good afternoon,');
     expect(greeting(new Date(2026, 3, 27, 20))).toBe('Good evening,');
+  });
+
+  it('parseApiInstant treats naive UTC timestamps as UTC', () => {
+    const d = parseApiInstant('2026-07-30T11:22:00');
+    expect(d.toISOString()).toBe('2026-07-30T11:22:00.000Z');
+    expect(typeof formatTimeOfDay('2026-07-30T11:22:00')).toBe('string');
+  });
+
+  it('toDateOnly normalizes datetime strings', () => {
+    expect(toDateOnly('2026-07-30T00:00:00')).toBe('2026-07-30');
+  });
+
+  it('weekdayShort is the local three-letter weekday', () => {
+    expect(weekdayShort('2026-08-26')).toBe('Wed');
+    expect(weekdayShort('2026-08-25')).toBe('Tue');
   });
 });
