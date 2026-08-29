@@ -16,7 +16,11 @@ import { FontFamily } from '../theme/typography';
 import { Avatar, ScreenHeader, Toast } from '../components';
 import { useExam } from '../features/exams/hooks';
 import { useStudentsByClass } from '@/features/students/hooks';
-import { useGradesByExam, useUpsertGrade } from '@/features/grades/hooks';
+import {
+  useGradesByExam,
+  useUpsertGrade,
+  useNotifyExamMarksPublished,
+} from '@/features/grades/hooks';
 import { deriveColorSet } from '@/theme/derive';
 import type { HomeStackParamList } from '../navigation/types';
 
@@ -36,6 +40,7 @@ export const MarksEntryScreen: React.FC = () => {
   );
   const { data: grades = [] } = useGradesByExam(examId);
   const upsert = useUpsertGrade(examId);
+  const notifyMarks = useNotifyExamMarksPublished(examId);
 
   const maxMarks = exam?.maxMarks ?? 100;
   const cs = deriveColorSet(exam?.id ?? examId);
@@ -84,8 +89,18 @@ export const MarksEntryScreen: React.FC = () => {
           upsert.mutateAsync({ studentId: s.id, examId, marks: Number(marks[s.id]) })
         )
       );
+      const allDone = toSave.length === students.length && students.length > 0;
+      let notifyMsg = '';
+      if (allDone) {
+        try {
+          const res = await notifyMarks.mutateAsync();
+          notifyMsg = ` · ${res.emailsSent} email · parent + student app`;
+        } catch {
+          notifyMsg = ' · saved · notify failed';
+        }
+      }
       setToast({
-        msg: `Saved marks for ${toSave.length} student${toSave.length === 1 ? '' : 's'}`,
+        msg: `Marks published for ${toSave.length} student${toSave.length === 1 ? '' : 's'}${notifyMsg}`,
         type: 'success',
       });
     } catch {
@@ -145,6 +160,9 @@ export const MarksEntryScreen: React.FC = () => {
         </Animated.View>
         <Text style={styles.summaryHint}>
           {enteredCount}/{students.length} entered · {maxMarks} max per student
+          {enteredCount === students.length && students.length > 0
+            ? ' · save sends parent email + app'
+            : ''}
         </Text>
 
         {students.length === 0 && (
@@ -200,7 +218,11 @@ export const MarksEntryScreen: React.FC = () => {
             <ActivityIndicator color={Colors.white} />
           ) : (
             <>
-              <Text style={styles.fabText}>Save Marks</Text>
+              <Text style={styles.fabText}>
+                {enteredCount === students.length && students.length > 0
+                  ? 'Publish marks'
+                  : 'Save marks'}
+              </Text>
               <View style={styles.fabBadge}>
                 <Text style={styles.fabBadgeText}>{enteredCount}</Text>
               </View>

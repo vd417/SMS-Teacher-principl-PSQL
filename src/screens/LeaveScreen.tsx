@@ -15,6 +15,9 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { ScreenHeader, Pill, Toast } from '../components';
+import { DatePickerField } from '../components/ui/DatePickerField';
+import { LeaveAttachmentPicker } from '../components/leave/LeaveAttachmentPicker';
+import { AttachmentThumbnails } from '../components/leave/AttachmentThumbnails';
 import { useLeave, useApplyLeave } from '@/features/leave/hooks';
 import { leaveSchema, LeaveSchemaType } from '../validation/schemas';
 import type { NewLeaveInput } from '@/data/repositories/types';
@@ -44,8 +47,9 @@ export const LeaveScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<'apply' | 'history'>('apply');
   const [toastVisible, setToastVisible] = useState(false);
+  const [attachmentUrls, setAttachmentUrls] = useState<string[]>([]);
 
-  const { data: leaveRequests = [], isLoading, isError } = useLeave();
+  const { data: leaveRequests = [], isLoading, isError, refetch } = useLeave();
   const applyMutation = useApplyLeave();
 
   const {
@@ -76,14 +80,20 @@ export const LeaveScreen: React.FC = () => {
       to: data.to,
       reason: data.reason,
       substitute: data.substitute || undefined,
+      ...(attachmentUrls.length > 0 ? { attachmentUrls } : {}),
     };
     applyMutation.mutate(input, {
       onSuccess: () => {
         setToastVisible(true);
         reset();
+        setAttachmentUrls([]);
       },
     });
   };
+
+  const fromValue = watch('from');
+  const toValue = watch('to');
+  const minToDate = fromValue ? new Date(fromValue + 'T12:00:00') : undefined;
 
   return (
     <View style={styles.flex}>
@@ -151,12 +161,11 @@ export const LeaveScreen: React.FC = () => {
                   control={control}
                   name="from"
                   render={({ field: { onChange, value } }) => (
-                    <TextInput
-                      style={[styles.input, errors.from && styles.inputError]}
+                    <DatePickerField
                       value={value}
-                      onChangeText={onChange}
-                      placeholder="YYYY-MM-DD"
-                      placeholderTextColor={Colors.inkSoft}
+                      onChange={onChange}
+                      error={!!errors.from}
+                      maximumDate={toValue ? new Date(toValue + 'T12:00:00') : undefined}
                     />
                   )}
                 />
@@ -168,12 +177,11 @@ export const LeaveScreen: React.FC = () => {
                   control={control}
                   name="to"
                   render={({ field: { onChange, value } }) => (
-                    <TextInput
-                      style={[styles.input, errors.to && styles.inputError]}
+                    <DatePickerField
                       value={value}
-                      onChangeText={onChange}
-                      placeholder="YYYY-MM-DD"
-                      placeholderTextColor={Colors.inkSoft}
+                      onChange={onChange}
+                      error={!!errors.to}
+                      minimumDate={minToDate}
                     />
                   )}
                 />
@@ -219,6 +227,10 @@ export const LeaveScreen: React.FC = () => {
                   />
                 )}
               />
+            </Animated.View>
+
+            <Animated.View entering={FadeInDown.delay(290).springify()}>
+              <LeaveAttachmentPicker urls={attachmentUrls} onChange={setAttachmentUrls} />
             </Animated.View>
 
             {/* Submit */}
@@ -280,6 +292,15 @@ export const LeaveScreen: React.FC = () => {
                   {req.substitute && (
                     <Text style={styles.historySub}>Substitute: {req.substitute}</Text>
                   )}
+                  {req.attachmentUrls && req.attachmentUrls.length > 0 ? (
+                    <AttachmentThumbnails urls={req.attachmentUrls} size={56} />
+                  ) : null}
+                  {req.status === 'rejected' && req.decidedNote ? (
+                    <View style={styles.rejectionBox}>
+                      <Text style={styles.rejectionLabel}>Rejection note</Text>
+                      <Text style={styles.rejectionText}>{req.decidedNote}</Text>
+                    </View>
+                  ) : null}
                   <Text style={styles.historyApplied}>Applied on {req.appliedOn}</Text>
                 </View>
               </Animated.View>
@@ -379,4 +400,22 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   historyApplied: { fontFamily: FontFamily.regular, fontSize: 12, color: Colors.inkSoft },
+  rejectionBox: {
+    marginTop: 10,
+    padding: 10,
+    borderRadius: Radii.md,
+    backgroundColor: Colors.absentSoft,
+  },
+  rejectionLabel: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 12,
+    color: Colors.absent,
+    marginBottom: 4,
+  },
+  rejectionText: {
+    fontFamily: FontFamily.regular,
+    fontSize: 13,
+    color: Colors.ink3,
+    lineHeight: 18,
+  },
 });

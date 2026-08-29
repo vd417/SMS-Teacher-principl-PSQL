@@ -1,11 +1,19 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Linking,
+  ActivityIndicator,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Colors, Radii } from '../theme';
 import { FontFamily } from '../theme/typography';
-import { ScreenHeader, Card, Avatar, Toast } from '../components';
+import { ScreenHeader, Card, Avatar, Toast, TierGate } from '../components';
 import { BusMap } from './bus/BusMap';
 import {
   useAssignedBus,
@@ -13,6 +21,7 @@ import {
   useBusRoster,
   useSaveBoarding,
 } from '@/features/bus/hooks';
+import { isAppError } from '@/lib/errors';
 import type { BoardingRecord, BoardingStatus } from '@/data/domain';
 
 const NEXT: Record<BoardingStatus, BoardingStatus> = {
@@ -33,7 +42,7 @@ const STATUS_ICON: Record<BoardingStatus, string> = {
 
 export const BusScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
-  const { data: bus } = useAssignedBus();
+  const { data: bus, isLoading, isError } = useAssignedBus();
   const busId = bus?.id ?? '';
   const { data: position } = useBusPosition(busId);
   const { data: roster } = useBusRoster(busId);
@@ -41,6 +50,7 @@ export const BusScreen: React.FC = () => {
 
   const [draft, setDraft] = useState<BoardingRecord[]>([]);
   const [toastVisible, setToastVisible] = useState(false);
+  const [errorToast, setErrorToast] = useState<string | null>(null);
   useEffect(() => {
     if (roster) setDraft(roster);
   }, [roster]);
@@ -62,7 +72,18 @@ export const BusScreen: React.FC = () => {
         <ScreenHeader title="Bus Duty" showBack />
       </Animated.View>
 
-      {bus && (
+      {isLoading ? (
+        <ActivityIndicator color={Colors.primary} style={{ marginTop: 40 }} />
+      ) : isError || !bus ? (
+        <View style={styles.emptyWrap}>
+          <Ionicons name="bus-outline" size={48} color={Colors.inkSoft} />
+          <Text style={styles.emptyTitle}>No bus duty assigned</Text>
+          <Text style={styles.emptyText}>
+            Ask your principal to assign you on the Live Bus fleet screen. Once assigned, you can
+            mark student boarding here.
+          </Text>
+        </View>
+      ) : (
         <>
           <Animated.View entering={FadeInDown.delay(100).springify()}>
             <Card style={styles.busCard}>
@@ -84,19 +105,28 @@ export const BusScreen: React.FC = () => {
                   </TouchableOpacity>
                 </View>
               </View>
-              <View style={styles.statusRow}>
-                <Ionicons name="navigate" size={14} color={Colors.primary} />
-                <Text style={styles.statusText}>
-                  {position
-                    ? `En route to ${position.nextStopName} · ~${position.etaMinutes} min`
-                    : 'Locating bus…'}
-                </Text>
-              </View>
+              <TierGate
+                feature="transport.gps"
+                title="Live GPS tracking locked"
+                blurb="Real-time bus location is part of the Platinum plan. Contact your school admin to upgrade."
+                minHeight={140}
+              >
+                <View style={styles.statusRow}>
+                  <Ionicons name="navigate" size={14} color={Colors.primary} />
+                  <Text style={styles.statusText}>
+                    {position
+                      ? `En route to ${position.nextStopName} · ~${position.etaMinutes} min`
+                      : 'Locating bus…'}
+                  </Text>
+                </View>
+              </TierGate>
             </Card>
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(160).springify()} style={styles.mapWrap}>
-            <BusMap bus={bus} position={position} />
+            <TierGate feature="transport.gps" title="Live map locked" minHeight={180}>
+              <BusMap bus={bus} position={position} />
+            </TierGate>
           </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(220).springify()} style={styles.rosterSection}>
@@ -109,28 +139,49 @@ export const BusScreen: React.FC = () => {
               </View>
             </View>
             <Card padding={0}>
-              {draft.map((r, i) => (
-                <TouchableOpacity
-                  key={r.studentId}
-                  style={[styles.row, i < draft.length - 1 && styles.rowBorder]}
-                  onPress={() => cycle(r.studentId)}
-                  activeOpacity={0.7}
-                >
-                  <Avatar initials={r.initials} size={36} />
-                  <Text style={styles.rowName}>{r.studentName}</Text>
-                  <Ionicons
-                    name={STATUS_ICON[r.status] as never}
-                    size={22}
-                    color={STATUS_COLOR[r.status]}
-                  />
-                </TouchableOpacity>
-              ))}
+              {draft.length === 0 ? (
+                <View style={styles.emptyRoster}>
+                  <Text style={styles.emptyRosterText}>
+                    No students assigned to this bus yet. Boarding saves once the driver starts a
+                    live trip.
+                  </Text>
+                </View>
+              ) : (
+                draft.map((r, i) => (
+                  <TouchableOpacity
+                    key={r.studentId}
+                    style={[styles.row, i < draft.length - 1 && styles.rowBorder]}
+                    onPress={() => cycle(r.studentId)}
+                    activeOpacity={0.7}
+                  >
+                    <Avatar initials={r.initials} size={36} />
+                    <Text style={styles.rowName}>{r.studentName}</Text>
+                    <Ionicons
+                      name={STATUS_ICON[r.status] as never}
+                      size={22}
+                      color={STATUS_COLOR[r.status]}
+                    />
+                  </TouchableOpacity>
+                ))
+              )}
             </Card>
 
             <TouchableOpacity
-              style={styles.saveBtn}
-              onPress={() => save.mutate(draft, { onSuccess: () => setToastVisible(true) })}
-              disabled={save.isPending}
+              style={[styles.saveBtn, draft.length === 0 && styles.saveBtnDisabled]}
+              onPress={() =>
+                save.mutate(draft, {
+                  onSuccess: () => setToastVisible(true),
+                  onError: (e) =>
+                    setErrorToast(
+                      isAppError(e) && e.code === 'no_active_trip'
+                        ? 'No live trip for this bus yet. Ask admin to start the route.'
+                        : isAppError(e)
+                          ? e.message
+                          : 'Could not save boarding. Try again.'
+                    ),
+                })
+              }
+              disabled={save.isPending || draft.length === 0}
               activeOpacity={0.85}
             >
               <Text style={styles.saveLabel}>{save.isPending ? 'Saving…' : 'Save Boarding'}</Text>
@@ -143,6 +194,12 @@ export const BusScreen: React.FC = () => {
         message="Boarding saved"
         type="success"
         onHide={() => setToastVisible(false)}
+      />
+      <Toast
+        visible={!!errorToast}
+        message={errorToast ?? ''}
+        type="error"
+        onHide={() => setErrorToast(null)}
       />
     </ScrollView>
   );
@@ -199,4 +256,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   saveLabel: { fontFamily: FontFamily.bold, fontSize: 15, color: Colors.white },
+  saveBtnDisabled: { opacity: 0.45 },
+  emptyRoster: { padding: 20 },
+  emptyRosterText: {
+    fontFamily: FontFamily.regular,
+    fontSize: 14,
+    color: Colors.inkMuted,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
+  emptyWrap: { alignItems: 'center', marginTop: 48, paddingHorizontal: 12, gap: 10 },
+  emptyTitle: { fontFamily: FontFamily.bold, fontSize: 17, color: Colors.ink },
+  emptyText: {
+    fontFamily: FontFamily.regular,
+    fontSize: 14,
+    color: Colors.inkMuted,
+    textAlign: 'center',
+    lineHeight: 20,
+  },
 });

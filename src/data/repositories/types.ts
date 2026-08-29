@@ -27,12 +27,14 @@ import type {
   ApprovalRequest,
   PrincipalOverview,
   SchoolAttendance,
+  AppNotification,
 } from '@/data/domain';
 import type { Page } from '@/lib/envelope';
 
 export interface NewExamInput {
   title: string;
   classId: string;
+  subject: string;
   date: string;
   time: string;
   duration: number;
@@ -43,6 +45,9 @@ export interface NewExamInput {
 export interface NewAssignmentInput {
   title: string;
   classId: string;
+  className?: string;
+  subject?: string;
+  period?: number | null;
   dueDate: string;
   description?: string;
   imageUri?: string;
@@ -113,10 +118,41 @@ export interface AttendanceRollCall {
   reason: string;
   marked: boolean;
 }
+export interface ClassDayTimetableSlot {
+  id: string;
+  period: number;
+  subject: string | null;
+  subjectId: string | null;
+  startTime: string | null;
+  endTime: string | null;
+  teacherId: string | null;
+  teacherName: string | null;
+  isCurrent: boolean;
+  marked: boolean;
+  canMark: boolean;
+}
 export interface AttendanceRepository {
   forClass(classId: string, date: string): Promise<AttendanceRecord[]>;
   rollCall(classId: string, date: string): Promise<AttendanceRollCall>;
+  dayTimetable(classId: string, date: string): Promise<ClassDayTimetableSlot[]>;
+  forPeriod(
+    classId: string,
+    date: string,
+    period: number,
+    subject: string
+  ): Promise<AttendanceRecord[]>;
   save(classId: string, date: string, records: AttendanceRecord[]): Promise<void>;
+  savePeriod(
+    classId: string,
+    args: {
+      date: string;
+      period: number;
+      subject: string;
+      subjectId?: string | null;
+      periodId?: string | null;
+      records: AttendanceRecord[];
+    }
+  ): Promise<void>;
 }
 export interface MyAttendanceRepository {
   schoolLocation(): Promise<SchoolLocation>;
@@ -142,6 +178,7 @@ export interface GradesRepository {
 export interface AssignmentsRepository {
   list(): Promise<Assignment[]>;
   create(input: NewAssignmentInput): Promise<Assignment>;
+  update(id: string, input: NewAssignmentInput): Promise<Assignment>;
 }
 export interface ChatRepository {
   contacts(): Promise<ChatContact[]>;
@@ -151,6 +188,11 @@ export interface ChatRepository {
 export interface AnnouncementsRepository {
   list(): Promise<Announcement[]>;
   create(input: NewAnnouncementInput): Promise<Announcement>;
+}
+export interface NotificationsRepository {
+  list(): Promise<AppNotification[]>;
+  // Backend only supports mark-all-read, not per-notification.
+  markRead(): Promise<void>;
 }
 export interface CalendarRepository {
   list(): Promise<CalendarEvent[]>;
@@ -194,6 +236,7 @@ export interface Repositories {
   assignments: AssignmentsRepository;
   chat: ChatRepository;
   announcements: AnnouncementsRepository;
+  notifications: NotificationsRepository;
   calendar: CalendarRepository;
   library: LibraryRepository;
   payroll: PayrollRepository;

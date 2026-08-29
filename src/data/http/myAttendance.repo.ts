@@ -7,6 +7,7 @@ import type {
   TeacherAttendanceSummary,
 } from '@/data/domain';
 import type { HttpClient } from '@/lib/httpClient';
+import { deviceUtcOffsetMinutes, todayISO, toDateOnly } from '@/lib/date';
 
 interface SchoolLocationDTO {
   lat: number;
@@ -22,6 +23,7 @@ interface CheckEventDTO {
   accuracy_meters: number;
   distance_meters: number;
   verified: boolean;
+  offset_minutes?: number;
 }
 interface TeacherAttendanceDayDTO {
   date: string;
@@ -50,7 +52,7 @@ const toEvent = (d: CheckEventDTO): CheckEvent => ({
   verified: d.verified,
 });
 const toDay = (d: TeacherAttendanceDayDTO): TeacherAttendanceDay => ({
-  date: d.date,
+  date: toDateOnly(d.date),
   checkIn: d.check_in ? toEvent(d.check_in) : undefined,
   checkOut: d.check_out ? toEvent(d.check_out) : undefined,
 });
@@ -67,20 +69,30 @@ const fromEvent = (e: CheckEvent): CheckEventDTO => ({
   accuracy_meters: e.accuracyMeters,
   distance_meters: e.distanceMeters,
   verified: e.verified,
+  offset_minutes: deviceUtcOffsetMinutes(),
 });
 
 export function httpMyAttendance(http: HttpClient): MyAttendanceRepository {
   return {
     schoolLocation: () =>
       http.get<SchoolLocationDTO>('/me/attendance/school-location').then(toSchool),
-    today: () => http.get<TeacherAttendanceDayDTO>('/me/attendance/today').then(toDay),
+    today: () =>
+      http
+        .get<TeacherAttendanceDayDTO>('/me/attendance/today', {
+          params: { date: todayISO(), offset_minutes: deviceUtcOffsetMinutes() },
+        })
+        .then(toDay),
     history: (limit) =>
       http
-        .get<TeacherAttendanceDayDTO[]>(`/me/attendance/history?limit=${limit}`)
+        .get<TeacherAttendanceDayDTO[]>('/me/attendance/history', {
+          params: { limit, offset_minutes: deviceUtcOffsetMinutes() },
+        })
         .then((d) => d.map(toDay)),
     summary: (month) =>
       http
-        .get<TeacherAttendanceSummaryDTO>(`/me/attendance/summary?month=${month}`)
+        .get<TeacherAttendanceSummaryDTO>(`/me/attendance/summary`, {
+          params: { month, offset_minutes: deviceUtcOffsetMinutes() },
+        })
         .then(toSummary),
     punch: (event) =>
       http.post<TeacherAttendanceDayDTO>('/me/attendance/punch', fromEvent(event)).then(toDay),

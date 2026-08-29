@@ -25,6 +25,32 @@ export function useAttendanceRollCall(classId: string, date: string) {
   });
 }
 
+export function useClassDayTimetable(classId: string, date: string) {
+  const repos = useRepositories();
+  const tenantId = useTenantId();
+  return useQuery({
+    queryKey: queryKeys.dayTimetable(tenantId, classId, date),
+    queryFn: () => repos.attendance.dayTimetable(classId, date),
+    enabled: classId !== '' && date !== '',
+  });
+}
+
+export function usePeriodAttendance(
+  classId: string,
+  date: string,
+  period: number | null,
+  subject: string | null
+) {
+  const repos = useRepositories();
+  const tenantId = useTenantId();
+  const subj = (subject ?? '').trim();
+  return useQuery({
+    queryKey: queryKeys.periodAttendance(tenantId, classId, date, period ?? 0, subj),
+    queryFn: () => repos.attendance.forPeriod(classId, date, period!, subj),
+    enabled: classId !== '' && date !== '' && period != null && period > 0 && subj !== '',
+  });
+}
+
 export interface SectionAttendanceSummaries {
   /** Per-section {total, present}, keyed by classId. */
   bySection: Record<string, SectionAttendance>;
@@ -104,6 +130,44 @@ export function useMarkAttendance(classId: string, date: string) {
       // and the teacher's Home dashboard both aggregate these same records.
       qc.invalidateQueries({ queryKey: queryKeys.principalAttendance(tenantId, date) });
       qc.invalidateQueries({ queryKey: queryKeys.principalOverview(tenantId) });
+      qc.invalidateQueries({ queryKey: queryKeys.dashboard(tenantId) });
+    },
+  });
+}
+
+export function useMarkPeriodAttendance(
+  classId: string,
+  date: string,
+  period: number | null,
+  subject: string | null,
+  subjectId?: string | null,
+  periodId?: string | null
+) {
+  const repos = useRepositories();
+  const tenantId = useTenantId();
+  const qc = useQueryClient();
+  const subj = (subject ?? '').trim();
+  const key = queryKeys.periodAttendance(tenantId, classId, date, period ?? 0, subj);
+
+  return useMutation({
+    mutationFn: (records: AttendanceRecord[]) => {
+      if (period == null || !subj) {
+        return Promise.reject(new Error('Select a timetable period first'));
+      }
+      return repos.attendance.savePeriod(classId, {
+        date,
+        period,
+        subject: subj,
+        subjectId,
+        periodId,
+        records,
+      });
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: key });
+      qc.invalidateQueries({ queryKey: queryKeys.dayTimetable(tenantId, classId, date) });
+      qc.invalidateQueries({ queryKey: queryKeys.attendance(tenantId, classId, date) });
+      qc.invalidateQueries({ queryKey: queryKeys.principalAttendance(tenantId, date) });
       qc.invalidateQueries({ queryKey: queryKeys.dashboard(tenantId) });
     },
   });

@@ -4,10 +4,11 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { TabBar } from '../components';
 import { HomeScreen } from '../screens/HomeScreen';
 import { ScheduleScreen } from '../screens/ScheduleScreen';
-import { ClassesScreen } from '../screens/ClassesScreen';
+import { ClassHubScreen } from '../screens/ClassHubScreen';
 import { ClassDetailScreen } from '../screens/ClassDetailScreen';
 import { StudentScreen } from '../screens/StudentScreen';
 import { AttendanceScreen } from '../screens/AttendanceScreen';
+import { ClassTimetableScreen } from '../screens/principal/ClassTimetableScreen';
 import { ChatScreen } from '../screens/ChatScreen';
 import { ChatThreadScreen } from '../screens/ChatThreadScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
@@ -19,6 +20,7 @@ import { ChangePasswordScreen } from '../screens/ChangePasswordScreen';
 import { SchoolPickerScreen } from '../screens/SchoolPickerScreen';
 import { AttendancePickClassScreen } from '../screens/AttendancePickClassScreen';
 import { AttendancePickSectionScreen } from '../screens/AttendancePickSectionScreen';
+import { MarksPickExamScreen } from '../screens/MarksPickExamScreen';
 import { MarksPickClassScreen } from '../screens/MarksPickClassScreen';
 import { MarksEntryScreen } from '../screens/MarksEntryScreen';
 import { ExamsScreen } from '../screens/ExamsScreen';
@@ -30,6 +32,7 @@ import { AssignmentNewScreen } from '../screens/AssignmentNewScreen';
 import { AnnouncementsScreen } from '../screens/AnnouncementsScreen';
 import { LibraryScreen } from '../screens/LibraryScreen';
 import { MoreScreen } from '../screens/MoreScreen';
+import { StaffDirectoryScreen } from '../screens/StaffDirectoryScreen';
 import { BusScreen } from '../screens/BusScreen';
 import type {
   MainTabParamList,
@@ -49,7 +52,12 @@ const HomeStackNavigator = () => (
     <HomeStack.Screen name="AttendancePickClass" component={AttendancePickClassScreen} />
     <HomeStack.Screen name="AttendancePickSection" component={AttendancePickSectionScreen} />
     <HomeStack.Screen name="AttendanceScreen" component={AttendanceScreen} />
-    <HomeStack.Screen name="MarksPickClass" component={MarksPickClassScreen} />
+    <HomeStack.Screen
+      name="MarksPickClass"
+      component={MarksPickClassScreen}
+      initialParams={{ flow: 'marks' }}
+    />
+    <HomeStack.Screen name="MarksPickExam" component={MarksPickExamScreen} />
     <HomeStack.Screen name="MarksEntryScreen" component={MarksEntryScreen} />
     <HomeStack.Screen name="StudentScreen" component={StudentScreen} />
     <HomeStack.Screen name="ExamsScreen" component={ExamsScreen} />
@@ -64,6 +72,9 @@ const HomeStackNavigator = () => (
     <HomeStack.Screen name="LibraryScreen" component={LibraryScreen} />
     <HomeStack.Screen name="PayslipScreen" component={PayslipScreen} />
     <HomeStack.Screen name="LeaveScreen" component={LeaveScreen} />
+    <HomeStack.Screen name="ChatScreen" component={ChatScreen} />
+    <HomeStack.Screen name="ChatThreadScreen" component={ChatThreadScreen} />
+    <HomeStack.Screen name="StaffDirectoryScreen" component={StaffDirectoryScreen} />
   </HomeStack.Navigator>
 );
 
@@ -71,10 +82,13 @@ const HomeStackNavigator = () => (
 const ClassesStack = createStackNavigator<ClassesStackParamList>();
 const ClassesStackNavigator = () => (
   <ClassesStack.Navigator screenOptions={{ headerShown: false }}>
-    <ClassesStack.Screen name="ClassesScreen" component={ClassesScreen} />
+    <ClassesStack.Screen name="ClassHubScreen" component={ClassHubScreen} />
     <ClassesStack.Screen name="ClassDetailScreen" component={ClassDetailScreen} />
     <ClassesStack.Screen name="StudentScreen" component={StudentScreen} />
     <ClassesStack.Screen name="AttendanceScreen" component={AttendanceScreen} />
+    <ClassesStack.Screen name="MarksPickExam" component={MarksPickExamScreen} />
+    <ClassesStack.Screen name="MarksEntryScreen" component={MarksEntryScreen} />
+    <ClassesStack.Screen name="ClassTimetableScreen" component={ClassTimetableScreen} />
   </ClassesStack.Navigator>
 );
 

@@ -22,6 +22,12 @@ test('429 rate limiting overrides the code message', () => {
   );
 });
 
+test('network errors explain the API must be running', () => {
+  expect(
+    authErrorMessage(new AppError({ code: 'network', status: 0, message: 'Failed to fetch' }))
+  ).toBe('Cannot reach the server. Start sms-backend on http://localhost:5162 and try again.');
+});
+
 test('falls back for unknown codes and non-errors', () => {
   expect(authErrorMessage(appErr('mystery', 400))).toBe('raw'); // uses the AppError message
   expect(authErrorMessage('not an error')).toBe('Something went wrong. Please try again.');

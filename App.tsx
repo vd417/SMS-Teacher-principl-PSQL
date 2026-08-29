@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -30,11 +30,16 @@ function App() {
     PlusJakartaSans_700Bold,
     PlusJakartaSans_800ExtraBold,
   });
+  const [fontWaitTimedOut, setFontWaitTimedOut] = useState(false);
+  useEffect(() => {
+    const id = setTimeout(() => setFontWaitTimedOut(true), 4000);
+    return () => clearTimeout(id);
+  }, []);
 
-  if (!fontsLoaded) {
+  if (!fontsLoaded && !fontWaitTimedOut) {
     return (
       <View style={styles.loading}>
-        <ActivityIndicator size="large" color={Colors.primary} />
+        <ActivityIndicator size="large" color={Colors.white} />
       </View>
     );
   }

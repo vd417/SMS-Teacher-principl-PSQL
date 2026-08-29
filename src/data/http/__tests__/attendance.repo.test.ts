@@ -133,3 +133,71 @@ test('save rejects when every student row is missing an id', async () => {
     ])
   ).rejects.toThrow('No students to save');
 });
+
+test('savePeriod POST bulk-upserts period marks with canonical status words', async () => {
+  const calls: { url: string; body: unknown }[] = [];
+  const http = createHttpClient({
+    baseUrl: 'https://api.test/v1',
+    getAuth: () => ({ accessToken: 't', tenantId: 'tenant-1' }),
+    fetchImpl: mockFetch(async (url, init) => {
+      calls.push({ url, body: JSON.parse(String(init?.body)) });
+      return {
+        ok: true,
+        status: 204,
+        statusText: 'No Content',
+        json: async () => undefined,
+      };
+    }),
+  });
+
+  await httpAttendance(http).savePeriod('c1', {
+    date: '2026-08-26',
+    period: 1,
+    subject: 'Mathematics',
+    subjectId: 'sub1',
+    periodId: 'slot1',
+    records: [
+      { studentId: 's1', status: 'P', date: '2026-08-26' },
+      { studentId: 's2', status: 'A', date: '2026-08-26' },
+    ],
+  });
+
+  expect(calls).toHaveLength(1);
+  expect(calls[0].url).toBe('https://api.test/v1/classes/c1/attendance/periods');
+  expect(calls[0].body).toEqual({
+    date: '2026-08-26',
+    period: 1,
+    subject: 'Mathematics',
+    subject_id: 'sub1',
+    period_id: 'slot1',
+    records: [
+      { student_id: 's1', status: 'present' },
+      { student_id: 's2', status: 'absent' },
+    ],
+  });
+});
+
+test('forPeriod GET maps saved present/absent rows back to roll-call codes', async () => {
+  const http = createHttpClient({
+    baseUrl: 'https://api.test/v1',
+    getAuth: () => ({ accessToken: 't', tenantId: 'tenant-1' }),
+    fetchImpl: mockFetch(async () => ({
+      ok: true,
+      status: 200,
+      statusText: 'OK',
+      json: async () => ({
+        data: [
+          { student_id: 's1', status: 'present', date: '2026-08-26T00:00:00' },
+          { student_id: 's2', status: 'absent', date: '2026-08-26T00:00:00' },
+        ],
+      }),
+    })),
+  });
+
+  await expect(
+    httpAttendance(http).forPeriod('c1', '2026-08-26', 1, 'Mathematics')
+  ).resolves.toEqual([
+    { studentId: 's1', status: 'P', date: '2026-08-26' },
+    { studentId: 's2', status: 'A', date: '2026-08-26' },
+  ]);
+});

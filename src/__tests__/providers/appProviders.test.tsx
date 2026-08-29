@@ -12,6 +12,30 @@ jest.mock('expo-secure-store', () => ({
   setItemAsync: async () => {},
   deleteItemAsync: async () => {},
 }));
+jest.mock('@microsoft/signalr', () => ({
+  LogLevel: { None: 0 },
+  HubConnectionBuilder: class {
+    withUrl() {
+      return this;
+    }
+    withAutomaticReconnect() {
+      return this;
+    }
+    configureLogging() {
+      return this;
+    }
+    build() {
+      return {
+        on() {},
+        off() {},
+        onreconnected() {},
+        onclose() {},
+        start: async () => {},
+        stop: async () => {},
+      };
+    }
+  },
+}));
 
 const Probe = () => {
   const repos = useRepositories();

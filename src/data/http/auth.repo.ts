@@ -7,6 +7,7 @@ import {
   schoolChoiceSchema,
   toSessionFromMe,
   toUserFromMe,
+  toTenantFromMe,
   maskIdentifier,
 } from './auth.schema';
 
@@ -61,7 +62,10 @@ export function httpAuth(http: HttpClient): AuthRepository {
       );
       return { accessToken: t.access_token, refreshToken: t.refresh_token };
     },
-    me: async () => toUserFromMe(meSchema.parse(await http.get('/auth/me'))),
+    me: async () => {
+      const me = meSchema.parse(await http.get('/auth/me'));
+      return { user: toUserFromMe(me), tenant: toTenantFromMe(me) };
+    },
     logout: (refreshToken) => http.post('/auth/logout', { refresh_token: refreshToken }),
     forgotPassword: async (identifier) => {
       await http.post('/auth/password/forgot', { identifier });

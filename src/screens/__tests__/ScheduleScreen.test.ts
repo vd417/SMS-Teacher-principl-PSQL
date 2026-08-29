@@ -1,4 +1,4 @@
-import { cellFor } from '../ScheduleScreen';
+import { cellFor, periodBellTimes } from '../ScheduleScreen';
 import type { TimetableSlot } from '@/data/domain';
 
 jest.mock('@react-native-async-storage/async-storage', () => ({
@@ -16,8 +16,8 @@ const mondayMath: TimetableSlot = {
   classId: 'c1',
   className: 'IV-A',
   room: '101',
-  startTime: '08:00',
-  endTime: '08:45',
+  startTime: '08:15',
+  endTime: '09:00',
   teacherName: 'Ravi Kumar',
 };
 
@@ -31,5 +31,12 @@ test('cellFor returns the lesson scheduled in the exact day and period', () => {
     className: 'IV-A',
     room: '101',
     classId: 'c1',
+    startTime: '08:15',
+    endTime: '09:00',
   });
+});
+
+test('periodBellTimes uses published slot times (not hardcoded 08:00)', () => {
+  expect(periodBellTimes([mondayMath], 1)).toEqual({ start: '08:15', end: '09:00' });
+  expect(periodBellTimes([mondayMath], 2)).toEqual({ start: '—', end: '—' });
 });

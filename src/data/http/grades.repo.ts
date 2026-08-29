@@ -1,4 +1,4 @@
-import type { GradesRepository, GradeInput } from '@/data/repositories/types';
+import type { GradesRepository, GradeInput, NotifyMarksResult } from '@/data/repositories/types';
 import type { HttpClient } from '@/lib/httpClient';
 import { toGrade, gradeSchema } from './mappers';
 
@@ -16,5 +16,20 @@ export function httpGrades(http: HttpClient): GradesRepository {
           marks: input.marks,
         })
         .then((x) => toGrade(gradeSchema.parse(x))),
+    notifyPublished: (examPaperId) =>
+      http
+        .post<{
+          parent_reach?: number;
+          student_reach?: number;
+          emails_sent?: number;
+        }>(`/exam-papers/${examPaperId}/notify-marks`, {})
+        .then(
+          (d) =>
+            ({
+              parentReach: d.parent_reach ?? 0,
+              studentReach: d.student_reach ?? 0,
+              emailsSent: d.emails_sent ?? 0,
+            }) satisfies NotifyMarksResult
+        ),
   };
 }

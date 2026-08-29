@@ -62,7 +62,7 @@ test('signIn with multiple schools stops at selecting-school and exposes pending
       role: 'teacher' as const,
       mustSetPassword: false,
     },
-    tenant: { id: 't1', name: 'School One' },
+    tenant: { id: 't1', name: 'School One', tier: 'silver', planName: '' },
   }));
   const mockListSchools = jest.fn(async () => [
     { id: 't1', name: 'School One' },
@@ -115,7 +115,7 @@ test('switchSchool establishes the session and returns to authenticated', async 
       role: 'teacher' as const,
       mustSetPassword: false,
     },
-    tenant: { id: 't1', name: 'School One' },
+    tenant: { id: 't1', name: 'School One', tier: 'silver', planName: '' },
   }));
   const mockListSchools = jest.fn(async () => [
     { id: 't1', name: 'School One' },
@@ -137,7 +137,7 @@ test('switchSchool establishes the session and returns to authenticated', async 
       role: 'principal' as const,
       mustSetPassword: false,
     },
-    tenant: { id: tenantId, name: 'School Two' },
+    tenant: { id: tenantId, name: 'School Two', tier: 'silver', planName: '' },
   }));
   const fakeRepos = {
     auth: { login: mockLogin, listMySchools: mockListSchools, switchSchool: mockSwitchSchool },
@@ -192,7 +192,7 @@ test('signIn still completes via establishSession when listMySchools throws', as
       role: 'teacher' as const,
       mustSetPassword: false,
     },
-    tenant: { id: 't1', name: 'School One' },
+    tenant: { id: 't1', name: 'School One', tier: 'silver', planName: '' },
   }));
   const mockListSchools = jest.fn(async () => {
     throw new Error('schools endpoint down');
@@ -248,7 +248,7 @@ test('a rejected switchSchool leaves pendingSchools and status unchanged so the 
       role: 'teacher' as const,
       mustSetPassword: false,
     },
-    tenant: { id: 't1', name: 'School One' },
+    tenant: { id: 't1', name: 'School One', tier: 'silver', planName: '' },
   }));
   const mockListSchools = jest.fn(async () => [
     { id: 't1', name: 'School One' },
@@ -318,7 +318,7 @@ test('updatePhoto calls the repo and patches session.user.photoUrl in place', as
       mustSetPassword: false,
       photoUrl: null,
     },
-    tenant: { id: 't1', name: 'School One' },
+    tenant: { id: 't1', name: 'School One', tier: 'silver', planName: '' },
   }));
   const mockListSchools = jest.fn(async () => [{ id: 't1', name: 'School One', logoUrl: null }]);
   const mockUpdatePhoto = jest.fn(async () => undefined);
@@ -382,7 +382,7 @@ test('establishSession never persists photoUrl to AsyncStorage (web localStorage
       mustSetPassword: false,
       photoUrl: bigPhoto,
     },
-    tenant: { id: 't1', name: 'School One' },
+    tenant: { id: 't1', name: 'School One', tier: 'silver', planName: '' },
   }));
   const mockListSchools = jest.fn(async () => [{ id: 't1', name: 'School One', logoUrl: null }]);
   const fakeRepos3 = {

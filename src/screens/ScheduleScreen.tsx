@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -20,17 +20,32 @@ const PERIOD_W = 66;
 const DAY_W = 116;
 const GAP = 6;
 
-const PERIOD_MIN = 45;
-const LUNCH_MIN = 30;
-const DAY_START = 8 * 60; // 08:00
-const fmt = (mins: number) => `${Math.floor(mins / 60)}:${String(mins % 60).padStart(2, '0')}`;
-const periodStartMin = (p: number) =>
-  DAY_START + (p - 1) * PERIOD_MIN + (p > LUNCH_AFTER ? LUNCH_MIN : 0);
-const periodStart = (p: number) => fmt(periodStartMin(p));
-const periodEnd = (p: number) => fmt(periodStartMin(p) + PERIOD_MIN);
-
 type Row = { type: 'period'; period: number } | { type: 'lunch' };
-type Lesson = { subject: string; className: string; room: string; classId: string };
+type Lesson = {
+  subject: string;
+  className: string;
+  room: string;
+  classId: string;
+  startTime: string;
+  endTime: string;
+};
+
+/** Prefer published start/end from any slot for this period number. */
+export function periodBellTimes(
+  timetable: TimetableSlot[],
+  period: number
+): { start: string; end: string } {
+  const withTimes = timetable.find(
+    (s) => s.period === period && (s.startTime?.trim() || s.endTime?.trim())
+  );
+  if (withTimes) {
+    return {
+      start: (withTimes.startTime || '').trim() || '—',
+      end: (withTimes.endTime || '').trim() || '—',
+    };
+  }
+  return { start: '—', end: '—' };
+}
 
 export function cellFor(timetable: TimetableSlot[], day: WeekDay, period: number): Lesson | null {
   const slot = timetable.find((item) => item.day === day && item.period === period);
@@ -40,6 +55,8 @@ export function cellFor(timetable: TimetableSlot[], day: WeekDay, period: number
     className: slot.className,
     room: slot.room,
     classId: slot.classId,
+    startTime: slot.startTime ?? '',
+    endTime: slot.endTime ?? '',
   };
 }
 
@@ -59,6 +76,12 @@ export const ScheduleScreen: React.FC = () => {
     if (p === LUNCH_AFTER) rows.push({ type: 'lunch' });
   }
   const lunchBandW = DAY_W * DAYS.length + GAP * (DAYS.length - 1);
+
+  const bells = useMemo(() => {
+    const map = new Map<number, { start: string; end: string }>();
+    for (let p = 1; p <= PERIODS; p++) map.set(p, periodBellTimes(timetable, p));
+    return map;
+  }, [timetable]);
 
   return (
     <ScrollView
@@ -114,8 +137,8 @@ export const ScheduleScreen: React.FC = () => {
                 >
                   <View style={[styles.periodCell, { width: PERIOD_W }]}>
                     <Text style={styles.periodNum}>P{r.period}</Text>
-                    <Text style={styles.periodTime}>{periodStart(r.period)}</Text>
-                    <Text style={styles.periodTime}>{periodEnd(r.period)}</Text>
+                    <Text style={styles.periodTime}>{bells.get(r.period)?.start ?? '—'}</Text>
+                    <Text style={styles.periodTime}>{bells.get(r.period)?.end ?? '—'}</Text>
                   </View>
                   {DAYS.map((_d, di) => {
                     const lesson = cellFor(timetable, DAYS[di], r.period);
@@ -177,19 +200,17 @@ const styles = StyleSheet.create({
   emptyCell: {
     minHeight: 66,
     borderRadius: Radii.md,
-    borderWidth: 1,
-    borderColor: Colors.ruleSoft,
-    backgroundColor: Colors.white,
+    backgroundColor: Colors.paper2,
   },
   lunchBand: {
-    backgroundColor: Colors.paper2,
+    minHeight: 36,
     borderRadius: Radii.md,
+    backgroundColor: Colors.paper2,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
   },
-  lunchText: { fontFamily: FontFamily.semiBold, fontSize: 12, color: Colors.inkMuted },
-  empty: { alignItems: 'center', paddingTop: 60 },
-  emptyEmoji: { fontSize: 48, marginBottom: 16 },
-  emptyTitle: { fontFamily: FontFamily.bold, fontSize: 20, color: Colors.ink },
+  lunchText: { fontFamily: FontFamily.medium, fontSize: 12, color: Colors.inkMuted },
+  empty: { alignItems: 'center', marginTop: 48, gap: 8 },
+  emptyEmoji: { fontSize: 36 },
+  emptyTitle: { fontFamily: FontFamily.bold, fontSize: 16, color: Colors.ink },
 });

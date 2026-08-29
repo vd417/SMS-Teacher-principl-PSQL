@@ -10,9 +10,18 @@ export function useStudentsByClass(classId: string) {
   const tenantId = useTenantId();
   return useQuery({
     queryKey: queryKeys.studentsByClass(tenantId, classId),
-    queryFn: () => repos.students.listByClass(classId, { limit: 200 }),
+    queryFn: async () => {
+      const items: import('@/data/domain').Student[] = [];
+      let cursor: string | undefined;
+      for (;;) {
+        const page = await repos.students.listByClass(classId, { limit: 200, cursor });
+        items.push(...page.items);
+        if (!page.nextCursor) break;
+        cursor = page.nextCursor;
+      }
+      return items;
+    },
     enabled: classId !== '',
-    select: (p) => p.items,
   });
 }
 

@@ -26,6 +26,7 @@ jest.mock('@expo/vector-icons', () => {
 const mockNavigate = jest.fn();
 jest.mock('@react-navigation/native', () => ({
   useNavigation: () => ({ navigate: mockNavigate }),
+  useRoute: () => ({ params: undefined }),
 }));
 
 beforeEach(() => {
@@ -119,11 +120,15 @@ test("shows a Present/Total/% summary aggregated across a grade's sections, and 
   renderScreen(repos);
 
   // Total = 2 + 3 = 5, Present = 2 + 0 = 2, pct = round(2/5*100) = 40.
-  await waitFor(() => expect(screen.getByText('Present 2/5 · 40%')).toBeTruthy());
+  await waitFor(() => expect(screen.getByText('Present 2/5')).toBeTruthy());
+  expect(screen.getByText('40%')).toBeTruthy();
 
   fireEvent.press(screen.getByText('IV'));
 
-  expect(mockNavigate).toHaveBeenCalledWith('AttendancePickSection', { gradeName: 'IV' });
+  expect(mockNavigate).toHaveBeenCalledWith('AttendancePickSection', {
+    gradeName: 'IV',
+    flow: 'attendance',
+  });
 });
 
 test('groups two classes that share a grade but have different names into one grade card', async () => {
@@ -167,13 +172,17 @@ test('groups two classes that share a grade but have different names into one gr
 
   // A single "I" grade card renders (not two "I-A"/"I-B" cards), aggregating
   // both sections: total = 2 + 3 = 5.
-  await waitFor(() => expect(screen.getByText('Present 0/5 · 0%')).toBeTruthy());
+  await waitFor(() => expect(screen.getByText('Present 0/5')).toBeTruthy());
+  expect(screen.getByText('0%')).toBeTruthy();
   expect(screen.queryByText('I-A')).toBeNull();
   expect(screen.queryByText('I-B')).toBeNull();
 
   fireEvent.press(screen.getByText('I'));
 
-  expect(mockNavigate).toHaveBeenCalledWith('AttendancePickSection', { gradeName: 'I' });
+  expect(mockNavigate).toHaveBeenCalledWith('AttendancePickSection', {
+    gradeName: 'I',
+    flow: 'attendance',
+  });
 });
 
 test('excludes a section from the aggregate (not counted as unmarked) when its attendance fetch fails', async () => {
@@ -229,7 +238,8 @@ test('excludes a section from the aggregate (not counted as unmarked) when its a
   renderScreen(repos);
 
   // c1 is fully excluded (0/0), so the aggregate is just c2's 2/3, not (2)/(4+3).
-  await waitFor(() => expect(screen.getByText('Present 2/3 · 67%')).toBeTruthy());
+  await waitFor(() => expect(screen.getByText('Present 2/3')).toBeTruthy());
+  expect(screen.getByText('67%')).toBeTruthy();
 });
 
 test('shows "No students" when a grade has no students in any section', async () => {
@@ -247,4 +257,161 @@ test('shows "No students" when a grade has no students in any section', async ()
   renderScreen(repos);
 
   await waitFor(() => expect(screen.getByText('No students')).toBeTruthy());
+});
+
+test('lists grades in ascending school order (Nursery through XII)', async () => {
+  const classes: Class[] = [
+    {
+      id: 'c1',
+      name: 'XII',
+      grade: '',
+      section: 'A',
+      subject: 'Math',
+      studentCount: 0,
+      room: '101',
+    },
+    {
+      id: 'c2',
+      name: 'Nursery',
+      grade: '',
+      section: 'A',
+      subject: 'Math',
+      studentCount: 0,
+      room: '102',
+    },
+    { id: 'c3', name: 'I', grade: '', section: 'A', subject: 'Math', studentCount: 0, room: '103' },
+    {
+      id: 'c4',
+      name: 'LKG',
+      grade: '',
+      section: 'A',
+      subject: 'Math',
+      studentCount: 0,
+      room: '104',
+    },
+  ];
+  const repos = {
+    classes: { list: jest.fn(async () => classes) },
+    students: { listByClass: jest.fn(async () => ({ items: [], nextCursor: null })) },
+    attendance: { forClass: jest.fn(async () => []) },
+  } as unknown as Repositories;
+
+  renderScreen(repos);
+
+  await waitFor(() => expect(screen.getByText('Nursery')).toBeTruthy());
+  const names = screen.getAllByText(/^(Nursery|LKG|I|XII)$/).map((node) => node.props.children);
+  expect(names).toEqual(['Nursery', 'LKG', 'I', 'XII']);
+});
+
+test('filters grades by class name or section via search', async () => {
+  const classes: Class[] = [
+    {
+      id: 'c1',
+      name: 'IV',
+      grade: '',
+      section: 'A',
+      subject: 'Math',
+      studentCount: 0,
+      room: '101',
+    },
+    { id: 'c2', name: 'V', grade: '', section: 'B', subject: 'Math', studentCount: 0, room: '102' },
+  ];
+  const repos = {
+    classes: { list: jest.fn(async () => classes) },
+    students: { listByClass: jest.fn(async () => ({ items: [], nextCursor: null })) },
+    attendance: { forClass: jest.fn(async () => []) },
+  } as unknown as Repositories;
+
+  renderScreen(repos);
+
+  await waitFor(() => expect(screen.getByText('IV')).toBeTruthy());
+  fireEvent.changeText(
+    screen.getByPlaceholderText('Search class, section, or student...'),
+    'section b'
+  );
+  expect(screen.queryByText('IV')).toBeNull();
+  expect(screen.getByText('V')).toBeTruthy();
+});
+
+test('shows View more when more than eight grades are listed', async () => {
+  const classes: Class[] = ['Nursery', 'LKG', 'UKG', 'I', 'II', 'III', 'IV', 'V', 'VI', 'VII'].map(
+    (name, i) => ({
+      id: `c${i}`,
+      name,
+      grade: '',
+      section: 'A',
+      subject: 'Math',
+      studentCount: 0,
+      room: `${100 + i}`,
+    })
+  );
+  const repos = {
+    classes: { list: jest.fn(async () => classes) },
+    students: { listByClass: jest.fn(async () => ({ items: [], nextCursor: null })) },
+    attendance: { forClass: jest.fn(async () => []) },
+  } as unknown as Repositories;
+
+  renderScreen(repos);
+
+  await waitFor(() => expect(screen.getByText('Nursery')).toBeTruthy());
+  expect(screen.getByText('View more (2 classes)')).toBeTruthy();
+  expect(screen.queryByText('VII')).toBeNull();
+
+  fireEvent.press(screen.getByText('View more (2 classes)'));
+  expect(screen.getByText('VII')).toBeTruthy();
+  expect(screen.getByText('View less')).toBeTruthy();
+});
+
+test('filters students by name and navigates to AttendanceScreen on tap', async () => {
+  const classes: Class[] = [
+    {
+      id: 'c1',
+      name: 'IV',
+      grade: '',
+      section: 'A',
+      subject: 'Math',
+      studentCount: 0,
+      room: '101',
+    },
+    { id: 'c2', name: 'V', grade: '', section: 'B', subject: 'Math', studentCount: 0, room: '102' },
+  ];
+  const ankit: Student = {
+    id: 's1',
+    name: 'Ankit Sharma',
+    roll: '12',
+    initials: 'AS',
+    classId: 'c1',
+    attendance: 0,
+    grade: 'IV',
+    parent: '',
+    parentPhone: '',
+    photoUrl: null,
+  };
+
+  const repos = {
+    classes: { list: jest.fn(async () => classes) },
+    students: {
+      listByClass: jest.fn(async (classId: string) => ({
+        items: classId === 'c1' ? [ankit] : [],
+        nextCursor: null,
+      })),
+    },
+    attendance: { forClass: jest.fn(async () => []) },
+  } as unknown as Repositories;
+
+  renderScreen(repos);
+
+  await waitFor(() => expect(screen.getByText('IV')).toBeTruthy());
+
+  fireEvent.changeText(
+    screen.getByPlaceholderText('Search class, section, or student...'),
+    'ankit'
+  );
+
+  await waitFor(() => expect(screen.getByText('Ankit Sharma')).toBeTruthy());
+  expect(screen.getByText(/IV-A · Roll 12/)).toBeTruthy();
+  expect(screen.queryByText('IV')).toBeNull();
+
+  fireEvent.press(screen.getByText('Ankit Sharma'));
+  expect(mockNavigate).toHaveBeenCalledWith('AttendanceScreen', { classId: 'c1' });
 });

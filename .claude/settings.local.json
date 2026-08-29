@@ -24,7 +24,12 @@
       "Bash(npm run *)",
       "PowerShell(Start-Process \"chrome.exe\" \"http://localhost:8081\")",
       "Skill(run)",
-      "Bash(\"/c/Program Files/Google/Chrome/Application/chrome.exe\" \"http://localhost:8081\")"
+      "Bash(\"/c/Program Files/Google/Chrome/Application/chrome.exe\" \"http://localhost:8081\")",
+      "Bash(git -C \"D:\\\\SMS\\\\sms-project\\\\sms-teacher-app\" status --short)",
+      "Bash(git -C \"D:\\\\SMS\\\\sms-project\\\\sms-teacher-app\" diff --stat)",
+      "Bash(npx eas *)",
+      "Bash(curl -s \"https://storage.googleapis.com/eas-workflows-production/logs/64431794-8eea-4172-b4d4-d7ce4a5a813f/93a91102-86c6-47f3-95c4-039195012236/2026-08-04T10%3A06%3A54Z-fed1b19f-c3fc-4bab-9a02-ea3b062aa4b8.txt?X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=www-production%40exponentjs.iam.gserviceaccount.com%2F20260804%2Fauto%2Fstorage%2Fgoog4_request&X-Goog-Date=20260804T172243Z&X-Goog-Expires=900&X-Goog-SignedHeaders=host&X-Goog-Signature=b4fbbe873d3c33606f9bc4dd3ee0ec863584fdc78e23b50af007800e0ecd12c2a3eacae6899e797b00990c9e35efbfaad862c97901fe5b24234a5fa7689f9913c51b10198b97069a1349efe68f05b563a848b96a39a3146c738a4bca3d359726abbcf20a98717511c6738b37271cd16ecab3b40fc632f6e502cd1de9821c14c79ac0c2db23f3af9a366a76808fbf769cdc078db5862d42c30ad81ff78450ac43373fc8fe777885ebef71e6cfcfd8c067b89d2c6fc1ab12871461038c40f658485177488f2aef50d03cf49a790111f7a275969e54ce2b9983017cdcab390143af8bfc9866e5d308f7736b91f0d0ab232637373e54cc865eb2cf93e4b76462ed33\" -o /tmp/build_log.txt -w \"%{http_code}\\\\n\")",
+      "Read(//tmp/**)"
     ]
   }
 }

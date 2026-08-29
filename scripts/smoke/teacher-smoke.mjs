@@ -1,9 +1,15 @@
 // Live smoke test for the Teacher App API. Replaces the deleted mock↔http
 // contract tests with an end-to-end check against a running backend.
 //
-// Prereq: the backend is up (e.g. `docker-compose up` in ../sms-backend) and a
-// teacher account exists. Configure via env:
-//   API_BASE_URL    e.g. http://localhost:5000/v1   (must include /v1)
+// Prereq: the backend is up and a teacher account exists. Local backend ports:
+//   `dotnet run` (Sms.Api http profile) -> http://localhost:5162
+//   `docker-compose up` in ../sms-backend -> http://localhost:5080
+// The account's role must be backend-canonical (`school.teacher` / `school.principal`),
+// not the teacher-app's unqualified `teacher`/`principal` — the API's `teacher.app`
+// authz policy requires the `school.*` form or timetable/calendar/library/assignments 403.
+//
+// Configure via env:
+//   API_BASE_URL    e.g. http://localhost:5162/v1   (must include /v1)
 //   SMOKE_EMAIL + SMOKE_PASSWORD   password login, OR
 //   SMOKE_TOKEN     a pre-obtained access token (skips login)
 //
@@ -13,7 +19,7 @@
 // enveloped ({data}) with the expected shape. 403/404 (role/data-absent) count
 // as SKIP, not failure. Exits non-zero if any endpoint fails.
 
-const BASE = process.env.API_BASE_URL ?? 'http://localhost:5000/v1';
+const BASE = process.env.API_BASE_URL ?? 'http://localhost:5162/v1';
 
 async function call(path, token) {
   const res = await fetch(`${BASE}${path}`, {
@@ -70,6 +76,8 @@ const CHECKS = [
   ['/me/attendance/summary', 'data'],
   ['/bus/assigned', 'data'],
   ['/principal/overview', 'data'],
+  ['/transport/fleet', 'list'],
+  ['/transport/buses', 'list'],
 ];
 
 function verdict(kind, status, body) {

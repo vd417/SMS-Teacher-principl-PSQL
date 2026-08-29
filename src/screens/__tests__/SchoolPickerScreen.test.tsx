@@ -81,7 +81,7 @@ describe('SchoolPickerScreen — login-gate entry (pendingSchools set directly)'
       accessToken: 'a',
       refreshToken: 'r',
       user: makeUser(),
-      tenant: { id: 't1', name: 'School One' },
+      tenant: { id: 't1', name: 'School One', tier: 'silver', planName: '' },
     }));
     const mockListSchools = jest.fn(async () => [
       { id: 't1', name: 'School One', logoUrl: 'https://cdn.example.com/one.png' },
@@ -91,7 +91,7 @@ describe('SchoolPickerScreen — login-gate entry (pendingSchools set directly)'
       accessToken: 'a2',
       refreshToken: 'r2',
       user: makeUser(),
-      tenant: { id: tenantId, name: 'School Two' },
+      tenant: { id: tenantId, name: 'School Two', tier: 'silver', planName: '' },
     }));
     const repos = {
       auth: { login: mockLogin, listMySchools: mockListSchools, switchSchool: mockSwitchSchool },
@@ -137,7 +137,7 @@ describe('SchoolPickerScreen — Profile entry (pendingSchools null, useMySchool
       accessToken: 'a',
       refreshToken: 'r',
       user: makeUser(),
-      tenant: { id: 't1', name: 'School One' },
+      tenant: { id: 't1', name: 'School One', tier: 'silver', planName: '' },
     }));
     // First call is signIn's own branching check (single school -> establishes
     // session directly, pendingSchools stays null); later calls are useMySchools
@@ -153,7 +153,7 @@ describe('SchoolPickerScreen — Profile entry (pendingSchools null, useMySchool
       accessToken: 'a2',
       refreshToken: 'r2',
       user: makeUser(),
-      tenant: { id: tenantId, name: 'School Two' },
+      tenant: { id: tenantId, name: 'School Two', tier: 'silver', planName: '' },
     }));
     const repos = {
       auth: { login: mockLogin, listMySchools: mockListSchools, switchSchool: mockSwitchSchool },

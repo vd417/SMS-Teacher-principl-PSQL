@@ -65,5 +65,6 @@ export function formatTimeOfDay(iso?: string): string {
   if (!iso) return '—';
   const d = parseApiInstant(iso);
   if (Number.isNaN(d.getTime())) return '—';
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  // hour12 explicit: the device's default locale isn't guaranteed to use AM/PM.
+  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
 }

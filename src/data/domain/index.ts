@@ -9,10 +9,15 @@ export type LeaveStatus = 'approved' | 'pending' | 'rejected';
 export type BookStatus = 'available' | 'issued' | 'overdue';
 export type PayslipStatus = 'paid' | 'pending';
 export type Role = 'teacher' | 'principal';
+export type Tier = 'silver' | 'gold' | 'platinum';
 
 export interface Tenant {
   id: string;
   name: string;
+  tier: Tier;
+  planName: string;
+  /** Per-school logo from tenant branding (multi-tenant SaaS). */
+  logoUrl?: string | null;
 }
 export interface User {
   id: string;
@@ -48,6 +53,8 @@ export interface Class {
   studentCount: number;
   room: string;
   nextPeriod?: string;
+  /** dbo.Teachers.Id for the class homeroom teacher, when set by the API. */
+  classTeacherId?: string;
 }
 export interface Student {
   id: string;
@@ -55,7 +62,8 @@ export interface Student {
   roll: string;
   initials: string;
   classId: string;
-  attendance: number;
+  /** Official period attendance % from API; null when unmarked. */
+  attendance: number | null;
   grade: string;
   parent: string;
   parentPhone: string;
@@ -78,6 +86,12 @@ export interface TimetableSlot {
   endTime: string;
   teacherName: string;
 }
+/** Exam term / datesheet published from sms-admin (GET /exams). */
+export interface ExamTerm {
+  id: string;
+  name: string;
+  published: boolean;
+}
 export interface Exam {
   id: string;
   title: string;
@@ -90,6 +104,8 @@ export interface Exam {
   maxMarks: number;
   topics: string[];
   status: ExamStatus;
+  /** Parent exam term when the paper belongs to a published datesheet. */
+  examTermId?: string;
 }
 export interface GradeEntry {
   studentId: string;
@@ -113,6 +129,7 @@ export interface Assignment {
   description?: string;
   /** Optional attached image (data URI on web, file URI on native). */
   imageUri?: string;
+  period?: number | null;
 }
 export interface ChatContact {
   id: string;
@@ -123,6 +140,12 @@ export interface ChatContact {
   time: string;
   unread: number;
   online: boolean;
+  /** Which student this parent thread is about — undefined for staff/group threads. */
+  childName?: string;
+  childClassLabel?: string;
+  /** Read-receipt tick for the Inbox list preview — only meaningful when lastMessageMine. */
+  lastMessageMine: boolean;
+  lastMessageStatus?: 'sent' | 'delivered' | 'read';
 }
 export interface ChatMessage {
   id: string;
@@ -130,6 +153,8 @@ export interface ChatMessage {
   text: string;
   time: string;
   isMe: boolean;
+  imageUrl?: string;
+  status?: 'sent' | 'delivered' | 'read';
 }
 export interface Announcement {
   id: string;
@@ -139,6 +164,16 @@ export interface Announcement {
   from: string;
   type: AnnouncementType;
   pinned?: boolean;
+  audience?: string;
+}
+export interface AppNotification {
+  id: string;
+  title: string;
+  body: string;
+  time: string;
+  icon: string;
+  tone: string;
+  unread: boolean;
 }
 export interface CalendarEvent {
   id: string;
@@ -165,6 +200,12 @@ export interface PayslipEntry {
   deductions: number;
   net: number;
   status: PayslipStatus;
+  basic?: number;
+  hra?: number;
+  allowances?: number;
+  epf?: number;
+  profTax?: number;
+  otherDeductions?: number;
 }
 export interface LeaveRequest {
   id: string;
@@ -175,6 +216,8 @@ export interface LeaveRequest {
   substitute?: string;
   status: LeaveStatus;
   appliedOn: string;
+  decidedNote?: string;
+  attachmentUrls?: string[];
 }
 export interface DashboardStats {
   totalStudents: number;
@@ -201,6 +244,8 @@ export interface ApprovalRequest {
   status: LeaveStatus; // 'pending' | 'approved' | 'rejected'
   appliedOn: string; // YYYY-MM-DD
   decidedNote?: string;
+  decidedByName?: string;
+  attachmentUrls?: string[];
 }
 
 export interface StaffAttendanceEntry {
@@ -211,8 +256,26 @@ export interface StaffAttendanceEntry {
   phone: string;
   checkedIn: boolean;
   checkInAt?: string; // ISO timestamp
+  checkInVerified?: boolean;
+  /** Teaching title (HOD, Senior Teacher, Teacher). Populated from API `designation` or legacy `role`. */
+  designation?: string;
   /** Department/role for non-teaching staff (e.g. Security, Guard, Peon). Teachers group by subject. */
   role?: string;
+}
+
+/** Colleague row for the staff directory (teachers + principal chat/call list). */
+export interface SchoolStaffMember {
+  id: string;
+  name: string;
+  initials: string;
+  phone?: string;
+  /** Chat thread role label (e.g. Teacher, Principal, Security). */
+  roleLabel: string;
+  subtitle: string;
+  photoUrl?: string;
+  checkedIn?: boolean;
+  checkInAt?: string;
+  checkInVerified?: boolean;
 }
 export interface PrincipalKpis {
   studentsPresentPct: number;
@@ -261,12 +324,41 @@ export interface Bus {
 }
 export interface BusPosition {
   busId: string;
-  currentStopIndex: number; // index into stops[]
-  progress: number; // 0..1 between currentStop and the next stop
-  lat: number;
-  lng: number;
-  nextStopName: string;
-  etaMinutes: number;
+  currentStopIndex: number;
+  progress: number;
+  lat?: number;
+  lng?: number;
+  nextStopName?: string;
+  etaMinutes?: number;
+}
+export type FleetBusStatus = 'idle' | 'on_route' | 'at_stop' | 'delayed';
+export interface FleetBus {
+  busId: string;
+  busNo: string;
+  routeName?: string;
+  driver?: string;
+  driverPhone?: string;
+  stopCount: number;
+  studentsRiding: number;
+  status: FleetBusStatus;
+  lat?: number;
+  lng?: number;
+  speedKmh?: number;
+  nextStopName?: string;
+  lastPingAt?: string;
+  teacherUserId?: string;
+  teacherName?: string;
+}
+export interface TransportBusRow {
+  busId: string;
+  busNo: string;
+  routeName?: string;
+  driver?: string;
+  driverPhone?: string;
+  stopCount: number;
+  studentsAssigned: number;
+  teacherUserId?: string;
+  teacherName?: string;
 }
 export interface BoardingRecord {
   studentId: string;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,14 +11,21 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { ScreenHeader, Pill } from '../components';
-import { useAnnouncements, useCreateAnnouncement } from '@/features/announcements/hooks';
+import {
+  useAnnouncements,
+  useAppNotifications,
+  useCreateAnnouncement,
+  useMarkNotificationsRead,
+} from '@/features/announcements/hooks';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { Skeleton } from '@/ui/state/Skeleton';
 import { ErrorState } from '@/ui/state/ErrorState';
 import { EmptyState } from '@/ui/state/EmptyState';
+import { resolveNotificationRoute } from '@/lib/notificationRouting';
 import type { AnnouncementType } from '@/data/domain';
 
 const TYPE_CONFIG: Record<AnnouncementType, { color: string; soft: string; icon: string }> = {
@@ -30,14 +37,46 @@ const TYPE_CONFIG: Record<AnnouncementType, { color: string; soft: string; icon:
 
 export const AnnouncementsScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<any>();
   const { data: announcements = [], isLoading, isError, refetch } = useAnnouncements();
+  const {
+    data: appNotifications = [],
+    isLoading: notificationsLoading,
+    isError: notificationsError,
+    refetch: refetchNotifications,
+  } = useAppNotifications();
+  const markNotificationsRead = useMarkNotificationsRead();
 
   const pinned = announcements.filter((a) => a.pinned);
   const rest = announcements.filter((a) => !a.pinned);
+  const loading = isLoading || notificationsLoading;
+  const hasError = isError || notificationsError;
+  const retry = () => {
+    void refetch();
+    void refetchNotifications();
+  };
 
   const { session } = useAuth();
   const isPrincipal = session?.user.role === 'principal';
   const createAnnouncement = useCreateAnnouncement();
+
+  const hasUnread = appNotifications.some((n) => n.unread);
+  useFocusEffect(
+    useCallback(() => {
+      if (hasUnread) markNotificationsRead.mutate();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [hasUnread])
+  );
+
+  const handleNotificationPress = (note: { icon: string; title: string }) => {
+    const target = resolveNotificationRoute(note, isPrincipal);
+    if (!target) return;
+    if (target.kind === 'tab') {
+      navigation.getParent()?.navigate(target.tab);
+    } else {
+      navigation.navigate(target.screen, target.params);
+    }
+  };
   const [composeOpen, setComposeOpen] = useState(false);
   const [draftTitle, setDraftTitle] = useState('');
   const [draftBody, setDraftBody] = useState('');
@@ -67,18 +106,57 @@ export const AnnouncementsScreen: React.FC = () => {
           <ScreenHeader title="Announcements" subtitle={`${announcements.length} total`} showBack />
         </Animated.View>
 
-        {isLoading ? (
+        {loading ? (
           <>
             {[0, 1, 2, 3].map((i) => (
               <Skeleton key={i} height={90} radius={12} />
             ))}
           </>
-        ) : isError ? (
-          <ErrorState onRetry={refetch} />
-        ) : announcements.length === 0 ? (
-          <EmptyState label="No announcements" />
+        ) : hasError ? (
+          <ErrorState onRetry={retry} />
+        ) : announcements.length === 0 && appNotifications.length === 0 ? (
+          <EmptyState label="No announcements yet" />
         ) : (
           <>
+            {appNotifications.length > 0 && (
+              <>
+                <Animated.View entering={FadeInDown.delay(90).springify()}>
+                  <Text style={styles.sectionLabel}>App alerts</Text>
+                </Animated.View>
+                {appNotifications.map((note, i) => {
+                  const target = resolveNotificationRoute(note, isPrincipal);
+                  return (
+                    <Animated.View
+                      key={note.id}
+                      entering={FadeInDown.delay(110 + i * 50).springify()}
+                    >
+                      <TouchableOpacity
+                        style={[styles.annCard, note.unread && styles.unreadCard]}
+                        activeOpacity={target ? 0.8 : 1}
+                        disabled={!target}
+                        onPress={() => handleNotificationPress(note)}
+                      >
+                        <View style={[styles.typeIcon, { backgroundColor: Colors.blueSoft }]}>
+                          <Ionicons name="notifications" size={20} color={Colors.blue} />
+                        </View>
+                        <View style={styles.annContent}>
+                          <Text style={styles.annTitle}>{note.title}</Text>
+                          {note.body ? (
+                            <Text style={styles.annBody} numberOfLines={3}>
+                              {note.body}
+                            </Text>
+                          ) : null}
+                          {note.time ? <Text style={styles.annMeta}>{note.time}</Text> : null}
+                        </View>
+                        {target ? (
+                          <Ionicons name="chevron-forward" size={16} color={Colors.inkSoft} />
+                        ) : null}
+                      </TouchableOpacity>
+                    </Animated.View>
+                  );
+                })}
+              </>
+            )}
             {pinned.length > 0 && (
               <>
                 <Animated.View entering={FadeInDown.delay(100).springify()}>
@@ -230,6 +308,10 @@ const styles = StyleSheet.create({
   pinnedCard: {
     borderLeftWidth: 3,
     borderLeftColor: Colors.primary,
+  },
+  unreadCard: {
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.blue,
   },
   typeIcon: {
     width: 40,

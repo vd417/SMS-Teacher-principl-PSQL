@@ -58,3 +58,10 @@ export function useUpsertGrade(examId: string) {
     onSettled: () => qc.invalidateQueries({ queryKey: key }),
   });
 }
+
+export function useNotifyExamMarksPublished(examPaperId: string) {
+  const repos = useRepositories();
+  return useMutation({
+    mutationFn: () => repos.grades.notifyPublished(examPaperId),
+  });
+}

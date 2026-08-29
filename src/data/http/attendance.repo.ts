@@ -12,6 +12,20 @@ const rollCallSchema = z.object({
   marked: z.boolean(),
 });
 
+const daySlotSchema = z.object({
+  id: z.string(),
+  period: z.number(),
+  subject: z.string().nullable().optional(),
+  subject_id: z.string().nullable().optional(),
+  start_time: z.string().nullable().optional(),
+  end_time: z.string().nullable().optional(),
+  teacher_id: z.string().nullable().optional(),
+  teacher_name: z.string().nullable().optional(),
+  is_current: z.boolean(),
+  marked: z.boolean(),
+  can_mark: z.boolean(),
+});
+
 export function httpAttendance(http: HttpClient): AttendanceRepository {
   return {
     forClass: (classId, date) =>
@@ -38,6 +52,37 @@ export function httpAttendance(http: HttpClient): AttendanceRepository {
           };
         }),
 
+    dayTimetable: (classId, date) =>
+      http.get<unknown[]>(`/classes/${classId}/timetable/day`, { params: { date } }).then((d) =>
+        (Array.isArray(d) ? d : []).map((x) => {
+          const row = daySlotSchema.parse(x);
+          return {
+            id: row.id,
+            period: row.period,
+            subject: row.subject ?? null,
+            subjectId: row.subject_id ?? null,
+            startTime: row.start_time ?? null,
+            endTime: row.end_time ?? null,
+            teacherId: row.teacher_id ?? null,
+            teacherName: row.teacher_name ?? null,
+            isCurrent: row.is_current,
+            marked: row.marked,
+            canMark: row.can_mark,
+          };
+        })
+      ),
+
+    forPeriod: (classId, date, period, subject) =>
+      http
+        .get<unknown[]>(`/classes/${classId}/attendance/periods`, {
+          params: { date, period, subject },
+        })
+        .then((d) =>
+          (Array.isArray(d) ? d : []).map((x) =>
+            toAttendanceRecord(attendanceRecordSchema.parse(x))
+          )
+        ),
+
     save: (classId, date, records) => {
       const rows = records
         .filter((r) => r.studentId.trim() !== '')
@@ -50,6 +95,28 @@ export function httpAttendance(http: HttpClient): AttendanceRepository {
       }
       return http
         .post<void>(`/classes/${classId}/attendance`, { date, records: rows })
+        .then(() => undefined);
+    },
+
+    savePeriod: (classId, args) => {
+      const rows = args.records
+        .filter((r) => r.studentId.trim() !== '')
+        .map((r) => ({
+          student_id: r.studentId,
+          status: fromAttendanceStatus(r.status),
+        }));
+      if (rows.length === 0) {
+        return Promise.reject(new Error('No students to save'));
+      }
+      return http
+        .post<void>(`/classes/${classId}/attendance/periods`, {
+          date: args.date,
+          period: args.period,
+          subject: args.subject,
+          subject_id: args.subjectId ?? null,
+          period_id: args.periodId ?? null,
+          records: rows,
+        })
         .then(() => undefined);
     },
   };

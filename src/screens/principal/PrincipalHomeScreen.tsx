@@ -1,38 +1,123 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Colors, Radii, Shadows } from '../../theme';
 import { FontFamily } from '../../theme/typography';
-import { Avatar, Card, Donut, SectionHeader } from '../../components';
-import { useAuth } from '@/features/auth/AuthProvider';
+import {
+  Avatar,
+  Card,
+  Donut,
+  SectionHeader,
+  SchoolClosedBanner,
+  MoreFeaturesAvatar,
+  HomeSchoolHeader,
+  NotificationBell,
+} from '../../components';
+import { useAuth, useTenantId } from '@/features/auth/AuthProvider';
+import { queryClient, queryKeys } from '@/lib/queryClient';
+import { useCurrentSchoolBranding } from '@/features/auth/useCurrentSchoolBranding';
 import { usePrincipalOverview } from '@/features/principal/hooks';
 import { useApprovals } from '@/features/approvals/hooks';
+import { useAnnouncements, useAppNotifications } from '@/features/announcements/hooks';
+import { useSchoolClosedToday } from '@/features/calendar/hooks';
+import { useFeature } from '@/features/plan/hooks';
+import { staffCheckInStatus } from '@/lib/staffCheckIn';
+import { staffDisplayLabel } from '@/lib/staffCategory';
+import { navigateToMoreScreen } from '@/lib/navigateToMore';
 
 const SHORTCUTS = [
-  { key: 'AnnouncementsScreen', label: 'Broadcast', icon: 'megaphone-outline' as const },
-  { key: 'BusScreen', label: 'Live Bus', icon: 'bus-outline' as const },
-  { key: 'TeacherDirectoryScreen', label: 'Teachers', icon: 'people-outline' as const },
+  {
+    key: 'AnnouncementsScreen',
+    label: 'Broadcast',
+    icon: 'megaphone-outline' as const,
+    feature: 'communication',
+  },
+  {
+    key: 'PrincipalTransportScreen',
+    label: 'Live Bus',
+    icon: 'bus-outline' as const,
+    feature: 'transport',
+  },
+  {
+    key: 'TeacherDirectoryScreen',
+    label: 'Teachers',
+    icon: 'people-outline' as const,
+    feature: 'sis',
+  },
 ];
+
+function PrincipalShortcut({
+  shortcut,
+  onPress,
+}: {
+  shortcut: { label: string; icon: keyof typeof Ionicons.glyphMap; feature: string };
+  onPress: () => void;
+}) {
+  const { allowed } = useFeature(shortcut.feature);
+
+  return (
+    <TouchableOpacity
+      style={[styles.shortcut, !allowed && styles.shortcutLocked]}
+      onPress={onPress}
+      activeOpacity={0.8}
+    >
+      <View style={styles.shortcutIcon}>
+        <Ionicons name={shortcut.icon} size={20} color={Colors.primary} />
+        {!allowed && (
+          <View style={styles.shortcutLock}>
+            <Ionicons name="lock-closed" size={10} color={Colors.inkMuted} />
+          </View>
+        )}
+      </View>
+      <Text style={styles.shortcutLabel}>{shortcut.label}</Text>
+    </TouchableOpacity>
+  );
+}
 
 export const PrincipalHomeScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
-  const { session } = useAuth();
+  const { session, refreshProfile } = useAuth();
+  const tenantId = useTenantId();
   const user = session?.user;
+  const { name: schoolName, logoUrl: schoolLogoUrl } = useCurrentSchoolBranding();
 
-  const { data: overview } = usePrincipalOverview();
-  const { data: approvals = [] } = useApprovals();
+  const { data: overview, isLoading, refetch } = usePrincipalOverview();
+  const { data: approvals = [], refetch: refetchApprovals } = useApprovals();
+  const { data: announcements = [] } = useAnnouncements();
+  const schoolClosed = useSchoolClosedToday(announcements);
+  const { data: appNotifications = [] } = useAppNotifications();
+  const unreadCount = appNotifications.filter((n) => n.unread).length;
+
+  useFocusEffect(
+    useCallback(() => {
+      void refetch();
+      void refetchApprovals();
+      void refreshProfile();
+      if (tenantId) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.mySchools(tenantId) });
+      }
+    }, [refetch, refetchApprovals, refreshProfile, tenantId])
+  );
 
   const pending = approvals.filter((a) => a.status === 'pending');
-  const notCheckedIn = (overview?.staff ?? []).filter((s) => !s.checkedIn);
+
+  const openApprovalsTab = () => {
+    navigation.getParent()?.navigate('Approvals');
+  };
+  const staffRoster = overview?.staff ?? [];
+  const staffTotal = overview?.kpis.staffTotal ?? staffRoster.length;
+  const notCheckedIn = staffRoster.filter((s) => !s.checkedIn);
+  const checkedIn = staffRoster.filter((s) => s.checkedIn);
 
   const studentsPct = overview?.kpis.studentsPresentPct ?? 0;
-  const staffTotal = overview?.kpis.staffTotal ?? 0;
-  const staffPresent = overview?.kpis.staffPresent ?? 0;
+  const staffPresent = overview?.kpis.staffPresent ?? checkedIn.length;
   const staffPct = staffTotal ? Math.round((staffPresent / staffTotal) * 100) : 0;
+  const studentsLabel = isLoading ? '—' : `${studentsPct}%`;
+  const staffInLabel = isLoading ? '—' : `${staffPresent}/${staffTotal}`;
 
   return (
     <View style={styles.root}>
@@ -41,16 +126,34 @@ export const PrincipalHomeScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <Animated.View entering={FadeInDown.delay(50).springify()} style={styles.header}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.greeting}>Welcome,</Text>
-            <Text style={styles.name}>{(user?.name ?? 'Principal').split(' ')[0]} 👋</Text>
-            <Text style={styles.sub}>{user?.title ?? 'Principal'}</Text>
-          </View>
-          <TouchableOpacity onPress={() => navigation.navigate('PrincipalMoreScreen')}>
-            <Avatar initials={user?.initials ?? '?'} photoUri={user?.photoUrl} size={50} />
-          </TouchableOpacity>
+        <Animated.View entering={FadeInDown.delay(50).springify()}>
+          <HomeSchoolHeader
+            logoUrl={schoolLogoUrl}
+            schoolName={schoolName}
+            greetingLine="Welcome,"
+            nameLine={(user?.name ?? 'Principal').split(' ')[0]}
+            rightSlot={
+              <View style={styles.headerActions}>
+                <NotificationBell
+                  unreadCount={unreadCount}
+                  onDark
+                  onPress={() => navigation.navigate('AnnouncementsScreen')}
+                />
+                <MoreFeaturesAvatar
+                  size={42}
+                  onDark
+                  onPress={() => navigateToMoreScreen(navigation, true)}
+                />
+              </View>
+            }
+          />
         </Animated.View>
+
+        {schoolClosed && (
+          <Animated.View entering={FadeInDown.delay(100).springify()}>
+            <SchoolClosedBanner title={schoolClosed.title} description={schoolClosed.description} />
+          </Animated.View>
+        )}
 
         {/* Attendance chart */}
         <Animated.View entering={FadeInDown.delay(120).springify()}>
@@ -86,27 +189,19 @@ export const PrincipalHomeScreen: React.FC = () => {
 
         {/* KPIs */}
         <Animated.View entering={FadeInDown.delay(180).springify()} style={styles.kpiRow}>
-          <Kpi label="Students" value={`${overview?.kpis.studentsPresentPct ?? '—'}%`} />
+          <Kpi label="Students" value={studentsLabel} />
+          <Kpi label="Staff in" value={staffInLabel} />
           <Kpi
-            label="Staff in"
-            value={overview ? `${overview.kpis.staffPresent}/${overview.kpis.staffTotal}` : '—'}
+            label="Pending"
+            value={isLoading ? '—' : `${overview?.kpis.pendingApprovals ?? pending.length}`}
           />
-          <Kpi label="Pending" value={`${overview?.kpis.pendingApprovals ?? pending.length}`} />
         </Animated.View>
 
         {/* Approvals preview */}
         <Animated.View entering={FadeInDown.delay(240).springify()} style={styles.section}>
-          <SectionHeader
-            title="Approvals"
-            actionLabel="View All"
-            onAction={() => navigation.navigate('Approvals')}
-          />
+          <SectionHeader title="Approvals" actionLabel="View All" onAction={openApprovalsTab} />
           {pending.slice(0, 3).map((a) => (
-            <TouchableOpacity
-              key={a.id}
-              style={styles.previewRow}
-              onPress={() => navigation.navigate('Approvals')}
-            >
+            <TouchableOpacity key={a.id} style={styles.previewRow} onPress={openApprovalsTab}>
               <Avatar initials={a.requesterInitials} size={34} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.previewTitle}>{a.title}</Text>
@@ -117,10 +212,46 @@ export const PrincipalHomeScreen: React.FC = () => {
           ))}
         </Animated.View>
 
+        {/* Staff checked in */}
+        <Animated.View entering={FadeInDown.delay(280).springify()} style={styles.section}>
+          <SectionHeader title="Staff checked in" />
+          {isLoading ? (
+            <Text style={styles.previewMeta}>Loading…</Text>
+          ) : staffTotal === 0 ? (
+            <Text style={styles.previewMeta}>No staff on roster for this school.</Text>
+          ) : checkedIn.length === 0 ? (
+            <Text style={styles.previewMeta}>No staff check-ins yet today.</Text>
+          ) : (
+            checkedIn.slice(0, 5).map((s) => {
+              const status = staffCheckInStatus(s);
+              return (
+                <View key={s.teacherId} style={styles.previewRow}>
+                  <Avatar initials={s.initials} size={34} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.previewTitle}>{s.name}</Text>
+                    <Text style={styles.previewMeta}>
+                      {staffDisplayLabel(s)} · {status.label}
+                    </Text>
+                  </View>
+                  <Ionicons
+                    name={status.flagged ? 'warning-outline' : 'checkmark-circle'}
+                    size={16}
+                    color={status.flagged ? Colors.late : Colors.present}
+                  />
+                </View>
+              );
+            })
+          )}
+        </Animated.View>
+
         {/* Staff not checked in */}
         <Animated.View entering={FadeInDown.delay(300).springify()} style={styles.section}>
           <SectionHeader title="Not checked in" />
-          {notCheckedIn.length === 0 ? (
+          {isLoading ? (
+            <Text style={styles.previewMeta}>Loading…</Text>
+          ) : staffTotal === 0 ? (
+            <Text style={styles.previewMeta}>No staff on roster for this school.</Text>
+          ) : notCheckedIn.length === 0 ? (
             <Text style={styles.previewMeta}>Everyone is in.</Text>
           ) : (
             notCheckedIn.map((s) => (
@@ -128,7 +259,7 @@ export const PrincipalHomeScreen: React.FC = () => {
                 <Avatar initials={s.initials} size={34} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.previewTitle}>{s.name}</Text>
-                  <Text style={styles.previewMeta}>{s.subject}</Text>
+                  <Text style={styles.previewMeta}>{staffDisplayLabel(s)}</Text>
                 </View>
                 <Ionicons name="ellipse" size={10} color={Colors.absent} />
               </View>
@@ -139,16 +270,11 @@ export const PrincipalHomeScreen: React.FC = () => {
         {/* Quick shortcuts */}
         <Animated.View entering={FadeInDown.delay(360).springify()} style={styles.shortcutRow}>
           {SHORTCUTS.map((s) => (
-            <TouchableOpacity
+            <PrincipalShortcut
               key={s.key}
-              style={styles.shortcut}
+              shortcut={s}
               onPress={() => navigation.navigate(s.key)}
-            >
-              <View style={styles.shortcutIcon}>
-                <Ionicons name={s.icon} size={20} color={Colors.primary} />
-              </View>
-              <Text style={styles.shortcutLabel}>{s.label}</Text>
-            </TouchableOpacity>
+            />
           ))}
         </Animated.View>
       </ScrollView>
@@ -166,10 +292,7 @@ const Kpi: React.FC<{ label: string; value: string }> = ({ label, value }) => (
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.paper2 },
   scroll: { paddingHorizontal: 20 },
-  header: { flexDirection: 'row', alignItems: 'center', marginBottom: 16 },
-  greeting: { fontFamily: FontFamily.regular, fontSize: 14, color: Colors.inkMuted },
-  name: { fontFamily: FontFamily.extraBold, fontSize: 24, color: Colors.ink },
-  sub: { fontFamily: FontFamily.medium, fontSize: 13, color: Colors.inkMuted, marginTop: 2 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   attCard: { padding: 16, marginBottom: 16, gap: 16 },
   attTitle: { fontFamily: FontFamily.bold, fontSize: 15, color: Colors.ink },
   attDonuts: { flexDirection: 'row', justifyContent: 'space-around' },
@@ -216,6 +339,15 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primarySoft,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  shortcutLocked: { opacity: 0.72 },
+  shortcutLock: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    backgroundColor: Colors.white,
+    borderRadius: Radii.full,
+    padding: 2,
   },
   shortcutLabel: { fontFamily: FontFamily.semiBold, fontSize: 12, color: Colors.ink },
 });

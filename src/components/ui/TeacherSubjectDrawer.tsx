@@ -1,10 +1,13 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Modal, View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Radii, Shadows } from '../../theme';
 import { FontFamily } from '../../theme/typography';
 import { deriveColorSet } from '../../theme/derive';
 import { Avatar } from './Avatar';
+import { filterStaffBySearch } from '@/lib/staffSearch';
+import { staffCheckInStatus } from '@/lib/staffCheckIn';
+import { SearchField } from './SearchField';
 
 export interface DrawerStaff {
   teacherId: string;
@@ -12,6 +15,10 @@ export interface DrawerStaff {
   initials: string;
   subject: string;
   checkedIn: boolean;
+  checkInAt?: string;
+  checkInVerified?: boolean;
+  /** Teaching title when grouped under subject in the teaching drawer. */
+  designation?: string;
   /** Non-teaching role (Security, Guard, Peon); teachers group by subject. */
   role?: string;
 }
@@ -21,6 +28,8 @@ interface TeacherSubjectDrawerProps {
   staff: DrawerStaff[];
   onClose: () => void;
   title?: string;
+  /** Pre-fill drawer search (e.g. when opened from the attendance screen search). */
+  initialSearch?: string;
 }
 
 export const TeacherSubjectDrawer: React.FC<TeacherSubjectDrawerProps> = ({
@@ -28,12 +37,22 @@ export const TeacherSubjectDrawer: React.FC<TeacherSubjectDrawerProps> = ({
   staff,
   onClose,
   title = 'Staff by department',
+  initialSearch = '',
 }) => {
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    if (visible) setSearch(initialSearch);
+    else setSearch('');
+  }, [visible, initialSearch]);
+
+  const filteredStaff = useMemo(() => filterStaffBySearch(staff, search), [staff, search]);
+
   const groups = useMemo(() => {
     const map = new Map<string, DrawerStaff[]>();
-    for (const t of staff) {
+    for (const t of filteredStaff) {
       // Non-teaching staff group by their role; teachers group by subject.
-      const key = t.role && t.role.length > 0 ? t.role : t.subject || 'Other';
+      const key = t.role && t.role.length > 0 ? t.role : t.subject || t.designation || 'Other';
       const arr = map.get(key) ?? [];
       arr.push(t);
       map.set(key, arr);
@@ -41,7 +60,7 @@ export const TeacherSubjectDrawer: React.FC<TeacherSubjectDrawerProps> = ({
     return [...map.entries()]
       .map(([subject, teachers]) => ({ subject, teachers }))
       .sort((a, b) => a.subject.localeCompare(b.subject));
-  }, [staff]);
+  }, [filteredStaff]);
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -54,6 +73,13 @@ export const TeacherSubjectDrawer: React.FC<TeacherSubjectDrawerProps> = ({
               <Ionicons name="close" size={22} color={Colors.inkMuted} />
             </Pressable>
           </View>
+
+          <SearchField
+            placeholder="Search staff by name..."
+            value={search}
+            onChangeText={setSearch}
+            style={styles.search}
+          />
 
           <ScrollView showsVerticalScrollIndicator={false} style={styles.scroll}>
             {groups.map((g) => {
@@ -69,39 +95,70 @@ export const TeacherSubjectDrawer: React.FC<TeacherSubjectDrawerProps> = ({
                     </Text>
                   </View>
 
-                  {g.teachers.map((t) => (
-                    <View
-                      key={t.teacherId}
-                      style={[styles.teacherRow, { borderColor: cs.colorSoft }]}
-                    >
-                      <Avatar initials={t.initials} size={36} backgroundColor={cs.color} />
-                      <Text style={styles.teacherName}>{t.name}</Text>
+                  {g.teachers.map((t) => {
+                    const status = staffCheckInStatus(t);
+                    return (
                       <View
-                        style={[
-                          styles.statusPill,
-                          { backgroundColor: t.checkedIn ? Colors.presentSoft : Colors.paper2 },
-                        ]}
+                        key={t.teacherId}
+                        style={[styles.teacherRow, { borderColor: cs.colorSoft }]}
                       >
-                        <Ionicons
-                          name={t.checkedIn ? 'checkmark-circle' : 'ellipse-outline'}
-                          size={13}
-                          color={t.checkedIn ? Colors.present : Colors.inkMuted}
-                        />
-                        <Text
+                        <Avatar initials={t.initials} size={36} backgroundColor={cs.color} />
+                        <Text style={styles.teacherName}>{t.name}</Text>
+                        <View
                           style={[
-                            styles.statusText,
-                            { color: t.checkedIn ? Colors.present : Colors.inkMuted },
+                            styles.statusPill,
+                            {
+                              backgroundColor: t.checkedIn
+                                ? status.flagged
+                                  ? Colors.lateSoft
+                                  : Colors.presentSoft
+                                : Colors.paper2,
+                            },
                           ]}
                         >
-                          {t.checkedIn ? 'In' : 'Out'}
-                        </Text>
+                          <Ionicons
+                            name={
+                              t.checkedIn
+                                ? status.flagged
+                                  ? 'warning-outline'
+                                  : 'checkmark-circle'
+                                : 'ellipse-outline'
+                            }
+                            size={13}
+                            color={
+                              t.checkedIn
+                                ? status.flagged
+                                  ? Colors.late
+                                  : Colors.present
+                                : Colors.inkMuted
+                            }
+                          />
+                          <Text
+                            style={[
+                              styles.statusText,
+                              {
+                                color: t.checkedIn
+                                  ? status.flagged
+                                    ? Colors.late
+                                    : Colors.present
+                                  : Colors.inkMuted,
+                              },
+                            ]}
+                          >
+                            {status.label}
+                          </Text>
+                        </View>
                       </View>
-                    </View>
-                  ))}
+                    );
+                  })}
                 </View>
               );
             })}
-            {groups.length === 0 && <Text style={styles.empty}>No staff found</Text>}
+            {groups.length === 0 && (
+              <Text style={styles.empty}>
+                {search.trim() ? 'No matching staff' : 'No staff found'}
+              </Text>
+            )}
           </ScrollView>
         </Pressable>
       </Pressable>
@@ -140,6 +197,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   title: { fontFamily: FontFamily.extraBold, fontSize: 20, color: Colors.ink },
+  search: { marginBottom: 12 },
   scroll: { flexGrow: 0 },
   group: { marginBottom: 18 },
   groupHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },

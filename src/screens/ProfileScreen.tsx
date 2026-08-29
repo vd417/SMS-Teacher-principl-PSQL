@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -10,21 +10,30 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { Avatar, Card } from '../components';
+import { useFeature } from '@/features/plan/hooks';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useLogout, useUpdatePhoto } from '@/features/auth/hooks';
 import { useDashboardStats } from '@/features/dashboard/hooks';
 import { useMySchools } from '@/features/auth/useMySchools';
 import { pickImageFromLibrary, takePhotoFromCamera } from '@/lib/pickImage';
+import { dialPhoneNumber } from '@/lib/phoneLink';
 import { authErrorMessage } from '@/features/auth/authErrors';
 import type { ProfileStackParamList } from '../navigation/types';
 
 type ProfileNav = NativeStackNavigationProp<ProfileStackParamList, 'ProfileScreen'>;
+
+const NOT_ASSIGNED = 'Not assigned';
+
+function contactDisplay(value: string | undefined): string {
+  const trimmed = (value ?? '').trim();
+  return trimmed || NOT_ASSIGNED;
+}
 
 const MENU_ITEMS = [
   {
@@ -37,9 +46,16 @@ const MENU_ITEMS = [
     icon: 'document-text-outline',
     label: 'My Payslip',
     screen: 'PayslipScreen',
+    feature: 'hr_payroll',
     color: Colors.present,
   },
-  { icon: 'calendar-outline', label: 'Leave Requests', screen: 'LeaveScreen', color: Colors.coral },
+  {
+    icon: 'calendar-outline',
+    label: 'Leave Requests',
+    screen: 'LeaveScreen',
+    feature: 'operations',
+    color: Colors.coral,
+  },
   {
     icon: 'key-outline',
     label: 'Change Password',
@@ -61,12 +77,56 @@ const MENU_ITEMS = [
   },
 ] as const;
 
+type ProfileMenuItem = (typeof MENU_ITEMS)[number] & { feature?: string };
+
+function ProfileMenuRow({
+  item,
+  isLast,
+  onPress,
+}: {
+  item: ProfileMenuItem;
+  isLast: boolean;
+  onPress: () => void;
+}) {
+  // useFeature must run unconditionally (rules-of-hooks) — an unrecognized feature
+  // key defaults to the lowest tier requirement, which every plan satisfies, so this
+  // is equivalent to "always allowed" for rows with no feature restriction.
+  const { allowed } = useFeature(item.feature ?? 'none');
+
+  return (
+    <TouchableOpacity
+      style={[styles.menuRow, !isLast && styles.menuRowBorder, !allowed && styles.menuRowLocked]}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View style={[styles.menuIconWrap, { backgroundColor: item.color + '20' }]}>
+        <Ionicons name={item.icon as never} size={20} color={item.color} />
+      </View>
+      <Text style={styles.menuLabel}>{item.label}</Text>
+      {!allowed ? (
+        <Ionicons name="lock-closed" size={16} color={Colors.inkMuted} />
+      ) : (
+        <Ionicons name="chevron-forward" size={18} color={Colors.inkSoft} />
+      )}
+    </TouchableOpacity>
+  );
+}
+
 export const ProfileScreen: React.FC = () => {
   const navigation = useNavigation<ProfileNav>();
   const insets = useSafeAreaInsets();
-  const { session } = useAuth();
+  const { session, refreshProfile } = useAuth();
   const user = session?.user;
   const tenantName = session?.tenant.name ?? 'School';
+
+  useFocusEffect(
+    useCallback(() => {
+      refreshProfile().catch(() => {
+        /* keep showing the last-known profile if the refresh fails */
+      });
+    }, [refreshProfile])
+  );
+
   const { data: stats } = useDashboardStats();
   const updatePhoto = useUpdatePhoto();
   const [photoError, setPhotoError] = useState<string | null>(null);
@@ -206,20 +266,42 @@ export const ProfileScreen: React.FC = () => {
         <Card style={styles.infoCard}>
           {[
             { icon: 'mail-outline', label: 'Email', value: user?.email ?? '' },
-            { icon: 'call-outline', label: 'Phone', value: user?.phone ?? '' },
+            { icon: 'call-outline', label: 'Phone', value: user?.phone ?? '', dial: true },
             { icon: 'location-outline', label: 'Classroom', value: user?.classroom ?? '' },
             { icon: 'card-outline', label: 'Employee ID', value: user?.employee ?? '' },
-          ].map((item) => (
-            <View key={item.label} style={styles.infoRow}>
-              <View style={styles.infoIconWrap}>
-                <Ionicons name={item.icon as never} size={18} color={Colors.primary} />
+          ].map((item) => {
+            const row = (
+              <>
+                <View style={styles.infoIconWrap}>
+                  <Ionicons name={item.icon as never} size={18} color={Colors.primary} />
+                </View>
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>{item.label}</Text>
+                  <Text
+                    style={[
+                      styles.infoValue,
+                      item.dial && item.value ? styles.infoValueLink : null,
+                    ]}
+                  >
+                    {contactDisplay(item.value)}
+                  </Text>
+                </View>
+              </>
+            );
+            return item.dial && item.value ? (
+              <TouchableOpacity
+                key={item.label}
+                style={styles.infoRow}
+                onPress={() => void dialPhoneNumber(item.value)}
+              >
+                {row}
+              </TouchableOpacity>
+            ) : (
+              <View key={item.label} style={styles.infoRow}>
+                {row}
               </View>
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>{item.label}</Text>
-                <Text style={styles.infoValue}>{item.value}</Text>
-              </View>
-            </View>
-          ))}
+            );
+          })}
         </Card>
       </Animated.View>
 
@@ -228,18 +310,12 @@ export const ProfileScreen: React.FC = () => {
         <Text style={styles.sectionTitle}>Quick Links</Text>
         <Card padding={0} style={styles.menuCard}>
           {menuItems.map((item, i) => (
-            <TouchableOpacity
+            <ProfileMenuRow
               key={item.label}
-              style={[styles.menuRow, i < menuItems.length - 1 && styles.menuRowBorder]}
+              item={item}
+              isLast={i >= menuItems.length - 1}
               onPress={() => handleMenuPress(item.screen)}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.menuIconWrap, { backgroundColor: item.color + '20' }]}>
-                <Ionicons name={item.icon as never} size={20} color={item.color} />
-              </View>
-              <Text style={styles.menuLabel}>{item.label}</Text>
-              <Ionicons name="chevron-forward" size={18} color={Colors.inkSoft} />
-            </TouchableOpacity>
+            />
           ))}
         </Card>
       </Animated.View>
@@ -400,6 +476,9 @@ const styles = StyleSheet.create({
     color: Colors.ink,
     marginTop: 2,
   },
+  infoValueLink: {
+    color: Colors.primary,
+  },
   menuSection: {
     paddingHorizontal: 20,
     paddingTop: 24,
@@ -417,6 +496,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.ruleSoft,
   },
+  menuRowLocked: { opacity: 0.72 },
   menuIconWrap: {
     width: 36,
     height: 36,

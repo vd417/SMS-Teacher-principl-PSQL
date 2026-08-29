@@ -31,6 +31,14 @@ jest.mock('@react-navigation/native', () => ({
   useRoute: () => ({ params: { gradeName: mockGradeName } }),
 }));
 
+/** useClasses also loads timetable for the default teacher role. */
+function makeRepos(overrides: Record<string, unknown>): Repositories {
+  return {
+    timetable: { list: jest.fn(async () => []) },
+    ...overrides,
+  } as unknown as Repositories;
+}
+
 function makeStudents(n: number, classId: string): Student[] {
   return Array.from({ length: n }, (_, i) => ({
     id: `${classId}-s${i}`,
@@ -100,7 +108,7 @@ test("shows only the requested grade's sections with real (non-zero) student cou
     c2: makeStudents(3, 'c2'),
   };
 
-  const repos = {
+  const repos = makeRepos({
     classes: { list: jest.fn(async () => classes) },
     students: {
       listByClass: jest.fn(async (classId: string) => ({
@@ -109,7 +117,7 @@ test("shows only the requested grade's sections with real (non-zero) student cou
       })),
     },
     attendance: { forClass: jest.fn(async () => []) },
-  } as unknown as Repositories;
+  });
 
   renderScreen(repos);
 
@@ -159,7 +167,7 @@ test("selects classes by the grade route param, not by name, when a class's name
     c2: makeStudents(3, 'c2'),
   };
 
-  const repos = {
+  const repos = makeRepos({
     classes: { list: jest.fn(async () => classes) },
     students: {
       listByClass: jest.fn(async (classId: string) => ({
@@ -168,14 +176,14 @@ test("selects classes by the grade route param, not by name, when a class's name
       })),
     },
     attendance: { forClass: jest.fn(async () => []) },
-  } as unknown as Repositories;
+  });
 
   renderScreen(repos);
 
   // Both grade-I sections (c1, c2) render; grade-II's c3 is excluded.
   await waitFor(() => expect(screen.getByText('Section A')).toBeTruthy());
   expect(screen.getByText('Section B')).toBeTruthy();
-  expect(screen.getByText('2 students')).toBeTruthy();
+  await waitFor(() => expect(screen.getByText('2 students')).toBeTruthy());
   expect(screen.getByText('3 students')).toBeTruthy();
 
   fireEvent.press(screen.getByText('Section A'));
@@ -200,11 +208,11 @@ test('does not show "0 students" while summaries are still loading', async () =>
     resolveRoster = resolve;
   });
 
-  const repos = {
+  const repos = makeRepos({
     classes: { list: jest.fn(async () => classes) },
     students: { listByClass: jest.fn(() => rosterPromise) },
     attendance: { forClass: jest.fn(async () => [] as AttendanceRecord[]) },
-  } as unknown as Repositories;
+  });
 
   renderScreen(repos);
 
@@ -218,13 +226,82 @@ test('does not show "0 students" while summaries are still loading', async () =>
 
 test('shows an empty state when the grade has no matching sections', async () => {
   mockGradeName = 'Nonexistent Grade';
-  const repos = {
+  const repos = makeRepos({
     classes: { list: jest.fn(async () => [] as Class[]) },
     students: { listByClass: jest.fn(async () => ({ items: [], nextCursor: null })) },
     attendance: { forClass: jest.fn(async () => []) },
-  } as unknown as Repositories;
+  });
 
   renderScreen(repos);
 
   await waitFor(() => expect(screen.getByText('No sections found')).toBeTruthy());
+});
+
+test('lists sections in ascending order (A before B)', async () => {
+  const classes: Class[] = [
+    {
+      id: 'c1',
+      name: 'IV',
+      grade: '',
+      section: 'B',
+      subject: 'Math',
+      studentCount: 0,
+      room: '101',
+    },
+    {
+      id: 'c2',
+      name: 'IV',
+      grade: '',
+      section: 'A',
+      subject: 'Math',
+      studentCount: 0,
+      room: '102',
+    },
+  ];
+  const repos = makeRepos({
+    classes: { list: jest.fn(async () => classes) },
+    students: { listByClass: jest.fn(async () => ({ items: [], nextCursor: null })) },
+    attendance: { forClass: jest.fn(async () => []) },
+  });
+
+  renderScreen(repos);
+
+  await waitFor(() => expect(screen.getByText('Section A')).toBeTruthy());
+  const sectionLabels = screen.getAllByText(/^Section [AB]$/).map((n) => n.props.children);
+  expect(sectionLabels).toEqual(['Section A', 'Section B']);
+});
+
+test('filters sections via search', async () => {
+  const classes: Class[] = [
+    {
+      id: 'c1',
+      name: 'IV',
+      grade: '',
+      section: 'A',
+      subject: 'Math',
+      studentCount: 0,
+      room: '101',
+    },
+    {
+      id: 'c2',
+      name: 'IV',
+      grade: '',
+      section: 'B',
+      subject: 'Math',
+      studentCount: 0,
+      room: '102',
+    },
+  ];
+  const repos = makeRepos({
+    classes: { list: jest.fn(async () => classes) },
+    students: { listByClass: jest.fn(async () => ({ items: [], nextCursor: null })) },
+    attendance: { forClass: jest.fn(async () => []) },
+  });
+
+  renderScreen(repos);
+
+  await waitFor(() => expect(screen.getByText('Section A')).toBeTruthy());
+  fireEvent.changeText(screen.getByPlaceholderText('Search section...'), 'b');
+  expect(screen.queryByText('Section A')).toBeNull();
+  expect(screen.getByText('Section B')).toBeTruthy();
 });

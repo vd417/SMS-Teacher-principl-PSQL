@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown } from 'react-native-reanimated';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors, Radii, Shadows } from '../theme';
@@ -16,9 +17,9 @@ import { FontFamily } from '../theme/typography';
 import { Avatar, SearchField, ScreenHeader } from '../components';
 import { useChatContacts } from '@/features/chat/hooks';
 import { deriveColorSet } from '@/theme/derive';
-import type { InboxStackParamList } from '../navigation/types';
+import type { HomeStackParamList, InboxStackParamList } from '../navigation/types';
 
-type ChatNav = NativeStackNavigationProp<InboxStackParamList, 'ChatScreen'>;
+type ChatNav = NativeStackNavigationProp<HomeStackParamList & InboxStackParamList, 'ChatScreen'>;
 
 export const ChatScreen: React.FC = () => {
   const navigation = useNavigation<ChatNav>();
@@ -40,8 +41,9 @@ export const ChatScreen: React.FC = () => {
       <View style={styles.header}>
         <Animated.View entering={FadeInDown.delay(50).springify()}>
           <ScreenHeader
-            title="Inbox"
+            title="Chat"
             subtitle={totalUnread > 0 ? `${totalUnread} unread` : 'All caught up'}
+            showBack={navigation.canGoBack()}
           />
         </Animated.View>
         <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.searchWrap}>
@@ -97,10 +99,25 @@ export const ChatScreen: React.FC = () => {
                       </Text>
                       <Text style={styles.contactTime}>{item.time}</Text>
                     </View>
-                    <Text style={styles.contactRole}>{item.role}</Text>
-                    <Text style={styles.lastMessage} numberOfLines={1}>
-                      {item.lastMessage}
+                    <Text style={styles.contactRole}>
+                      {item.role ? item.role : 'Contact'}
+                      {item.childName
+                        ? ` · ${item.childName}${item.childClassLabel ? ` (${item.childClassLabel})` : ''}`
+                        : ''}
                     </Text>
+                    <View style={styles.lastMessageRow}>
+                      {item.lastMessageMine && item.lastMessageStatus ? (
+                        <Ionicons
+                          name={item.lastMessageStatus === 'sent' ? 'checkmark' : 'checkmark-done'}
+                          size={14}
+                          color={item.lastMessageStatus === 'read' ? Colors.blue : Colors.inkMuted}
+                          style={styles.tick}
+                        />
+                      ) : null}
+                      <Text style={styles.lastMessage} numberOfLines={1}>
+                        {item.lastMessage || 'No messages yet'}
+                      </Text>
+                    </View>
                   </View>
                   {item.unread > 0 && (
                     <View style={styles.unreadBadge}>
@@ -163,7 +180,14 @@ const styles = StyleSheet.create({
     color: Colors.inkMuted,
     marginBottom: 2,
   },
-  lastMessage: { fontFamily: FontFamily.regular, fontSize: 13, color: Colors.inkMuted },
+  lastMessageRow: { flexDirection: 'row', alignItems: 'center' },
+  tick: { marginRight: 3 },
+  lastMessage: {
+    fontFamily: FontFamily.regular,
+    fontSize: 13,
+    color: Colors.inkMuted,
+    flexShrink: 1,
+  },
   unreadBadge: {
     minWidth: 22,
     height: 22,

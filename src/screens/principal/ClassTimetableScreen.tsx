@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,8 +12,9 @@ import { useTimetable } from '@/features/timetable/hooks';
 import { deriveColorSet } from '@/theme/derive';
 import { ErrorState } from '@/ui/state/ErrorState';
 import { classLabel } from '@/lib/classLabel';
+import { periodBellTimes } from '../ScheduleScreen';
 import type { WeekDay } from '@/data/domain';
-import type { PrincipalTimetableStackParamList } from '../../navigation/types';
+import type { PrincipalClassesStackParamList } from '../../navigation/types';
 
 const DAYS: WeekDay[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 const PERIODS = 8; // teaching periods per day (P1..P8)
@@ -22,16 +23,7 @@ const PERIOD_W = 66;
 const DAY_W = 112;
 const GAP = 6;
 
-const PERIOD_MIN = 45;
-const LUNCH_MIN = 30;
-const DAY_START = 8 * 60; // 08:00
-const fmt = (mins: number) => `${Math.floor(mins / 60)}:${String(mins % 60).padStart(2, '0')}`;
-const periodStartMin = (p: number) =>
-  DAY_START + (p - 1) * PERIOD_MIN + (p > LUNCH_AFTER ? LUNCH_MIN : 0);
-const periodStart = (p: number) => fmt(periodStartMin(p));
-const periodEnd = (p: number) => fmt(periodStartMin(p) + PERIOD_MIN);
-
-type ClassTimetableRoute = RouteProp<PrincipalTimetableStackParamList, 'ClassTimetableScreen'>;
+type ClassTimetableRoute = RouteProp<PrincipalClassesStackParamList, 'ClassTimetableScreen'>;
 type Row = { type: 'period'; period: number } | { type: 'lunch' };
 type Lesson = { subject: string; room: string; teacherName: string };
 
@@ -50,6 +42,12 @@ export const ClassTimetableScreen: React.FC = () => {
     const slot = classSlots.find((t) => t.day === DAYS[dayIdx] && t.period === period);
     return slot ? { subject: slot.subject, room: slot.room, teacherName: slot.teacherName } : null;
   };
+
+  const bells = useMemo(() => {
+    const map = new Map<number, { start: string; end: string }>();
+    for (let p = 1; p <= PERIODS; p++) map.set(p, periodBellTimes(classSlots, p));
+    return map;
+  }, [classSlots]);
 
   const rows: Row[] = [];
   for (let p = 1; p <= PERIODS; p++) {
@@ -112,8 +110,8 @@ export const ClassTimetableScreen: React.FC = () => {
                   >
                     <View style={[styles.periodCell, { width: PERIOD_W }]}>
                       <Text style={styles.periodNum}>P{r.period}</Text>
-                      <Text style={styles.periodTime}>{periodStart(r.period)}</Text>
-                      <Text style={styles.periodTime}>{periodEnd(r.period)}</Text>
+                      <Text style={styles.periodTime}>{bells.get(r.period)?.start ?? '—'}</Text>
+                      <Text style={styles.periodTime}>{bells.get(r.period)?.end ?? '—'}</Text>
                     </View>
                     {DAYS.map((_d, di) => {
                       const lesson = lessonAt(di, r.period);

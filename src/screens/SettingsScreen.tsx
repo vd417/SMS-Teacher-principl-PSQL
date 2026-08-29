@@ -46,6 +46,7 @@ const SETTINGS_SECTIONS = [
 
 export const SettingsScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
+  const { refreshProfile } = useAuth();
 
   return (
     <ScrollView

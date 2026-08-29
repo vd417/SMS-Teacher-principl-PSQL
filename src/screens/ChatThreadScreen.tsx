@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,13 +20,15 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { Avatar } from '../components';
-import { useChatContacts, useChatMessages, useSendMessage } from '@/features/chat/hooks';
+import { useChatContacts, useChatMessages } from '@/features/chat/hooks';
+import { useChatComposer } from '@/features/chat/useChatComposer';
 import { deriveColorSet } from '@/theme/derive';
+import { pickImageFromLibrary } from '@/lib/pickImage';
 import { chatMessageSchema, ChatMessageSchemaType } from '../validation/schemas';
 import type { ChatMessage } from '@/data/domain';
-import type { InboxStackParamList } from '../navigation/types';
+import type { HomeStackParamList, InboxStackParamList } from '../navigation/types';
 
-type ChatThreadRoute = RouteProp<InboxStackParamList, 'ChatThreadScreen'>;
+type ChatThreadRoute = RouteProp<HomeStackParamList & InboxStackParamList, 'ChatThreadScreen'>;
 
 export const ChatThreadScreen: React.FC = () => {
   const route = useRoute<ChatThreadRoute>();
@@ -42,7 +45,15 @@ export const ChatThreadScreen: React.FC = () => {
     isError: messagesError,
   } = useChatMessages(contactId);
 
-  const sendMutation = useSendMessage(contactId);
+  const {
+    sendMessage,
+    sendImage,
+    sendPending,
+    sendError,
+    moderationError,
+    moderationWarning,
+    clearModerationError,
+  } = useChatComposer(contactId);
 
   const listRef = useRef<FlatList>(null);
 
@@ -52,14 +63,18 @@ export const ChatThreadScreen: React.FC = () => {
   });
 
   const onSend = (data: ChatMessageSchemaType) => {
-    sendMutation.mutate(data.message, {
-      onSuccess: () => {
-        reset();
-        setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
-      },
+    sendMessage(data.message, () => {
+      reset();
+      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
     });
-    reset();
-    setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
+  };
+
+  const onAttachImage = async () => {
+    const uri = await pickImageFromLibrary();
+    if (!uri) return;
+    sendImage(uri, () => {
+      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
+    });
   };
 
   const { color: avatarColor } = contact ? deriveColorSet(contact.id) : { color: Colors.primary };
@@ -73,8 +88,22 @@ export const ChatThreadScreen: React.FC = () => {
         <Avatar initials={contact.initials} size={32} backgroundColor={avatarColor} />
       )}
       <View style={[styles.bubble, item.isMe ? styles.bubbleMe : styles.bubbleOther]}>
-        <Text style={[styles.bubbleText, item.isMe && styles.bubbleTextMe]}>{item.text}</Text>
-        <Text style={[styles.bubbleTime, item.isMe && styles.bubbleTimeMe]}>{item.time}</Text>
+        {item.imageUrl ? (
+          <Image source={{ uri: item.imageUrl }} style={styles.bubbleImage} resizeMode="cover" />
+        ) : null}
+        {item.text ? (
+          <Text style={[styles.bubbleText, item.isMe && styles.bubbleTextMe]}>{item.text}</Text>
+        ) : null}
+        <View style={styles.bubbleMeta}>
+          <Text style={[styles.bubbleTime, item.isMe && styles.bubbleTimeMe]}>{item.time}</Text>
+          {item.isMe && item.status ? (
+            <Ionicons
+              name={item.status === 'sent' ? 'checkmark' : 'checkmark-done'}
+              size={14}
+              color={item.status === 'read' ? '#53BDEB' : '#667781'}
+            />
+          ) : null}
+        </View>
       </View>
     </Animated.View>
   );
@@ -97,7 +126,12 @@ export const ChatThreadScreen: React.FC = () => {
         )}
         <View style={styles.headerInfo}>
           <Text style={styles.headerName}>{contact?.name ?? '...'}</Text>
-          <Text style={styles.headerRole}>{contact?.role ?? ''}</Text>
+          <Text style={styles.headerRole}>
+            {contact?.role ?? ''}
+            {contact?.childName
+              ? ` · ${contact.childName}${contact.childClassLabel ? ` (${contact.childClassLabel})` : ''}`
+              : ''}
+          </Text>
         </View>
         {contact?.online && <View style={styles.onlineBadge} />}
       </View>
@@ -128,7 +162,17 @@ export const ChatThreadScreen: React.FC = () => {
       )}
 
       {/* Input */}
+      {moderationError && <Text style={styles.moderationErrorText}>{moderationWarning}</Text>}
+      {sendError && <Text style={styles.sendErrorText}>Message failed to send. Try again.</Text>}
       <View style={[styles.inputBar, { paddingBottom: insets.bottom + 12 }]}>
+        <TouchableOpacity
+          style={styles.attachBtn}
+          onPress={() => void onAttachImage()}
+          disabled={sendPending}
+          accessibilityLabel="Attach image"
+        >
+          <Ionicons name="image-outline" size={22} color={Colors.primary} />
+        </TouchableOpacity>
         <Controller
           control={control}
           name="message"
@@ -136,7 +180,10 @@ export const ChatThreadScreen: React.FC = () => {
             <TextInput
               style={styles.messageInput}
               value={value}
-              onChangeText={onChange}
+              onChangeText={(text) => {
+                if (moderationError) clearModerationError();
+                onChange(text);
+              }}
               placeholder="Type a message..."
               placeholderTextColor={Colors.inkMuted}
               multiline
@@ -147,9 +194,9 @@ export const ChatThreadScreen: React.FC = () => {
         <TouchableOpacity
           style={styles.sendBtn}
           onPress={handleSubmit(onSend)}
-          disabled={sendMutation.isPending}
+          disabled={sendPending}
         >
-          {sendMutation.isPending ? (
+          {sendPending ? (
             <ActivityIndicator color={Colors.white} size="small" />
           ) : (
             <Ionicons name="send" size={18} color={Colors.white} />
@@ -164,6 +211,21 @@ const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: Colors.paper },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   errorText: { fontFamily: FontFamily.regular, fontSize: 14, color: Colors.absent },
+  sendErrorText: {
+    fontFamily: FontFamily.medium,
+    fontSize: 12,
+    color: Colors.absent,
+    paddingHorizontal: 16,
+    paddingTop: 6,
+  },
+  moderationErrorText: {
+    fontFamily: FontFamily.medium,
+    fontSize: 12,
+    color: Colors.late,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    lineHeight: 18,
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -219,7 +281,7 @@ const styles = StyleSheet.create({
     maxWidth: '100%',
   },
   bubbleMe: {
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.primarySoft,
     borderBottomRightRadius: 4,
   },
   bubbleOther: {
@@ -233,15 +295,29 @@ const styles = StyleSheet.create({
     color: Colors.ink,
     lineHeight: 22,
   },
-  bubbleTextMe: { color: Colors.white },
+  bubbleTextMe: { color: Colors.ink },
+  bubbleImage: {
+    width: 200,
+    height: 200,
+    borderRadius: Radii.md,
+    marginBottom: 6,
+    backgroundColor: Colors.paper2,
+  },
   bubbleTime: {
     fontFamily: FontFamily.regular,
     fontSize: 11,
     color: Colors.inkMuted,
-    marginTop: 4,
+    marginTop: 0,
     textAlign: 'right',
   },
-  bubbleTimeMe: { color: 'rgba(255,255,255,0.6)' },
+  bubbleTimeMe: { color: Colors.inkMuted },
+  bubbleMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    gap: 4,
+    marginTop: 4,
+  },
   inputBar: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -251,6 +327,14 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: Colors.rule,
     gap: 10,
+  },
+  attachBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.primarySoft,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   messageInput: {
     flex: 1,

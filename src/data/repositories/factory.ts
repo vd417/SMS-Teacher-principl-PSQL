@@ -6,6 +6,7 @@ import { httpStudents } from '@/data/http/students.repo';
 import { httpTimetable } from '@/data/http/timetable.repo';
 import { httpAssignments } from '@/data/http/assignments.repo';
 import { httpAnnouncements } from '@/data/http/announcements.repo';
+import { httpNotifications } from '@/data/http/notifications.repo';
 import { httpCalendar } from '@/data/http/calendar.repo';
 import { httpLibrary } from '@/data/http/library.repo';
 import { httpPayroll } from '@/data/http/payroll.repo';
@@ -19,6 +20,8 @@ import { httpBus } from '@/data/http/bus.repo';
 import { httpMyAttendance } from '@/data/http/myAttendance.repo';
 import { httpApprovals } from '@/data/http/approvals.repo';
 import { httpPrincipal } from '@/data/http/principal.repo';
+import { httpTeachers } from '@/data/http/teachers.repo';
+import { httpStaff } from '@/data/http/staff.repo';
 
 export function createHttpRepositories(http: HttpClient): Repositories {
   return {
@@ -32,6 +35,7 @@ export function createHttpRepositories(http: HttpClient): Repositories {
     assignments: httpAssignments(http),
     chat: httpChat(http),
     announcements: httpAnnouncements(http),
+    notifications: httpNotifications(http),
     calendar: httpCalendar(http),
     library: httpLibrary(http),
     payroll: httpPayroll(http),
@@ -39,6 +43,8 @@ export function createHttpRepositories(http: HttpClient): Repositories {
     approvals: httpApprovals(http),
     dashboard: httpDashboard(http),
     principal: httpPrincipal(http),
+    teachers: httpTeachers(http),
+    staff: httpStaff(http),
     bus: httpBus(http),
     myAttendance: httpMyAttendance(http),
   };

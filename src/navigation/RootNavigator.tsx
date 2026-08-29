@@ -27,7 +27,10 @@ export const RootNavigator = () => {
   const mustSetPassword = session?.user.mustSetPassword === true;
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator
+      key={status === 'authenticated' ? `auth-${session?.tenant.id ?? 'none'}` : status}
+      screenOptions={{ headerShown: false }}
+    >
       {status === 'selecting-school' ? (
         <Stack.Screen name="SchoolPicker" component={SchoolPickerScreen} />
       ) : status !== 'authenticated' ? (

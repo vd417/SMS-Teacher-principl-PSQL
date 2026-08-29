@@ -5,13 +5,23 @@ import { TabBar } from '../components';
 import { PrincipalHomeScreen } from '../screens/principal/PrincipalHomeScreen';
 import { PrincipalMoreScreen } from '../screens/principal/PrincipalMoreScreen';
 import { ApprovalsScreen } from '../screens/principal/ApprovalsScreen';
+import { AssignmentsScreen } from '../screens/AssignmentsScreen';
+import { AssignmentNewScreen } from '../screens/AssignmentNewScreen';
+import { ExamsScreen } from '../screens/ExamsScreen';
+import { ExamNewScreen } from '../screens/ExamNewScreen';
 import { TeacherDirectoryScreen } from '../screens/principal/TeacherDirectoryScreen';
+import { TeacherAcademicsScreen } from '../screens/principal/TeacherAcademicsScreen';
 import { AnnouncementsScreen } from '../screens/AnnouncementsScreen';
 import { BusScreen } from '../screens/BusScreen';
+import { PrincipalTransportScreen } from '../screens/principal/PrincipalTransportScreen';
 import { PrincipalAttendanceScreen } from '../screens/principal/PrincipalAttendanceScreen';
+import { AttendancePickSectionScreen } from '../screens/AttendancePickSectionScreen';
 import { AttendanceScreen } from '../screens/AttendanceScreen';
-import { SchoolTimetableScreen } from '../screens/principal/SchoolTimetableScreen';
+import { ClassHubScreen } from '../screens/ClassHubScreen';
 import { ClassTimetableScreen } from '../screens/principal/ClassTimetableScreen';
+import { MarksPickExamScreen } from '../screens/MarksPickExamScreen';
+import { MarksEntryScreen } from '../screens/MarksEntryScreen';
+import { StudentScreen } from '../screens/StudentScreen';
 import { ChatScreen } from '../screens/ChatScreen';
 import { ChatThreadScreen } from '../screens/ChatThreadScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
@@ -25,8 +35,7 @@ import { SchoolPickerScreen } from '../screens/SchoolPickerScreen';
 import type {
   PrincipalTabParamList,
   PrincipalHomeStackParamList,
-  PrincipalAttendanceStackParamList,
-  PrincipalTimetableStackParamList,
+  PrincipalClassesStackParamList,
   InboxStackParamList,
   ProfileStackParamList,
 } from './types';
@@ -38,32 +47,41 @@ const PrincipalHomeStackNavigator = () => (
   <HomeStack.Navigator screenOptions={{ headerShown: false }}>
     <HomeStack.Screen name="PrincipalHomeScreen" component={PrincipalHomeScreen} />
     <HomeStack.Screen name="PrincipalMoreScreen" component={PrincipalMoreScreen} />
+    <HomeStack.Screen name="PrincipalAttendanceScreen" component={PrincipalAttendanceScreen} />
+    <HomeStack.Screen name="AttendancePickSection" component={AttendancePickSectionScreen} />
+    <HomeStack.Screen name="AttendanceScreen" component={AttendanceScreen} />
     <HomeStack.Screen name="AnnouncementsScreen" component={AnnouncementsScreen} />
     <HomeStack.Screen name="BusScreen" component={BusScreen} />
+    <HomeStack.Screen name="PrincipalTransportScreen" component={PrincipalTransportScreen} />
     <HomeStack.Screen name="TeacherDirectoryScreen" component={TeacherDirectoryScreen} />
+    <HomeStack.Screen name="TeacherAcademicsScreen" component={TeacherAcademicsScreen} />
+    <HomeStack.Screen name="AssignmentsScreen" component={AssignmentsScreen} />
+    <HomeStack.Screen name="AssignmentNewScreen" component={AssignmentNewScreen} />
+    <HomeStack.Screen name="ExamsScreen" component={ExamsScreen} />
+    <HomeStack.Screen name="ExamNew" component={ExamNewScreen} />
+    <HomeStack.Screen name="MarksEntryScreen" component={MarksEntryScreen} />
     <HomeStack.Screen name="PayslipScreen" component={PayslipScreen} />
     <HomeStack.Screen name="LeaveScreen" component={LeaveScreen} />
     <HomeStack.Screen name="LibraryScreen" component={LibraryScreen} />
+    <HomeStack.Screen name="MyAttendanceScreen" component={MyAttendanceScreen} />
   </HomeStack.Navigator>
 );
 
-const AttendanceStack = createStackNavigator<PrincipalAttendanceStackParamList>();
-const PrincipalAttendanceStackNavigator = () => (
-  <AttendanceStack.Navigator screenOptions={{ headerShown: false }}>
-    <AttendanceStack.Screen
-      name="PrincipalAttendanceScreen"
-      component={PrincipalAttendanceScreen}
-    />
-    <AttendanceStack.Screen name="AttendanceScreen" component={AttendanceScreen} />
-  </AttendanceStack.Navigator>
-);
-
-const TimetableStack = createStackNavigator<PrincipalTimetableStackParamList>();
-const PrincipalTimetableStackNavigator = () => (
-  <TimetableStack.Navigator screenOptions={{ headerShown: false }}>
-    <TimetableStack.Screen name="SchoolTimetableScreen" component={SchoolTimetableScreen} />
-    <TimetableStack.Screen name="ClassTimetableScreen" component={ClassTimetableScreen} />
-  </TimetableStack.Navigator>
+const ClassesStack = createStackNavigator<PrincipalClassesStackParamList>();
+const PrincipalClassesStackNavigator = () => (
+  <ClassesStack.Navigator screenOptions={{ headerShown: false }}>
+    <ClassesStack.Screen name="ClassHubScreen" component={ClassHubScreen} />
+    <ClassesStack.Screen name="AssignmentsScreen" component={AssignmentsScreen} />
+    <ClassesStack.Screen name="AssignmentNewScreen" component={AssignmentNewScreen} />
+    <ClassesStack.Screen name="ExamsScreen" component={ExamsScreen} />
+    <ClassesStack.Screen name="ExamNew" component={ExamNewScreen} />
+    <ClassesStack.Screen name="AttendancePickSection" component={AttendancePickSectionScreen} />
+    <ClassesStack.Screen name="ClassTimetableScreen" component={ClassTimetableScreen} />
+    <ClassesStack.Screen name="AttendanceScreen" component={AttendanceScreen} />
+    <ClassesStack.Screen name="MarksPickExam" component={MarksPickExamScreen} />
+    <ClassesStack.Screen name="MarksEntryScreen" component={MarksEntryScreen} />
+    <ClassesStack.Screen name="StudentScreen" component={StudentScreen} />
+  </ClassesStack.Navigator>
 );
 
 const InboxStack = createStackNavigator<InboxStackParamList>();
@@ -88,9 +106,8 @@ const ProfileStackNavigator = () => (
 export const PrincipalTabNavigator = () => (
   <Tab.Navigator tabBar={(props) => <TabBar {...props} />} screenOptions={{ headerShown: false }}>
     <Tab.Screen name="PHome" component={PrincipalHomeStackNavigator} />
+    <Tab.Screen name="PClasses" component={PrincipalClassesStackNavigator} />
     <Tab.Screen name="Approvals" component={ApprovalsScreen} />
-    <Tab.Screen name="PAttendance" component={PrincipalAttendanceStackNavigator} />
-    <Tab.Screen name="PTimetable" component={PrincipalTimetableStackNavigator} />
     <Tab.Screen name="PInbox" component={InboxStackNavigator} />
     <Tab.Screen name="PProfile" component={ProfileStackNavigator} />
   </Tab.Navigator>

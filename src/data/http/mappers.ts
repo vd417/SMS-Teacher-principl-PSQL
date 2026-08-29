@@ -1,4 +1,11 @@
 import { z } from 'zod';
+import { isTeachingDesignation } from '@/lib/staffCategory';
+import { parseAttendanceStatus } from '@/lib/attendanceStatus';
+import { mapAnnouncementType } from '@/lib/announcementType';
+import { mapExamPaperStatus } from '@/lib/examStatus';
+import { formatTimeOfDay } from '@/lib/date';
+import { initialsFrom } from '@/data/http/auth.schema';
+import { parseAttachmentUrls } from '@/lib/leaveAttachments';
 import type {
   Class,
   Student,
@@ -7,7 +14,6 @@ import type {
   Assignment,
   AssignmentStatus,
   Announcement,
-  AnnouncementType,
   CalendarEvent,
   EventType,
   LibraryBook,
@@ -27,9 +33,9 @@ import type {
   LeaveStatus,
   ApprovalRequest,
   PrincipalOverview,
+  SchoolStaffMember,
   SchoolAttendance,
 } from '@/data/domain';
-import { initialsFrom } from './auth.schema';
 
 // Auth/session mapping lives in ./auth.schema.ts. The schemas below are the zod
 // boundary validators (and DTO source of truth) for the remaining modules. The
@@ -38,6 +44,22 @@ import { initialsFrom } from './auth.schema';
 
 // Backend DateTime fields arrive as ISO strings; the UI wants plain dates.
 const dateOnly = (s?: string | null): string => (s ? s.slice(0, 10) : '');
+// ExamPaper.Topics is a comma-separated string on the wire; the app uses string[].
+const parseTopics = (raw?: string | null): string[] =>
+  raw?.trim()
+    ? raw
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean)
+    : [];
+const formatTopics = (topics?: string[]): string | undefined => {
+  if (!topics?.length) return undefined;
+  const joined = topics
+    .map((t) => t.trim())
+    .filter(Boolean)
+    .join(', ');
+  return joined || undefined;
+};
 const cap = (s: string): string => (s ? s[0].toUpperCase() + s.slice(1) : s);
 function dayCount(from?: string | null, to?: string | null): number {
   if (!from || !to) return 1;
@@ -57,6 +79,7 @@ export const classSchema = z.object({
   room: z.string().nullish(),
   student_count: z.number().nullish(),
   next_period: z.string().nullish(),
+  class_teacher_id: z.string().nullish(),
 });
 export type ClassDTO = z.infer<typeof classSchema>;
 export const toClass = (d: ClassDTO): Class => ({
@@ -68,6 +91,7 @@ export const toClass = (d: ClassDTO): Class => ({
   studentCount: d.student_count ?? 0,
   room: d.room ?? '',
   nextPeriod: d.next_period ?? undefined,
+  classTeacherId: d.class_teacher_id ?? undefined,
 });
 
 // ─── Students ────────────────────────────────────────────────────────────────
@@ -90,7 +114,7 @@ export const toStudent = (d: StudentDTO, classId = ''): Student => ({
   roll: d.roll != null ? String(d.roll) : '',
   initials: initialsFrom(d.name),
   classId,
-  attendance: d.attendance_pct ?? 0,
+  attendance: d.attendance_pct == null ? null : Number(d.attendance_pct),
   grade: d.grade ?? '',
   parent: d.guardian_name ?? '',
   parentPhone: d.guardian_phone ?? '',
@@ -137,6 +161,7 @@ export const assignmentSchema = z.object({
   status: z.string(),
   description: z.string().nullish(),
   image_uri: z.string().nullish(),
+  period: z.number().nullish(),
 });
 export type AssignmentDTO = z.infer<typeof assignmentSchema>;
 export const toAssignment = (d: AssignmentDTO): Assignment => ({
@@ -151,6 +176,7 @@ export const toAssignment = (d: AssignmentDTO): Assignment => ({
   status: d.status as AssignmentStatus,
   description: d.description ?? undefined,
   imageUri: d.image_uri ?? undefined,
+  period: d.period ?? null,
 });
 
 // ─── Announcements ───────────────────────────────────────────────────────────
@@ -162,6 +188,7 @@ export const announcementSchema = z.object({
   from: z.string().nullish(),
   type: z.string(),
   pinned: z.boolean().nullish(),
+  audience: z.string().nullish(),
 });
 export type AnnouncementDTO = z.infer<typeof announcementSchema>;
 export const toAnnouncement = (d: AnnouncementDTO): Announcement => ({
@@ -170,8 +197,29 @@ export const toAnnouncement = (d: AnnouncementDTO): Announcement => ({
   body: d.body ?? '',
   date: dateOnly(d.date),
   from: d.from ?? '',
-  type: d.type as AnnouncementType,
+  type: mapAnnouncementType(d.type),
   pinned: d.pinned ?? false,
+  ...(d.audience ? { audience: d.audience } : {}),
+});
+
+export const notificationSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  body: z.string().nullish(),
+  time: z.string().nullish(),
+  icon: z.string().nullish(),
+  tone: z.string().nullish(),
+  unread: z.boolean().nullish(),
+});
+export type NotificationDTO = z.infer<typeof notificationSchema>;
+export const toNotification = (d: NotificationDTO): import('@/data/domain').AppNotification => ({
+  id: d.id,
+  title: d.title,
+  body: d.body ?? '',
+  time: d.time ?? '',
+  icon: d.icon ?? 'bell',
+  tone: d.tone ?? 'brand',
+  unread: d.unread ?? false,
 });
 
 // ─── Calendar ────────────────────────────────────────────────────────────────
@@ -216,13 +264,19 @@ export const toLibraryBook = (d: LibraryBookDTO): LibraryBook => ({
 
 // ─── Payroll ─────────────────────────────────────────────────────────────────
 export const payslipSchema = z.object({
-  id: z.string(),
+  id: z.union([z.string(), z.number()]).transform(String),
   month: z.string().nullish(),
-  year: z.number(),
-  gross: z.number(),
-  deductions: z.number(),
-  net: z.number(),
+  year: z.coerce.number(),
+  gross: z.coerce.number(),
+  deductions: z.coerce.number(),
+  net: z.coerce.number(),
   status: z.string(),
+  basic: z.coerce.number().nullish(),
+  hra: z.coerce.number().nullish(),
+  allowances: z.coerce.number().nullish(),
+  epf: z.coerce.number().nullish(),
+  prof_tax: z.coerce.number().nullish(),
+  other_deductions: z.coerce.number().nullish(),
 });
 export type PayslipDTO = z.infer<typeof payslipSchema>;
 export const toPayslip = (d: PayslipDTO): PayslipEntry => ({
@@ -233,6 +287,12 @@ export const toPayslip = (d: PayslipDTO): PayslipEntry => ({
   deductions: d.deductions,
   net: d.net,
   status: d.status as PayslipStatus,
+  basic: d.basic,
+  hra: d.hra,
+  allowances: d.allowances,
+  epf: d.epf,
+  profTax: d.prof_tax,
+  otherDeductions: d.other_deductions,
 });
 
 // ─── Dashboard ───────────────────────────────────────────────────────────────
@@ -253,9 +313,22 @@ export const toDashboardStats = (d: DashboardStatsDTO): DashboardStats => ({
 });
 
 // ─── Exam papers ─────────────────────────────────────────────────────────────
-// ExamPaperResponse has no topics or class_name — defaulted client-side.
+// class_name is not on ExamPaperResponse — defaulted client-side when needed.
+export const examTermSchema = z.object({
+  id: z.string(),
+  name: z.string().nullish(),
+  published: z.boolean().nullish(),
+});
+export type ExamTermDTO = z.infer<typeof examTermSchema>;
+export const toExamTerm = (d: ExamTermDTO): import('@/data/domain').ExamTerm => ({
+  id: d.id,
+  name: d.name ?? '',
+  published: d.published ?? false,
+});
+
 export const examPaperSchema = z.object({
   id: z.string(),
+  exam_id: z.string().nullish(),
   class_id: z.string().nullish(),
   name: z.string().nullish(),
   subject: z.string().nullish(),
@@ -263,6 +336,7 @@ export const examPaperSchema = z.object({
   start_time: z.string().nullish(),
   duration_min: z.number().nullish(),
   max_marks: z.number().nullish(),
+  topics: z.string().nullish(),
   status: z.string(),
 });
 export type ExamPaperDTO = z.infer<typeof examPaperSchema>;
@@ -276,8 +350,9 @@ export const toExam = (d: ExamPaperDTO): Exam => ({
   time: d.start_time ?? '',
   duration: d.duration_min ?? 0,
   maxMarks: d.max_marks ?? 0,
-  topics: [],
-  status: d.status as ExamStatus,
+  topics: parseTopics(d.topics),
+  status: mapExamPaperStatus(d.status),
+  ...(d.exam_id ? { examTermId: d.exam_id } : {}),
 });
 export const toExamDTO = (
   e: Partial<Exam> & { classId?: string; maxMarks?: number }
@@ -289,6 +364,11 @@ export const toExamDTO = (
   ...(e.time !== undefined && { start_time: e.time }),
   ...(e.duration !== undefined && { duration_min: e.duration }),
   ...(e.maxMarks !== undefined && { max_marks: e.maxMarks }),
+  ...(e.topics !== undefined &&
+    (() => {
+      const topics = formatTopics(e.topics);
+      return topics !== undefined ? { topics } : {};
+    })()),
   ...(e.status !== undefined && { status: e.status }),
 });
 
@@ -327,14 +407,15 @@ const ATT_CODE_TO_WORD: Record<AttendanceStatus, CanonicalAttendanceStatus> = {
   V: 'leave',
 };
 export const attendanceRecordSchema = z.object({
-  student_id: z.string(),
+  student_id: z.string().nullish(),
+  studentId: z.string().nullish(),
   status: z.string(),
   date: z.string().nullish(),
 });
 export type AttendanceRecordDTO = z.infer<typeof attendanceRecordSchema>;
 export const toAttendanceRecord = (d: AttendanceRecordDTO): AttendanceRecord => ({
-  studentId: d.student_id,
-  status: ATT_WORD_TO_CODE[d.status as CanonicalAttendanceStatus] ?? 'A',
+  studentId: d.student_id ?? d.studentId ?? '',
+  status: parseAttendanceStatus(d.status),
   date: dateOnly(d.date),
 });
 export const fromAttendanceStatus = (s: AttendanceStatus): CanonicalAttendanceStatus =>
@@ -349,6 +430,11 @@ export const chatContactSchema = z.object({
   last_message: z.string().nullish(),
   last_at: z.string().nullish(),
   unread: z.number().nullish(),
+  online: z.boolean().nullish(),
+  child_name: z.string().nullish(),
+  child_class_label: z.string().nullish(),
+  last_message_mine: z.boolean().nullish(),
+  last_message_status: z.enum(['sent', 'delivered', 'read']).nullish(),
 });
 export type ChatContactDTO = z.infer<typeof chatContactSchema>;
 export const toChatContact = (d: ChatContactDTO): ChatContact => ({
@@ -357,9 +443,13 @@ export const toChatContact = (d: ChatContactDTO): ChatContact => ({
   role: d.role ?? '',
   initials: initialsFrom(d.name),
   lastMessage: d.last_message ?? '',
-  time: d.last_at ?? '',
+  time: d.last_at ? formatTimeOfDay(d.last_at) : '',
   unread: d.unread ?? 0,
-  online: false,
+  online: d.online ?? false,
+  childName: d.child_name ?? undefined,
+  childClassLabel: d.child_class_label ?? undefined,
+  lastMessageMine: d.last_message_mine ?? false,
+  lastMessageStatus: d.last_message_status ?? undefined,
 });
 
 export const chatMessageSchema = z.object({
@@ -368,20 +458,35 @@ export const chatMessageSchema = z.object({
   text: z.string(),
   sent_at: z.string(),
   is_mine: z.boolean(),
+  image_url: z.string().nullish(),
+  delivered_at: z.string().nullish(),
+  read_at: z.string().nullish(),
+  is_delivered: z.boolean().optional(),
+  is_read: z.boolean().optional(),
 });
 export type ChatMessageDTO = z.infer<typeof chatMessageSchema>;
 export const toChatMessage = (d: ChatMessageDTO): ChatMessage => ({
   id: d.id,
   senderId: d.sender_id ?? '',
   text: d.text,
-  time: d.sent_at,
+  time: formatTimeOfDay(d.sent_at),
   isMe: d.is_mine,
+  imageUrl: d.image_url ?? undefined,
+  status: receiptStatusFromDto(d),
 });
+
+function receiptStatusFromDto(d: ChatMessageDTO): ChatMessage['status'] {
+  if (!d.is_mine) return undefined;
+  if (d.is_read || (d.read_at && d.read_at.trim())) return 'read';
+  if (d.is_delivered || (d.delivered_at && d.delivered_at.trim())) return 'delivered';
+  return 'sent';
+}
 
 // ─── Leave ───────────────────────────────────────────────────────────────────
 export const leaveResponseSchema = z.object({
   id: z.string(),
   requester_id: z.string().nullish(),
+  requester_name: z.string().nullish(),
   type: z.string(),
   from_date: z.string().nullish(),
   to_date: z.string().nullish(),
@@ -390,30 +495,39 @@ export const leaveResponseSchema = z.object({
   status: z.string(),
   applied_on: z.string().nullish(),
   decided_note: z.string().nullish(),
+  decided_by_name: z.string().nullish(),
+  attachment_urls: z.union([z.string(), z.array(z.string())]).nullish(),
 });
 export type LeaveRequestDTO = z.infer<typeof leaveResponseSchema>;
-export const toLeaveRequest = (d: LeaveRequestDTO): LeaveRequest => ({
-  id: d.id,
-  type: d.type as LeaveType,
-  from: dateOnly(d.from_date),
-  to: dateOnly(d.to_date),
-  reason: d.reason ?? '',
-  substitute: d.substitute ?? undefined,
-  status: d.status as LeaveStatus,
-  appliedOn: dateOnly(d.applied_on),
-});
+export const toLeaveRequest = (d: LeaveRequestDTO): LeaveRequest => {
+  const attachmentUrls = parseAttachmentUrls(d.attachment_urls);
+  return {
+    id: d.id,
+    type: d.type as LeaveType,
+    from: dateOnly(d.from_date),
+    to: dateOnly(d.to_date),
+    reason: d.reason ?? '',
+    substitute: d.substitute ?? undefined,
+    status: d.status as LeaveStatus,
+    appliedOn: dateOnly(d.applied_on),
+    decidedNote: d.decided_note ?? undefined,
+    ...(attachmentUrls.length > 0 ? { attachmentUrls } : {}),
+  };
+};
 export const fromNewLeave = (r: {
   type: LeaveType;
   from: string;
   to: string;
   reason: string;
   substitute?: string;
+  attachmentUrls?: string[];
 }): Record<string, unknown> => ({
   type: r.type,
   from_date: r.from,
   to_date: r.to,
   reason: r.reason,
   ...(r.substitute !== undefined && { substitute: r.substitute }),
+  ...(r.attachmentUrls?.length ? { attachment_urls: r.attachmentUrls } : {}),
 });
 
 // ─── Approvals ───────────────────────────────────────────────────────────────
@@ -423,12 +537,14 @@ export type ApprovalRequestDTO = z.infer<typeof leaveResponseSchema>;
 export const approvalRequestSchema = leaveResponseSchema;
 export const toApprovalRequest = (d: ApprovalRequestDTO): ApprovalRequest => {
   const days = dayCount(d.from_date, d.to_date);
+  const requesterName = d.requester_name?.trim() || 'Staff member';
+  const attachmentUrls = parseAttachmentUrls(d.attachment_urls);
   return {
     id: d.id,
     type: 'leave',
     requesterId: d.requester_id ?? '',
-    requesterName: 'Staff member',
-    requesterInitials: '—',
+    requesterName,
+    requesterInitials: initialsFrom(requesterName),
     title: `${cap(d.type)} leave · ${days} day${days > 1 ? 's' : ''}`,
     detail: d.reason ?? '',
     from: dateOnly(d.from_date),
@@ -439,6 +555,87 @@ export const toApprovalRequest = (d: ApprovalRequestDTO): ApprovalRequest => {
     status: d.status as LeaveStatus,
     appliedOn: dateOnly(d.applied_on),
     decidedNote: d.decided_note ?? undefined,
+    ...(d.decided_by_name?.trim() ? { decidedByName: d.decided_by_name.trim() } : {}),
+    ...(attachmentUrls.length > 0 ? { attachmentUrls } : {}),
+  };
+};
+
+// ─── Teachers directory ──────────────────────────────────────────────────────
+function normalizeTeacherSubjects(raw: unknown): string[] {
+  if (Array.isArray(raw)) {
+    return raw.flatMap((item) => normalizeTeacherSubjects(item));
+  }
+  if (typeof raw === 'string') {
+    const text = raw.trim();
+    if (!text) return [];
+    if (text.startsWith('[')) {
+      try {
+        return normalizeTeacherSubjects(JSON.parse(text));
+      } catch {
+        /* fall through */
+      }
+    }
+    return text
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
+export const teacherDirectorySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  phone: z.string().nullish(),
+  designation: z.string().nullish(),
+  department: z.string().nullish(),
+  subjects: z.union([z.array(z.string()), z.string()]).optional(),
+  photo_url: z.string().nullish(),
+  status: z.string().optional(),
+});
+export type TeacherDirectoryDTO = z.infer<typeof teacherDirectorySchema>;
+
+export const toSchoolStaffMember = (d: TeacherDirectoryDTO): SchoolStaffMember => {
+  const subjects = normalizeTeacherSubjects(d.subjects);
+  const designation = d.designation?.trim();
+  const department = d.department?.trim();
+  const roleLabel = designation || department || 'Teacher';
+  const subtitle = subjects[0] || department || roleLabel;
+
+  return {
+    id: d.id,
+    name: d.name,
+    initials: initialsFrom(d.name),
+    phone: d.phone?.trim() || undefined,
+    roleLabel,
+    subtitle,
+    photoUrl: d.photo_url ?? undefined,
+  };
+};
+
+export const staffDirectorySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  phone: z.string().nullish(),
+  role: z.string().nullish(),
+  department: z.string().nullish(),
+  photo_url: z.string().nullish(),
+  status: z.string().optional(),
+});
+export type StaffDirectoryDTO = z.infer<typeof staffDirectorySchema>;
+
+export const toStaffDirectoryMember = (d: StaffDirectoryDTO): SchoolStaffMember => {
+  const role = d.role?.trim();
+  const department = d.department?.trim();
+  const roleLabel = role || department || 'Staff';
+  return {
+    id: d.id,
+    name: d.name,
+    initials: initialsFrom(d.name),
+    phone: d.phone?.trim() || undefined,
+    roleLabel,
+    subtitle: department || roleLabel,
+    photoUrl: d.photo_url ?? undefined,
   };
 };
 
@@ -451,18 +648,46 @@ const staffEntrySchema = z.object({
   phone: z.string().nullish(),
   checked_in: z.boolean(),
   check_in_at: z.string().nullish(),
+  check_in_verified: z.boolean().nullish(),
   role: z.string().nullish(),
+  designation: z.string().nullish(),
 });
-const toStaffEntry = (s: z.infer<typeof staffEntrySchema>) => ({
-  teacherId: s.teacher_id,
-  name: s.name,
-  initials: s.initials,
-  subject: s.subject ?? '',
-  phone: s.phone ?? '',
-  checkedIn: s.checked_in,
-  checkInAt: s.check_in_at ?? undefined,
-  role: s.role ?? undefined,
-});
+const toStaffEntry = (s: z.infer<typeof staffEntrySchema>) => {
+  const rawRole = s.role ?? undefined;
+  const designation = s.designation ?? undefined;
+
+  // New API: designation (teaching title) and role (non-teaching dept) are separate.
+  if (designation !== undefined) {
+    return {
+      teacherId: s.teacher_id,
+      name: s.name,
+      initials: s.initials,
+      subject: s.subject ?? '',
+      phone: s.phone ?? '',
+      checkedIn: s.checked_in,
+      checkInAt: s.check_in_at ?? undefined,
+      checkInVerified: s.check_in_verified ?? undefined,
+      designation,
+      role: rawRole,
+    };
+  }
+
+  // Legacy API overloads `role` with teacher Designation — normalize at the boundary.
+  const legacyTeachingTitle = rawRole && isTeachingDesignation(rawRole) ? rawRole : undefined;
+
+  return {
+    teacherId: s.teacher_id,
+    name: s.name,
+    initials: s.initials,
+    subject: s.subject ?? '',
+    phone: s.phone ?? '',
+    checkedIn: s.checked_in,
+    checkInAt: s.check_in_at ?? undefined,
+    checkInVerified: s.check_in_verified ?? undefined,
+    designation: legacyTeachingTitle,
+    role: legacyTeachingTitle ? undefined : rawRole,
+  };
+};
 
 export const principalOverviewSchema = z.object({
   kpis: z.object({

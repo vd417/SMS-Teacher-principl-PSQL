@@ -2,6 +2,8 @@ import * as Location from 'expo-location';
 import { AppError } from '@/lib/errors';
 import type { CheckEvent, CheckEventKind, SchoolLocation } from '@/data/domain';
 
+export { todayISO } from '@/lib/date';
+
 /** Max GPS-accuracy value (m) added to the radius when deciding "verified". */
 export const ACCURACY_CAP = 50;
 
@@ -56,12 +58,30 @@ export function buildCheckEvent(
   };
 }
 
-/** Today's date as YYYY-MM-DD in the device's local timezone. */
-export function todayISO(): string {
-  const d = new Date();
-  const month = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${d.getFullYear()}-${month}-${day}`;
+/** Build a CheckEvent when the school geofence is not configured (server re-verifies). */
+export function buildUncheckedCheckEvent(kind: CheckEventKind, pos: Position): CheckEvent {
+  return {
+    kind,
+    at: new Date().toISOString(),
+    lat: pos.lat,
+    lng: pos.lng,
+    accuracyMeters: pos.accuracyMeters,
+    distanceMeters: 0,
+    verified: false,
+  };
+}
+
+/** Build a manual check-in/out event (Silver/Gold — no GPS). */
+export function buildManualCheckEvent(kind: CheckEventKind): CheckEvent {
+  return {
+    kind,
+    at: new Date().toISOString(),
+    lat: 0,
+    lng: 0,
+    accuracyMeters: 0,
+    distanceMeters: 0,
+    verified: true,
+  };
 }
 
 /**

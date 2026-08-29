@@ -2,25 +2,34 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import type { Session } from '@/data/domain';
 import type { OtpChallenge, SchoolChoice } from '@/data/repositories/types';
 import { tokenStore } from '@/lib/tokenStore';
-import { readJson, writeJson } from '@/lib/asyncStore';
+import { readJson, writeJson, removeItem } from '@/lib/asyncStore';
+import { sessionForStorage } from '@/lib/sessionStorage';
 import { authSnapshot } from '@/lib/authSnapshot';
 import { authBridge } from '@/features/auth/authBridge';
 import { queryClient } from '@/lib/queryClient';
 import { useRepositories } from '@/data/repositories/RepositoryContext';
+import { logoForTenant, withTenantLogo } from '@/lib/schoolBranding';
 
 // User + tenant are persisted here; tokens live in SecureStore (tokenStore).
 // Together they rehydrate a full Session across app restarts.
 const SESSION_KEY = 'sd.session';
 
-// photoUrl can be a data URI up to ~400,000 characters (see ImageUrlValidation
-// on the backend) — too large to persist safely on every sign-in (web's
-// AsyncStorage polyfill is backed by localStorage, which throws
-// QuotaExceededError well before that). It's also redundant to persist:
-// startup rehydration always re-fetches the live value from repos.auth.me()
-// a moment later. Store null here; the in-memory `session.user.photoUrl` is
-// untouched, so display isn't affected within the running session.
-function forStorage(s: Session): Session {
-  return { ...s, user: { ...s.user, photoUrl: null } };
+async function persistSession(s: Session): Promise<void> {
+  try {
+    await writeJson(SESSION_KEY, sessionForStorage(s));
+    return;
+  } catch {
+    /* QuotaExceededError — often a legacy sd.session with embedded photo/logo data. */
+  }
+  try {
+    await removeItem(SESSION_KEY);
+    await writeJson(
+      SESSION_KEY,
+      sessionForStorage({ ...s, tenant: { ...s.tenant, logoUrl: null } })
+    );
+  } catch {
+    /* In-memory session still works; user may need to sign in again after a full reload. */
+  }
 }
 
 type Status = 'loading' | 'authenticated' | 'unauthenticated' | 'selecting-school';
@@ -37,6 +46,7 @@ interface AuthValue {
   changePassword: (password: string) => Promise<void>;
   switchSchool: (tenantId: string) => Promise<void>;
   updatePhoto: (photoUrl: string | null) => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 const AuthContext = createContext<AuthValue | null>(null);
 
@@ -57,11 +67,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       try {
         // me() confirms the stored token is still valid and refreshes user data.
-        const user = await repos.auth.me();
-        const rehydrated: Session = { ...stored, ...tokens, user };
+        const { user, tenant } = await repos.auth.me();
+        const rehydrated: Session = {
+          ...stored,
+          ...tokens,
+          user,
+          tenant: {
+            id: tenant.id,
+            name: tenant.name || stored.tenant?.name || '',
+            tier: tenant.tier ?? stored.tenant?.tier ?? 'silver',
+            planName: tenant.planName || stored.tenant?.planName || '',
+            logoUrl: stored.tenant?.logoUrl ?? null,
+          },
+        };
         authSnapshot.set({ accessToken: rehydrated.accessToken, tenantId: rehydrated.tenant.id });
         setSession(rehydrated);
         setStatus('authenticated');
+        void persistSession(rehydrated);
+        void repos.auth
+          .listMySchools()
+          .then((schoolList) => {
+            const liveLogo = logoForTenant(tenant.id, schoolList);
+            if (!liveLogo) return;
+            setSession((prev) =>
+              prev ? { ...prev, tenant: { ...prev.tenant, logoUrl: liveLogo } } : prev
+            );
+          })
+          .catch(() => {
+            /* logo is optional */
+          });
       } catch {
         await tokenStore.clear();
         await writeJson<Session | null>(SESSION_KEY, null);
@@ -72,7 +106,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const establishSession = useCallback(async (s: Session) => {
     await tokenStore.save({ accessToken: s.accessToken, refreshToken: s.refreshToken });
-    await writeJson<Session>(SESSION_KEY, forStorage(s));
+    await persistSession(s);
     authSnapshot.set({ accessToken: s.accessToken, tenantId: s.tenant.id });
     setSession(s);
     setStatus('authenticated');
@@ -91,11 +125,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // fall back to single-school behavior below
       }
       if (schools.length > 1) {
+        // Keep tokens alive for switch-school (snapshot alone is lost on refresh).
+        await tokenStore.save({ accessToken: s.accessToken, refreshToken: s.refreshToken });
+        authSnapshot.set({ accessToken: s.accessToken, tenantId: s.tenant.id });
         setPendingSchools(schools);
         setStatus('selecting-school');
         return;
       }
-      await establishSession(s);
+      await establishSession(withTenantLogo(s, schools));
     },
     [repos, establishSession]
   );
@@ -123,11 +160,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const switchSchool = useCallback(
     async (tenantId: string) => {
-      const s = await repos.auth.switchSchool(tenantId);
+      let s = await repos.auth.switchSchool(tenantId);
+      try {
+        const schools = await repos.auth.listMySchools();
+        s = withTenantLogo(s, schools);
+      } catch {
+        s = withTenantLogo(s, pendingSchools);
+      }
+      queryClient.clear();
       await establishSession(s);
       setPendingSchools(null);
     },
-    [repos, establishSession]
+    [repos, establishSession, pendingSchools]
   );
 
   const updatePhoto = useCallback(
@@ -137,6 +181,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     },
     [repos]
   );
+
+  const refreshProfile = useCallback(async () => {
+    const { user, tenant } = await repos.auth.me();
+    let logoUrl: string | null | undefined;
+    try {
+      const schools = await repos.auth.listMySchools();
+      logoUrl = logoForTenant(tenant.id, schools);
+    } catch {
+      logoUrl = undefined;
+    }
+    setSession((prev) =>
+      prev
+        ? {
+            ...prev,
+            user,
+            tenant: {
+              id: tenant.id,
+              name: tenant.name || prev.tenant.name,
+              tier: tenant.tier ?? prev.tenant.tier,
+              planName: tenant.planName || prev.tenant.planName,
+              logoUrl: logoUrl ?? prev.tenant.logoUrl ?? null,
+            },
+          }
+        : prev
+    );
+  }, [repos]);
 
   const forgotPassword = useCallback(
     (identifier: string) => repos.auth.forgotPassword(identifier),
@@ -205,6 +275,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       changePassword,
       switchSchool,
       updatePhoto,
+      refreshProfile,
     }),
     [
       status,
@@ -219,6 +290,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       changePassword,
       updatePhoto,
       switchSchool,
+      refreshProfile,
     ]
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

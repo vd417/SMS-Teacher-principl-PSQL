@@ -2,13 +2,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRepositories } from '@/data/repositories/RepositoryContext';
 import { useTenantId } from '@/features/auth/AuthProvider';
 import { queryKeys } from '@/lib/queryClient';
+import type { ApprovalListStatus } from '@/data/repositories/types';
 
-export function useApprovals() {
+export function useApprovals(status: ApprovalListStatus = 'pending') {
   const repos = useRepositories();
   const tenantId = useTenantId();
   return useQuery({
-    queryKey: queryKeys.approvals(tenantId),
-    queryFn: () => repos.approvals.list(),
+    queryKey: [...queryKeys.approvals(tenantId), status],
+    queryFn: () => repos.approvals.list(status),
   });
 }
 
@@ -28,6 +29,7 @@ export function useDecideApproval() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.approvals(tenantId) });
       qc.invalidateQueries({ queryKey: queryKeys.principalOverview(tenantId) });
+      qc.invalidateQueries({ queryKey: queryKeys.leave(tenantId) });
     },
   });
 }

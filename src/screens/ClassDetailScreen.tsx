@@ -12,14 +12,14 @@ import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
-import { Avatar, Pill } from '../components';
+import { Avatar } from '../components';
+import { StudentListContactActions } from '@/components/students/StudentListContactActions';
 import type { Student } from '@/data/domain';
 import { useClass } from '@/features/classes/hooks';
 import { useStudentsByClassPaged } from '@/features/students/hooks';
-import { deriveColorSet } from '@/theme/derive';
+import { classCardColorSet } from '@/theme/derive';
 import { Skeleton } from '@/ui/state/Skeleton';
 import { ErrorState } from '@/ui/state/ErrorState';
 import { EmptyState } from '@/ui/state/EmptyState';
@@ -78,69 +78,79 @@ export const ClassDetailScreen: React.FC = () => {
     );
   }
 
-  const cs = deriveColorSet(cls.id);
+  const cs = classCardColorSet(cls.id);
 
   const renderStudent = ({ item: student, index: i }: { item: Student; index: number }) => (
     <Animated.View
       style={styles.studentItemWrap}
       entering={FadeInDown.delay(Math.min(i, 8) * 40).springify()}
     >
-      <TouchableOpacity
-        style={styles.studentRow}
-        onPress={() =>
-          navigation.navigate('StudentScreen', { studentId: student.id, classId: cls.id })
-        }
-      >
-        <Avatar initials={student.initials} size={44} backgroundColor={cs.color} />
-        <View style={styles.studentInfo}>
-          <Text style={styles.studentName}>{student.name}</Text>
-          <Text style={styles.studentRoll}>Roll #{student.roll}</Text>
-        </View>
-        <View style={styles.studentRight}>
-          <View
-            style={[
-              styles.attBadge,
-              {
-                backgroundColor:
-                  student.attendance >= 90
-                    ? Colors.presentSoft
-                    : student.attendance >= 75
-                      ? Colors.lateSoft
-                      : Colors.absentSoft,
-              },
-            ]}
-          >
-            <Text
+      <View style={styles.studentRow}>
+        <TouchableOpacity
+          style={styles.studentRowMain}
+          onPress={() =>
+            navigation.navigate('StudentScreen', { studentId: student.id, classId: cls.id })
+          }
+        >
+          <Avatar
+            initials={student.initials}
+            size={44}
+            backgroundColor={cs.color}
+            photoUri={student.photoUrl}
+          />
+          <View style={styles.studentInfo}>
+            <Text style={styles.studentName}>{student.name}</Text>
+            <Text style={styles.studentRoll}>Roll #{student.roll}</Text>
+          </View>
+          <View style={styles.studentRight}>
+            <View
               style={[
-                styles.attText,
+                styles.attBadge,
                 {
-                  color:
-                    student.attendance >= 90
-                      ? Colors.present
-                      : student.attendance >= 75
-                        ? Colors.late
-                        : Colors.absent,
+                  backgroundColor:
+                    student.attendance == null
+                      ? Colors.ruleSoft
+                      : student.attendance >= 90
+                        ? Colors.presentSoft
+                        : student.attendance >= 75
+                          ? Colors.lateSoft
+                          : Colors.absentSoft,
                 },
               ]}
             >
-              {student.attendance}%
-            </Text>
+              <Text
+                style={[
+                  styles.attText,
+                  {
+                    color:
+                      student.attendance == null
+                        ? Colors.inkMuted
+                        : student.attendance >= 90
+                          ? Colors.present
+                          : student.attendance >= 75
+                            ? Colors.late
+                            : Colors.absent,
+                  },
+                ]}
+              >
+                {student.attendance == null ? '—' : `${student.attendance}%`}
+              </Text>
+            </View>
           </View>
-          <Pill label={student.grade} color={cs.color} backgroundColor={cs.colorSoft} size="sm" />
-        </View>
-      </TouchableOpacity>
+        </TouchableOpacity>
+        <StudentListContactActions
+          studentName={student.name}
+          parentName={student.parent}
+          parentPhone={student.parentPhone}
+        />
+      </View>
     </Animated.View>
   );
 
   const header = (
     <>
       {/* Hero */}
-      <LinearGradient
-        colors={[cs.color, cs.colorSoft]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={[styles.hero, { paddingTop: insets.top + 16 }]}
-      >
+      <View style={[styles.hero, { paddingTop: insets.top + 16, backgroundColor: cs.color }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Ionicons name="arrow-back" size={22} color={Colors.white} />
         </TouchableOpacity>
@@ -156,7 +166,7 @@ export const ClassDetailScreen: React.FC = () => {
             <Text style={styles.heroMetaText}>{cls.room}</Text>
           </View>
         </View>
-      </LinearGradient>
+      </View>
 
       {/* Action Row */}
       <View style={styles.actionRow}>
@@ -305,6 +315,11 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 8,
     ...Shadows.card,
+  },
+  studentRowMain: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   studentInfo: {
     flex: 1,

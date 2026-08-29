@@ -16,22 +16,24 @@ import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { Avatar, Card, Donut, Pill } from '../components';
 import { useStudent, useUpdateStudentPhoto } from '@/features/students/hooks';
+import { useStudentChatActions } from '@/features/students/useStudentChatActions';
 import { useClass } from '@/features/classes/hooks';
 import { deriveColorSet } from '@/theme/derive';
 import { Skeleton } from '@/ui/state/Skeleton';
 import { ErrorState } from '@/ui/state/ErrorState';
 import { pickImageFromLibrary, takePhotoFromCamera } from '@/lib/pickImage';
 import { authErrorMessage } from '@/features/auth/authErrors';
-import { classLabel } from '@/lib/classLabel';
+import { dialPhoneNumber } from '@/lib/phoneLink';
 import type { HomeStackParamList } from '../navigation/types';
 
 type StudentRoute = RouteProp<HomeStackParamList, 'StudentScreen'>;
 
 export const StudentScreen: React.FC = () => {
   const route = useRoute<StudentRoute>();
-  const navigation = useNavigation();
+  const navigation = useNavigation<any>();
   const insets = useSafeAreaInsets();
   const { studentId, classId } = route.params;
+  const { openStudentChat, openParentChat, isOpening } = useStudentChatActions();
 
   const {
     data: student,
@@ -183,28 +185,69 @@ export const StudentScreen: React.FC = () => {
             <View style={styles.attCardContent}>
               <View>
                 <Text style={styles.cardTitle}>Attendance</Text>
-                <Text style={styles.attPct}>{student.attendance}%</Text>
+                <Text style={styles.attPct}>
+                  {student.attendance == null ? 'Not marked' : `${student.attendance}%`}
+                </Text>
                 <Text style={styles.attDesc}>
-                  {student.attendance >= 90
-                    ? 'Excellent'
-                    : student.attendance >= 75
-                      ? 'Average'
-                      : 'Poor'}
+                  {student.attendance == null
+                    ? 'No period marks yet'
+                    : student.attendance >= 90
+                      ? 'Excellent'
+                      : student.attendance >= 75
+                        ? 'Average'
+                        : 'Poor'}
                 </Text>
               </View>
               <Donut
-                percentage={student.attendance}
+                percentage={student.attendance ?? 0}
                 size={90}
                 strokeWidth={9}
                 color={
-                  student.attendance >= 90
-                    ? Colors.present
-                    : student.attendance >= 75
-                      ? Colors.late
-                      : Colors.absent
+                  student.attendance == null
+                    ? Colors.inkMuted
+                    : student.attendance >= 90
+                      ? Colors.present
+                      : student.attendance >= 75
+                        ? Colors.late
+                        : Colors.absent
                 }
                 backgroundColor={Colors.ruleSoft}
               />
+            </View>
+          </Card>
+        </Animated.View>
+
+        {/* Chat */}
+        <Animated.View entering={FadeInDown.delay(130).springify()}>
+          <Text style={styles.sectionTitle}>Message</Text>
+          <Card padding={0}>
+            <View style={styles.contactActions}>
+              <TouchableOpacity
+                style={styles.contactBtn}
+                disabled={isOpening(student.name)}
+                onPress={() => openStudentChat(student.name)}
+              >
+                {isOpening(student.name) ? (
+                  <ActivityIndicator size="small" color={Colors.primary} />
+                ) : (
+                  <Ionicons name="chatbubble-outline" size={18} color={Colors.primary} />
+                )}
+                <Text style={styles.contactBtnText}>Chat Student</Text>
+              </TouchableOpacity>
+              {student.parent ? (
+                <TouchableOpacity
+                  style={styles.contactBtn}
+                  disabled={isOpening(student.parent)}
+                  onPress={() => openParentChat(student.parent)}
+                >
+                  {isOpening(student.parent) ? (
+                    <ActivityIndicator size="small" color={Colors.primary} />
+                  ) : (
+                    <Ionicons name="people-outline" size={18} color={Colors.primary} />
+                  )}
+                  <Text style={styles.contactBtnText}>Chat Parent</Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
           </Card>
         </Animated.View>
@@ -223,10 +266,21 @@ export const StudentScreen: React.FC = () => {
                 </View>
                 <View>
                   <Text style={styles.infoLabel}>{item.label}</Text>
-                  <Text style={styles.infoValue}>{item.value}</Text>
+                  <Text style={styles.infoValue}>{item.value || 'Not assigned'}</Text>
                 </View>
               </View>
             ))}
+            <View style={styles.contactActions}>
+              {student.parentPhone ? (
+                <TouchableOpacity
+                  style={styles.contactBtn}
+                  onPress={() => void dialPhoneNumber(student.parentPhone)}
+                >
+                  <Ionicons name="call-outline" size={18} color={Colors.primary} />
+                  <Text style={styles.contactBtnText}>Call Parent</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
           </Card>
         </Animated.View>
 
@@ -238,7 +292,11 @@ export const StudentScreen: React.FC = () => {
               { icon: 'school-outline', label: 'Class', value: classLabel(cls.name, cls.section) },
               { icon: 'book-outline', label: 'Subject', value: cls.subject },
               { icon: 'ribbon-outline', label: 'Current Grade', value: student.grade },
-              { icon: 'stats-chart-outline', label: 'Attendance', value: `${student.attendance}%` },
+              {
+                icon: 'stats-chart-outline',
+                label: 'Attendance',
+                value: student.attendance == null ? 'Not marked' : `${student.attendance}%`,
+              },
             ].map((item) => (
               <View key={item.label} style={styles.infoRow}>
                 <View style={styles.infoIcon}>
@@ -394,5 +452,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.ink,
     marginTop: 1,
+  },
+  contactActions: {
+    flexDirection: 'row',
+    gap: 10,
+    padding: 14,
+    paddingTop: 4,
+  },
+  contactBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+    borderRadius: Radii.md,
+    backgroundColor: Colors.primarySoft,
+  },
+  contactBtnText: {
+    fontFamily: FontFamily.semiBold,
+    fontSize: 14,
+    color: Colors.primary,
   },
 });

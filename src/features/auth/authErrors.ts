@@ -12,6 +12,9 @@ const DEFAULT_FALLBACK = 'Something went wrong. Please try again.';
 /** Maps an unknown error (usually an AppError from httpClient) to user-facing copy. */
 export function authErrorMessage(err: unknown, fallback: string = DEFAULT_FALLBACK): string {
   if (err instanceof AppError) {
+    if (err.status === 0) {
+      return 'Cannot reach the server. Start sms-backend on http://localhost:5162 and try again.';
+    }
     if (err.status === 429) return 'Too many attempts. Please wait a moment and try again.';
     return MESSAGES[err.code] ?? err.message ?? fallback;
   }

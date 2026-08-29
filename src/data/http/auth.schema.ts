@@ -1,5 +1,7 @@
 import { z } from 'zod';
-import type { Session, User, Tenant, Role } from '@/data/domain';
+import type { Session, User, Tenant, Role, Tier } from '@/data/domain';
+import { isTeachingDesignation } from '@/lib/staffCategory';
+import { normalizeTier } from '@/lib/gating';
 
 // ─── Wire schemas ────────────────────────────────────────────────────────────
 export const tokenSchema = z.object({
@@ -22,6 +24,8 @@ export const meSchema = z.object({
   classroom: z.string().nullable().optional(),
   joined: z.string().nullable().optional(),
   tenant_name: z.string().nullable().optional(),
+  tier: z.string().nullable().optional(),
+  plan_name: z.string().nullable().optional(),
   must_set_password: z.boolean().nullable().optional(),
   photo_url: z.string().nullable().optional(),
 });
@@ -49,6 +53,17 @@ export function pickRole(roles: string[]): Role {
   return leaves.includes('principal') ? 'principal' : 'teacher';
 }
 
+/** Profile title for UI — principals with a linked teacher row should not show "Teacher". */
+export function resolveDisplayTitle(role: Role, rawTitle?: string | null): string {
+  const title = (rawTitle ?? '').trim();
+  if (role === 'principal') {
+    if (!title || isTeachingDesignation(title)) return 'Principal';
+    return title;
+  }
+  if (title) return title;
+  return '';
+}
+
 export function initialsFrom(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean);
   if (parts.length === 0) return '—';
@@ -58,24 +73,30 @@ export function initialsFrom(name: string): string {
 
 export function toUserFromMe(me: MeWire): User {
   const name = me.name ?? '';
+  const role = pickRole(me.roles);
   return {
     id: me.id,
     name,
     initials: initialsFrom(name),
-    title: me.title ?? '',
+    title: resolveDisplayTitle(role, me.title),
     email: me.email ?? '',
     phone: me.phone ?? '',
     employee: me.employee ?? '',
     classroom: me.classroom ?? '',
     joined: me.joined ?? '',
-    role: pickRole(me.roles),
+    role,
     mustSetPassword: me.must_set_password ?? false,
     photoUrl: me.photo_url ?? null,
   };
 }
 
 export function toTenantFromMe(me: MeWire): Tenant {
-  return { id: me.tenant_id, name: me.tenant_name ?? '' };
+  return {
+    id: me.tenant_id,
+    name: me.tenant_name ?? '',
+    tier: normalizeTier(me.tier),
+    planName: me.plan_name ?? '',
+  };
 }
 
 export function toSessionFromMe(

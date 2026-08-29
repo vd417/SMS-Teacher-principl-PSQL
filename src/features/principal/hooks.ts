@@ -25,3 +25,22 @@ export function usePrincipalAttendance() {
     queryFn: () => repos.principal.attendance(date),
   });
 }
+
+export function useTransportFleet() {
+  const repos = useRepositories();
+  const tenantId = useTenantId();
+  return useQuery({
+    queryKey: queryKeys.transportFleet(tenantId),
+    queryFn: () => repos.principal.transportFleet(),
+    refetchInterval: 5000,
+  });
+}
+
+export function useTransportBuses() {
+  const repos = useRepositories();
+  const tenantId = useTenantId();
+  return useQuery({
+    queryKey: queryKeys.transportBuses(tenantId),
+    queryFn: () => repos.principal.listTransportBuses(),
+  });
+}

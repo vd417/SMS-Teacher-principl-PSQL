@@ -11,14 +11,13 @@ const TAB_ICONS: Record<
   { active: keyof typeof Ionicons.glyphMap; inactive: keyof typeof Ionicons.glyphMap }
 > = {
   Home: { active: 'home', inactive: 'home-outline' },
-  Timetable: { active: 'grid', inactive: 'grid-outline' },
+  Timetable: { active: 'calendar', inactive: 'calendar-outline' },
   Classes: { active: 'school', inactive: 'school-outline' },
   Inbox: { active: 'chatbubbles', inactive: 'chatbubbles-outline' },
   Profile: { active: 'person', inactive: 'person-outline' },
   PHome: { active: 'home', inactive: 'home-outline' },
-  Approvals: { active: 'checkmark-done', inactive: 'checkmark-done-outline' },
-  PAttendance: { active: 'stats-chart', inactive: 'stats-chart-outline' },
-  PTimetable: { active: 'grid', inactive: 'grid-outline' },
+  PClasses: { active: 'school', inactive: 'school-outline' },
+  Approvals: { active: 'clipboard', inactive: 'clipboard-outline' },
   PInbox: { active: 'chatbubbles', inactive: 'chatbubbles-outline' },
   PProfile: { active: 'person', inactive: 'person-outline' },
 };
@@ -30,9 +29,8 @@ const TAB_LABELS: Record<string, string> = {
   Inbox: 'Inbox',
   Profile: 'Me',
   PHome: 'Home',
+  PClasses: 'Classes',
   Approvals: 'Approvals',
-  PAttendance: 'Attendance',
-  PTimetable: 'Timetable',
   PInbox: 'Inbox',
   PProfile: 'Me',
 };
@@ -45,6 +43,7 @@ export const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, naviga
           const isFocused = state.index === index;
           const icons = TAB_ICONS[route.name] ?? { active: 'ellipse', inactive: 'ellipse-outline' };
           const label = TAB_LABELS[route.name] ?? route.name;
+          const compact = state.routes.length >= 6;
 
           const onPress = () => {
             const event = navigation.emit({
@@ -63,6 +62,7 @@ export const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, naviga
               isFocused={isFocused}
               icon={isFocused ? icons.active : icons.inactive}
               label={label}
+              compact={compact}
               onPress={onPress}
             />
           );
@@ -76,10 +76,11 @@ interface TabItemProps {
   isFocused: boolean;
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
+  compact?: boolean;
   onPress: () => void;
 }
 
-const TabItem: React.FC<TabItemProps> = ({ isFocused, icon, label, onPress }) => {
+const TabItem: React.FC<TabItemProps> = ({ isFocused, icon, label, compact, onPress }) => {
   const scale = useSharedValue(1);
 
   const animStyle = useAnimatedStyle(() => ({
@@ -95,10 +96,31 @@ const TabItem: React.FC<TabItemProps> = ({ isFocused, icon, label, onPress }) =>
 
   return (
     <TouchableOpacity onPress={handlePress} style={styles.tab} activeOpacity={0.8}>
-      <Animated.View style={[styles.iconWrap, isFocused && styles.iconWrapActive, animStyle]}>
-        <Ionicons name={icon} size={22} color={isFocused ? Colors.white : Colors.inkMuted} />
+      <Animated.View
+        style={[
+          styles.iconWrap,
+          compact && styles.iconWrapCompact,
+          isFocused && styles.iconWrapActive,
+          isFocused && compact && styles.iconWrapActiveCompact,
+          animStyle,
+        ]}
+      >
+        <Ionicons
+          name={icon}
+          size={compact ? 20 : 22}
+          color={isFocused ? Colors.white : Colors.inkMuted}
+        />
       </Animated.View>
-      <Text style={[styles.tabLabel, isFocused && styles.tabLabelActive]}>{label}</Text>
+      <Text
+        style={[
+          styles.tabLabel,
+          compact && styles.tabLabelCompact,
+          isFocused && styles.tabLabelActive,
+        ]}
+        numberOfLines={1}
+      >
+        {label}
+      </Text>
     </TouchableOpacity>
   );
 };
@@ -138,11 +160,14 @@ const styles = StyleSheet.create({
     width: 56,
     borderRadius: Radii.xl,
   },
+  iconWrapCompact: { width: 36, height: 28 },
+  iconWrapActiveCompact: { width: 48 },
   tabLabel: {
     fontFamily: FontFamily.medium,
     fontSize: 10,
     color: Colors.inkMuted,
   },
+  tabLabelCompact: { fontSize: 9 },
   tabLabelActive: {
     color: Colors.primary,
     fontFamily: FontFamily.bold,

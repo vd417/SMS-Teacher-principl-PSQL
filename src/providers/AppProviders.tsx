@@ -9,6 +9,7 @@ import { authBridge } from '@/features/auth/authBridge';
 import { createHttpRepositories } from '@/data/repositories/factory';
 import { RepositoryProvider } from '@/data/repositories/RepositoryContext';
 import { AuthProvider } from '@/features/auth/AuthProvider';
+import { LiveProvider } from '@/providers/LiveProvider';
 import type { Repositories } from '@/data/repositories/types';
 import { Colors } from '@/theme';
 
@@ -40,7 +41,9 @@ export const AppProviders: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <QueryClientProvider client={queryClient}>
       <RepositoryProvider repositories={repositories}>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <LiveProvider>{children}</LiveProvider>
+        </AuthProvider>
       </RepositoryProvider>
     </QueryClientProvider>
   );

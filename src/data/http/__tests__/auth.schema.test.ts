@@ -1,9 +1,11 @@
 import {
   pickRole,
+  resolveDisplayTitle,
   meSchema,
   schoolChoiceSchema,
   toSessionFromMe,
   toUserFromMe,
+  toTenantFromMe,
   initialsFrom,
   maskIdentifier,
 } from '../auth.schema';
@@ -12,6 +14,27 @@ test('pickRole prefers principal', () => {
   expect(pickRole(['teacher', 'principal'])).toBe('principal');
   expect(pickRole(['teacher'])).toBe('teacher');
   expect(pickRole([])).toBe('teacher');
+});
+
+test('resolveDisplayTitle shows Principal for principal role even with teacher title', () => {
+  expect(resolveDisplayTitle('principal', 'Teacher')).toBe('Principal');
+  expect(resolveDisplayTitle('principal', 'Senior Teacher')).toBe('Principal');
+  expect(resolveDisplayTitle('principal', null)).toBe('Principal');
+  expect(resolveDisplayTitle('teacher', 'Senior Teacher')).toBe('Senior Teacher');
+  expect(resolveDisplayTitle('teacher', null)).toBe('');
+});
+
+test('toUserFromMe maps principal title via resolveDisplayTitle', () => {
+  const me = meSchema.parse({
+    id: 'u1',
+    tenant_id: 't1',
+    roles: ['school.principal', 'school.teacher'],
+    name: 'Rina Pandey',
+    title: 'Teacher',
+  });
+  const user = toUserFromMe(me);
+  expect(user.role).toBe('principal');
+  expect(user.title).toBe('Principal');
 });
 
 test('pickRole accepts backend-canonical school.* roles', () => {
@@ -46,7 +69,28 @@ test('toSessionFromMe builds a full Session', () => {
   expect(s.user.name).toBe('Asha Rao');
   expect(s.user.initials).toBe('AR');
   expect(s.user.role).toBe('teacher');
-  expect(s.tenant).toEqual({ id: 't1', name: 'Westbrook' });
+  expect(s.tenant).toEqual({
+    id: 't1',
+    name: 'Westbrook',
+    tier: 'silver',
+    planName: '',
+  });
+});
+
+test('toTenantFromMe maps tier and plan_name (defaults tier to silver)', () => {
+  const gold = toTenantFromMe(
+    meSchema.parse({
+      id: 'u1',
+      tenant_id: 't1',
+      roles: ['teacher'],
+      tier: 'gold',
+      plan_name: 'Gold',
+    })
+  );
+  expect(gold).toEqual({ id: 't1', name: '', tier: 'gold', planName: 'Gold' });
+
+  const missing = toTenantFromMe(meSchema.parse({ id: 'u1', tenant_id: 't1', roles: ['teacher'] }));
+  expect(missing.tier).toBe('silver');
 });
 
 test('meSchema tolerates explicit nulls (the live backend sends null, not omitted, for unset profile fields)', () => {

@@ -36,7 +36,13 @@
           "locationAlwaysAndWhenInUsePermission": "Allow School Desk to use your location to verify you are at school when you check in."
         }
       ],
-      "@sentry/react-native"
+      [
+        "@sentry/react-native/expo",
+        {
+          "disableAutoUpload": true
+        }
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "extra": {
       "eas": {

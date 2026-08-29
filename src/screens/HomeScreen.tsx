@@ -1,23 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
-import { Avatar, Card, Donut, SectionHeader, Toast, PunchButton } from '../components';
-import { useAuth } from '@/features/auth/AuthProvider';
+import {
+  Avatar,
+  Card,
+  Donut,
+  SectionHeader,
+  Toast,
+  PunchButton,
+  SchoolClosedBanner,
+  MoreFeaturesAvatar,
+  HomeSchoolHeader,
+  NotificationBell,
+} from '../components';
+import { useAuth, useTenantId } from '@/features/auth/AuthProvider';
+import { queryClient, queryKeys } from '@/lib/queryClient';
+import { useCurrentSchoolBranding } from '@/features/auth/useCurrentSchoolBranding';
 import { useClasses } from '@/features/classes/hooks';
 import { useDashboardStats } from '@/features/dashboard/hooks';
-import { useAnnouncements } from '@/features/announcements/hooks';
-import { useMyAttendanceToday, usePunch } from '@/features/teacherAttendance/hooks';
+import { useAnnouncements, useAppNotifications } from '@/features/announcements/hooks';
+import { useSchoolClosedToday } from '@/features/calendar/hooks';
+import {
+  useMyAttendanceToday,
+  usePunch,
+  useSchoolLocation,
+  useGeofenceAllowed,
+  useStaffCheckInAllowed,
+} from '@/features/teacherAttendance/hooks';
 import { useAttendance } from '@/features/attendance/hooks';
 import { useExams } from '@/features/exams/hooks';
-import { todayISO, formatLongDate, greeting } from '@/lib/date';
+import { todayISO, formatLongDate, greeting, formatTimeOfDay } from '@/lib/date';
+import { formatPunchLabel, punchSuccessMessage, punchErrorMessage } from '@/lib/attendanceDisplay';
 import { isAppError } from '@/lib/errors';
 import { deriveColorSet } from '@/theme/derive';
+import { navigateToMoreScreen } from '@/lib/navigateToMore';
 import { Skeleton } from '@/ui/state/Skeleton';
 import { classLabel } from '@/lib/classLabel';
 import type { Class } from '@/data/domain';
@@ -107,13 +129,17 @@ export const HomeScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const [_search, setSearch] = useState('');
 
-  const { session } = useAuth();
+  const { session, refreshProfile } = useAuth();
+  const tenantId = useTenantId();
   const user = session?.user;
-  const tenantName = session?.tenant.name ?? 'School';
+  const { name: schoolName, logoUrl: schoolLogoUrl } = useCurrentSchoolBranding();
 
-  const { data: classes = [], isLoading: classesLoading } = useClasses();
-  const { data: stats, isLoading: statsLoading } = useDashboardStats();
+  const { data: classes = [], isLoading: classesLoading, refetch: refetchClasses } = useClasses();
+  const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useDashboardStats();
   const { data: announcements = [] } = useAnnouncements();
+  const schoolClosed = useSchoolClosedToday(announcements);
+  const { data: appNotifications = [] } = useAppNotifications();
+  const unreadCount = appNotifications.filter((n) => n.unread).length;
 
   const { data: exams = [] } = useExams();
   const today = todayISO();
@@ -122,7 +148,12 @@ export const HomeScreen: React.FC = () => {
     .sort((a, b) => a.date.localeCompare(b.date))[0];
 
   const { data: myToday, isLoading: myTodayLoading } = useMyAttendanceToday();
+  const { data: schoolLocation } = useSchoolLocation();
   const punch = usePunch();
+  const schoolConfigured = schoolLocation != null;
+  const { allowed: geofenceAllowed } = useGeofenceAllowed();
+  const { allowed: staffCheckInAllowed } = useStaffCheckInAllowed();
+  const punchOpts = { geo: geofenceAllowed, schoolConfigured };
   const [punchToast, setPunchToast] = useState<{
     msg: string;
     type: 'success' | 'warning' | 'error';
@@ -135,21 +166,32 @@ export const HomeScreen: React.FC = () => {
     punch.mutate(kind, {
       onSuccess: (day) => {
         const ev = kind === 'in' ? day.checkIn : day.checkOut;
-        const meters = ev ? Math.round(ev.distanceMeters) : 0;
-        setPunchToast({
-          msg: ev?.verified
-            ? `Checked ${kind} — ${meters} m from school ✓`
-            : `Checked ${kind} — ${meters} m away, flagged`,
-          type: ev?.verified ? 'success' : 'warning',
-        });
+        const { msg, type } = punchSuccessMessage(kind, ev, punchOpts);
+        setPunchToast({ msg, type });
       },
       onError: (e) =>
         setPunchToast({
-          msg: isAppError(e) ? e.message : 'Could not record punch. Try again.',
+          msg: punchErrorMessage(e),
           type: 'error',
         }),
     });
   };
+
+  const studentAttPct =
+    stats && stats.totalStudents > 0
+      ? Math.round((stats.attendanceToday / stats.totalStudents) * 100)
+      : 0;
+
+  useFocusEffect(
+    useCallback(() => {
+      void refetchClasses();
+      void refetchStats();
+      void refreshProfile();
+      if (tenantId) {
+        void queryClient.invalidateQueries({ queryKey: queryKeys.mySchools(tenantId) });
+      }
+    }, [refetchClasses, refetchStats, refreshProfile, tenantId])
+  );
 
   return (
     <View style={styles.root}>
@@ -159,16 +201,34 @@ export const HomeScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <Animated.View entering={FadeInDown.delay(50).springify()} style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Text style={styles.greeting}>{greeting()}</Text>
-            <Text style={styles.teacherName}>{(user?.name ?? 'Teacher').split(' ')[0]} 👋</Text>
-            <Text style={styles.subtitle}>{tenantName}</Text>
-          </View>
-          <TouchableOpacity onPress={() => navigation.navigate('MoreScreen' as never)}>
-            <Avatar initials={user?.initials ?? '?'} photoUri={user?.photoUrl} size={50} />
-          </TouchableOpacity>
+        <Animated.View entering={FadeInDown.delay(50).springify()}>
+          <HomeSchoolHeader
+            logoUrl={schoolLogoUrl}
+            schoolName={schoolName}
+            greetingLine={greeting()}
+            nameLine={(user?.name ?? 'Teacher').split(' ')[0]}
+            rightSlot={
+              <View style={styles.headerActions}>
+                <NotificationBell
+                  unreadCount={unreadCount}
+                  onDark
+                  onPress={() => navigation.navigate('AnnouncementsScreen')}
+                />
+                <MoreFeaturesAvatar
+                  size={42}
+                  onDark
+                  onPress={() => navigateToMoreScreen(navigation, false)}
+                />
+              </View>
+            }
+          />
         </Animated.View>
+
+        {schoolClosed && (
+          <Animated.View entering={FadeInDown.delay(100).springify()}>
+            <SchoolClosedBanner title={schoolClosed.title} description={schoolClosed.description} />
+          </Animated.View>
+        )}
 
         {/* Upcoming Banner */}
         {nextExam && (
@@ -184,50 +244,63 @@ export const HomeScreen: React.FC = () => {
           </Animated.View>
         )}
 
-        {/* My Check-In / Check-Out */}
-        <Animated.View entering={FadeInDown.delay(150).springify()}>
-          <Card style={styles.myAttCard}>
-            <View style={styles.myAttHeader}>
-              <Ionicons name="location" size={16} color={Colors.primary} />
-              <Text style={styles.myAttTitle}>My Attendance</Text>
-            </View>
-            {myLatestPunch && (
-              <View style={styles.myAttHint}>
-                <Ionicons
-                  name={myLatestPunch.verified ? 'location' : 'warning'}
-                  size={12}
-                  color={myLatestPunch.verified ? Colors.inkMuted : Colors.late}
-                />
-                <Text style={styles.myAttHintText}>
-                  {Math.round(myLatestPunch.distanceMeters)} m from school
-                  {myLatestPunch.verified ? '' : ' · unverified'}
-                </Text>
-              </View>
-            )}
-            {/* Home offers check-in only; check-out lives on the My Attendance screen. */}
-            {canCheckIn ? (
-              <PunchButton
-                label="Check In"
-                icon="enter-outline"
-                onPress={() => handlePunch('in')}
-                loading={punch.isPending}
-              />
-            ) : (
-              myToday?.checkIn && (
-                <View style={styles.myAttDone}>
-                  <Ionicons name="checkmark-circle" size={16} color={Colors.present} />
-                  <Text style={styles.myAttDoneText}>
-                    {myToday.checkOut ? 'Checked out' : 'Checked in'} at{' '}
-                    {new Date((myToday.checkOut ?? myToday.checkIn).at).toLocaleTimeString([], {
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </Text>
+        {/* My Check-In — manual on Silver/Gold, GPS geo-fence on Platinum */}
+        {staffCheckInAllowed && (
+          <Animated.View entering={FadeInDown.delay(150).springify()}>
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={() => navTab.navigate('Profile', { screen: 'MyAttendanceScreen' })}
+            >
+              <Card style={styles.myAttCard}>
+                <View style={styles.myAttHeader}>
+                  <Ionicons
+                    name={geofenceAllowed ? 'location' : 'finger-print-outline'}
+                    size={16}
+                    color={Colors.primary}
+                  />
+                  <Text style={styles.myAttTitle}>My Attendance</Text>
                 </View>
-              )
-            )}
-          </Card>
-        </Animated.View>
+                {schoolClosed && (
+                  <Text style={styles.myAttClosedHint}>
+                    School is closed today — check-in is disabled.
+                  </Text>
+                )}
+                {myLatestPunch && (
+                  <View style={styles.myAttHint}>
+                    <Ionicons
+                      name={geofenceAllowed ? 'location' : 'time-outline'}
+                      size={12}
+                      color={Colors.inkMuted}
+                    />
+                    <Text style={styles.myAttHintText}>
+                      {formatPunchLabel(myLatestPunch, punchOpts)}
+                    </Text>
+                  </View>
+                )}
+                {/* Home offers check-in only; check-out lives on the My Attendance screen. */}
+                {canCheckIn ? (
+                  <PunchButton
+                    label="Check In"
+                    icon="enter-outline"
+                    onPress={() => handlePunch('in')}
+                    loading={punch.isPending}
+                    disabled={!!schoolClosed}
+                  />
+                ) : (
+                  myToday?.checkIn && (
+                    <View style={styles.myAttDone}>
+                      <Ionicons name="checkmark-circle" size={16} color={Colors.present} />
+                      <Text style={styles.myAttDoneText}>
+                        {myToday.checkOut ? 'Checked out' : 'Checked in'} at{' '}
+                        {formatTimeOfDay((myToday.checkOut ?? myToday.checkIn)?.at)}
+                      </Text>
+                    </View>
+                  )
+                )}
+              </Card>
+            </TouchableOpacity>
+          </Animated.View>
+        )}
 
         {/* Attendance Card */}
         <Animated.View entering={FadeInDown.delay(180).springify()}>
@@ -241,7 +314,7 @@ export const HomeScreen: React.FC = () => {
                 <Skeleton height={80} width={80} radius={40} />
               ) : (
                 <Donut
-                  percentage={stats?.attendanceToday ?? 0}
+                  percentage={studentAttPct}
                   size={80}
                   strokeWidth={8}
                   color={Colors.primary}
@@ -264,7 +337,7 @@ export const HomeScreen: React.FC = () => {
           <SectionHeader
             title="My Classes"
             actionLabel="View All"
-            onAction={() => navTab.navigate('Classes', { screen: 'ClassesScreen' })}
+            onAction={() => navTab.navigate('Classes', { screen: 'ClassHubScreen' })}
           />
           {classesLoading ? (
             <View style={styles.classGrid}>
@@ -347,7 +420,7 @@ export const HomeScreen: React.FC = () => {
                   {ann.title}
                 </Text>
                 <Text style={styles.annFrom}>
-                  {ann.from} · {ann.date}
+                  {ann.from} · {formatLongDate(ann.date)}
                 </Text>
               </View>
               <Ionicons name="chevron-forward" size={16} color={Colors.inkSoft} />
@@ -383,7 +456,7 @@ export const HomeScreen: React.FC = () => {
                   icon: 'document-text-outline',
                 },
                 {
-                  label: 'Active Tasks',
+                  label: 'Homework Due',
                   value: String(stats?.pendingAssignments ?? 0),
                   icon: 'clipboard-outline',
                 },
@@ -421,29 +494,10 @@ const styles = StyleSheet.create({
   scroll: {
     paddingHorizontal: 20,
   },
-  header: {
+  headerActions: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 16,
-  },
-  headerLeft: {},
-  greeting: {
-    fontFamily: FontFamily.regular,
-    fontSize: 14,
-    color: Colors.inkMuted,
-  },
-  teacherName: {
-    fontFamily: FontFamily.extraBold,
-    fontSize: 26,
-    color: Colors.ink,
-    marginTop: 2,
-  },
-  subtitle: {
-    fontFamily: FontFamily.regular,
-    fontSize: 13,
-    color: Colors.inkMuted,
-    marginTop: 2,
+    alignItems: 'center',
+    gap: 4,
   },
   banner: {
     flexDirection: 'row',
@@ -672,6 +726,12 @@ const styles = StyleSheet.create({
   myAttTitle: { fontFamily: FontFamily.bold, fontSize: 15, color: Colors.ink, flex: 1 },
   myAttHint: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 12 },
   myAttHintText: { fontFamily: FontFamily.medium, fontSize: 12, color: Colors.inkMuted },
+  myAttClosedHint: {
+    fontFamily: FontFamily.medium,
+    fontSize: 12,
+    color: Colors.absent,
+    marginBottom: 8,
+  },
   myAttDone: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   myAttDoneText: { fontFamily: FontFamily.semiBold, fontSize: 13, color: Colors.present },
 });
