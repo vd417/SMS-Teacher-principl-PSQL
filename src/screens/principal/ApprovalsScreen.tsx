@@ -141,7 +141,15 @@ export const ApprovalsScreen: React.FC = () => {
                 <Avatar initials={req.requesterInitials} size={40} />
                 <View style={styles.cardHeadText}>
                   <Text style={styles.cardTitle}>{req.title}</Text>
-                  <Text style={styles.cardMeta}>{req.requesterName}</Text>
+                  <View style={styles.requesterRow}>
+                    <Text style={styles.cardMeta}>{req.requesterName}</Text>
+                    <Pill
+                      label={req.requesterRole}
+                      color={Colors.primary}
+                      backgroundColor={Colors.primarySoft}
+                      size="sm"
+                    />
+                  </View>
                 </View>
                 {filter === 'pending' ? (
                   <View style={[styles.dot, { backgroundColor: PRIORITY_COLOR[req.priority] }]} />
@@ -298,6 +306,7 @@ const styles = StyleSheet.create({
   cardHead: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   cardHeadText: { flex: 1 },
   cardTitle: { fontFamily: FontFamily.bold, fontSize: 15, color: Colors.ink },
+  requesterRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
   cardMeta: { fontFamily: FontFamily.regular, fontSize: 13, color: Colors.inkMuted },
   dot: { width: 10, height: 10, borderRadius: 5 },
   dateRange: {

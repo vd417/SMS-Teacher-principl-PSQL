@@ -200,6 +200,37 @@ test('toApprovalRequest uses requester_name and attachment_urls', () => {
   expect(a.attachmentUrls).toEqual(['https://example.com/doc.jpg']);
 });
 
+test('toApprovalRequest maps requester_role, falling back to Teacher', () => {
+  const withRole = toApprovalRequest(
+    approvalRequestSchema.parse({
+      id: 'a5',
+      requester_id: 'u9',
+      requester_name: 'Guard One',
+      requester_role: 'Security',
+      type: 'casual',
+      from_date: '2026-07-01',
+      to_date: '2026-07-01',
+      status: 'pending',
+      applied_on: '2026-06-20',
+    })
+  );
+  expect(withRole.requesterRole).toBe('Security');
+
+  const withoutRole = toApprovalRequest(
+    approvalRequestSchema.parse({
+      id: 'a6',
+      requester_id: 'u9',
+      requester_name: 'Someone',
+      type: 'casual',
+      from_date: '2026-07-01',
+      to_date: '2026-07-01',
+      status: 'pending',
+      applied_on: '2026-06-20',
+    })
+  );
+  expect(withoutRole.requesterRole).toBe('Teacher');
+});
+
 test('toApprovalRequest maps decided_by_name', () => {
   const dto = approvalRequestSchema.parse({
     id: 'a3',

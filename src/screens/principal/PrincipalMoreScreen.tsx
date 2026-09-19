@@ -66,11 +66,19 @@ const MORE_ITEMS: readonly MoreItem[] = [
   },
   {
     icon: 'clipboard-outline',
-    label: 'Staff Attendance',
+    label: 'Student Attendance',
     feature: 'attendance',
     color: Colors.present,
     soft: Colors.presentSoft,
     target: { stack: 'PrincipalAttendanceScreen' },
+  },
+  {
+    icon: 'id-card-outline',
+    label: 'Staff Attendance',
+    feature: 'attendance',
+    color: Colors.teal,
+    soft: Colors.tealSoft,
+    target: { stack: 'StaffAttendanceScreen' },
   },
   {
     icon: 'school-outline',

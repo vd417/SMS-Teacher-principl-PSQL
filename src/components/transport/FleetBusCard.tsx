@@ -12,7 +12,7 @@ const STATUS_LABEL: Record<FleetBusStatus, string> = {
   delayed: 'Delayed',
 };
 
-const STATUS_COLOR: Record<FleetBusStatus, string> = {
+export const STATUS_COLOR: Record<FleetBusStatus, string> = {
   idle: Colors.inkMuted,
   on_route: Colors.primary,
   at_stop: Colors.present,
@@ -25,6 +25,9 @@ type Props = {
   onAssign?: () => void;
   onUnassign?: () => void;
   assignBusy?: boolean;
+  onAddTravelingTeacher?: () => void;
+  onRemoveTravelingTeacher?: (teacherUserId: string) => void;
+  travelBusy?: boolean;
 };
 
 export const FleetBusCard: React.FC<Props> = ({
@@ -33,6 +36,9 @@ export const FleetBusCard: React.FC<Props> = ({
   onAssign,
   onUnassign,
   assignBusy,
+  onAddTravelingTeacher,
+  onRemoveTravelingTeacher,
+  travelBusy,
 }) => (
   <View style={styles.card}>
     <View style={styles.head}>
@@ -73,6 +79,33 @@ export const FleetBusCard: React.FC<Props> = ({
       <Text style={styles.dutyText}>Duty teacher: {bus.teacherName?.trim() || 'Unassigned'}</Text>
     </View>
 
+    {bus.travelingTeachers && bus.travelingTeachers.length > 0 ? (
+      expanded ? (
+        <View style={styles.travelList}>
+          <Text style={styles.travelListLabel}>Also travels:</Text>
+          {bus.travelingTeachers.map((t) => (
+            <View key={t.teacherUserId} style={styles.travelChip}>
+              <Text style={styles.travelChipText}>{t.teacherName}</Text>
+              <TouchableOpacity
+                onPress={() => onRemoveTravelingTeacher?.(t.teacherUserId)}
+                disabled={travelBusy}
+                hitSlop={8}
+              >
+                <Ionicons name="close-circle" size={16} color={Colors.inkMuted} />
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      ) : (
+        <View style={styles.dutyRow}>
+          <Ionicons name="people-outline" size={16} color={Colors.inkMuted} />
+          <Text style={styles.dutyText}>
+            Also travels: {bus.travelingTeachers.map((t) => t.teacherName).join(', ')}
+          </Text>
+        </View>
+      )
+    ) : null}
+
     {expanded ? (
       <View style={styles.actions}>
         {bus.driverPhone ? (
@@ -93,6 +126,14 @@ export const FleetBusCard: React.FC<Props> = ({
           <Text style={styles.primaryBtnText}>
             {bus.teacherUserId ? 'Change duty teacher' : 'Assign duty teacher'}
           </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.secondaryBtn}
+          onPress={onAddTravelingTeacher}
+          disabled={travelBusy}
+        >
+          <Ionicons name="person-add-outline" size={16} color={Colors.primary} />
+          <Text style={styles.secondaryBtnText}>Add traveling teacher</Text>
         </TouchableOpacity>
       </View>
     ) : null}
@@ -135,6 +176,18 @@ const styles = StyleSheet.create({
   statMuted: { fontFamily: FontFamily.regular, fontSize: 12, color: Colors.inkSoft },
   dutyRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 10 },
   dutyText: { fontFamily: FontFamily.medium, fontSize: 13, color: Colors.ink3, flex: 1 },
+  travelList: { marginTop: 10, gap: 6 },
+  travelListLabel: { fontFamily: FontFamily.medium, fontSize: 13, color: Colors.ink3 },
+  travelChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.paper,
+    borderRadius: Radii.full,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  travelChipText: { fontFamily: FontFamily.medium, fontSize: 13, color: Colors.ink3 },
   actions: { marginTop: 12, gap: 8 },
   primaryBtn: {
     backgroundColor: Colors.primary,

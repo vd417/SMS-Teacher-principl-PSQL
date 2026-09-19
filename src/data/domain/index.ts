@@ -234,6 +234,8 @@ export interface ApprovalRequest {
   requesterId: string;
   requesterName: string;
   requesterInitials: string;
+  /** Requester's role/designation (e.g. "Teacher", "HOD", "Security"). */
+  requesterRole: string;
   title: string; // e.g. "Casual leave · 2 days"
   detail: string; // human-readable summary
   from?: string; // YYYY-MM-DD (leave range / correction date)
@@ -256,6 +258,7 @@ export interface StaffAttendanceEntry {
   phone: string;
   checkedIn: boolean;
   checkInAt?: string; // ISO timestamp
+  checkOutAt?: string; // ISO timestamp
   checkInVerified?: boolean;
   /** Teaching title (HOD, Senior Teacher, Teacher). Populated from API `designation` or legacy `role`. */
   designation?: string;
@@ -275,6 +278,7 @@ export interface SchoolStaffMember {
   photoUrl?: string;
   checkedIn?: boolean;
   checkInAt?: string;
+  checkOutAt?: string;
   checkInVerified?: boolean;
 }
 export interface PrincipalKpis {
@@ -328,8 +332,10 @@ export interface BusPosition {
   progress: number;
   lat?: number;
   lng?: number;
+  speedKmh?: number;
   nextStopName?: string;
   etaMinutes?: number;
+  lastPingAt?: string;
 }
 export type FleetBusStatus = 'idle' | 'on_route' | 'at_stop' | 'delayed';
 export interface FleetBus {
@@ -348,6 +354,23 @@ export interface FleetBus {
   lastPingAt?: string;
   teacherUserId?: string;
   teacherName?: string;
+  conductorStaffId?: string;
+  /** Teachers who travel on this bus (commute) without being the duty teacher who manages it. */
+  travelingTeachers?: { teacherUserId: string; teacherName: string }[];
+  /** Ordered stops for drawing this bus's route on the fleet map, when the backend provides them. */
+  stops?: BusStop[];
+}
+/** A bus tied to one of the teacher's classes, for read-only live location (not necessarily their duty bus). */
+export interface MyRouteBus {
+  busId: string;
+  busNo: string;
+  routeName?: string;
+  isDutyTeacher: boolean;
+  lat?: number;
+  lng?: number;
+  speedKmh?: number;
+  nextStopName?: string;
+  lastPingAt?: string;
 }
 export interface TransportBusRow {
   busId: string;

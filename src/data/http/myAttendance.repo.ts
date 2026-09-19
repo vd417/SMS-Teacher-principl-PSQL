@@ -25,7 +25,7 @@ interface CheckEventDTO {
   verified: boolean;
   offset_minutes?: number;
 }
-interface TeacherAttendanceDayDTO {
+export interface TeacherAttendanceDayDTO {
   date: string;
   check_in?: CheckEventDTO;
   check_out?: CheckEventDTO;
@@ -51,7 +51,7 @@ const toEvent = (d: CheckEventDTO): CheckEvent => ({
   distanceMeters: d.distance_meters,
   verified: d.verified,
 });
-const toDay = (d: TeacherAttendanceDayDTO): TeacherAttendanceDay => ({
+export const toDay = (d: TeacherAttendanceDayDTO): TeacherAttendanceDay => ({
   date: toDateOnly(d.date),
   checkIn: d.check_in ? toEvent(d.check_in) : undefined,
   checkOut: d.check_out ? toEvent(d.check_out) : undefined,

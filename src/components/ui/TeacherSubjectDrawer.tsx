@@ -8,14 +8,17 @@ import { Avatar } from './Avatar';
 import { filterStaffBySearch } from '@/lib/staffSearch';
 import { staffCheckInStatus } from '@/lib/staffCheckIn';
 import { SearchField } from './SearchField';
+import { StaffListContactActions } from '@/components/staff/StaffListContactActions';
 
 export interface DrawerStaff {
   teacherId: string;
   name: string;
   initials: string;
   subject: string;
+  phone?: string;
   checkedIn: boolean;
   checkInAt?: string;
+  checkOutAt?: string;
   checkInVerified?: boolean;
   /** Teaching title when grouped under subject in the teaching drawer. */
   designation?: string;
@@ -30,6 +33,8 @@ interface TeacherSubjectDrawerProps {
   title?: string;
   /** Pre-fill drawer search (e.g. when opened from the attendance screen search). */
   initialSearch?: string;
+  /** Tap a staff row's name/avatar to view their check-in/out history. */
+  onPressTeacher?: (teacher: DrawerStaff) => void;
 }
 
 export const TeacherSubjectDrawer: React.FC<TeacherSubjectDrawerProps> = ({
@@ -38,6 +43,7 @@ export const TeacherSubjectDrawer: React.FC<TeacherSubjectDrawerProps> = ({
   onClose,
   title = 'Staff by department',
   initialSearch = '',
+  onPressTeacher,
 }) => {
   const [search, setSearch] = useState('');
 
@@ -102,51 +108,76 @@ export const TeacherSubjectDrawer: React.FC<TeacherSubjectDrawerProps> = ({
                         key={t.teacherId}
                         style={[styles.teacherRow, { borderColor: cs.colorSoft }]}
                       >
-                        <Avatar initials={t.initials} size={36} backgroundColor={cs.color} />
-                        <Text style={styles.teacherName}>{t.name}</Text>
-                        <View
-                          style={[
-                            styles.statusPill,
-                            {
-                              backgroundColor: t.checkedIn
-                                ? status.flagged
-                                  ? Colors.lateSoft
-                                  : Colors.presentSoft
-                                : Colors.paper2,
-                            },
-                          ]}
+                        <Pressable
+                          style={styles.teacherRowTop}
+                          disabled={!onPressTeacher}
+                          onPress={() => onPressTeacher?.(t)}
                         >
-                          <Ionicons
-                            name={
-                              t.checkedIn
-                                ? status.flagged
-                                  ? 'warning-outline'
-                                  : 'checkmark-circle'
-                                : 'ellipse-outline'
-                            }
-                            size={13}
-                            color={
-                              t.checkedIn
-                                ? status.flagged
-                                  ? Colors.late
-                                  : Colors.present
-                                : Colors.inkMuted
-                            }
-                          />
-                          <Text
+                          <Avatar initials={t.initials} size={36} backgroundColor={cs.color} />
+                          <Text style={styles.teacherName} numberOfLines={1}>
+                            {t.name}
+                          </Text>
+                          <View
                             style={[
-                              styles.statusText,
+                              styles.statusPill,
                               {
-                                color: t.checkedIn
+                                backgroundColor: t.checkedIn
                                   ? status.flagged
-                                    ? Colors.late
-                                    : Colors.present
-                                  : Colors.inkMuted,
+                                    ? Colors.lateSoft
+                                    : Colors.presentSoft
+                                  : Colors.paper2,
                               },
                             ]}
                           >
-                            {status.label}
-                          </Text>
+                            <Ionicons
+                              name={
+                                t.checkedIn
+                                  ? status.flagged
+                                    ? 'warning-outline'
+                                    : 'checkmark-circle'
+                                  : 'ellipse-outline'
+                              }
+                              size={13}
+                              color={
+                                t.checkedIn
+                                  ? status.flagged
+                                    ? Colors.late
+                                    : Colors.present
+                                  : Colors.inkMuted
+                              }
+                            />
+                            <Text
+                              style={[
+                                styles.statusText,
+                                {
+                                  color: t.checkedIn
+                                    ? status.flagged
+                                      ? Colors.late
+                                      : Colors.present
+                                    : Colors.inkMuted,
+                                },
+                              ]}
+                            >
+                              {status.label}
+                            </Text>
+                          </View>
+                        </Pressable>
+                        <View style={styles.teacherRowActions}>
+                          {onPressTeacher ? (
+                            <Pressable
+                              style={styles.historyLink}
+                              onPress={() => onPressTeacher(t)}
+                              accessibilityLabel={`View ${t.name}'s attendance history`}
+                            >
+                              <Text style={styles.historyLinkText}>History</Text>
+                              <Ionicons name="chevron-forward" size={13} color={Colors.primary} />
+                            </Pressable>
+                          ) : null}
+                          <StaffListContactActions
+                            name={t.name}
+                            roleLabel={t.designation || t.role || t.subject || 'Staff'}
+                            phone={t.phone}
+                          />
                         </View>
                       </View>
                     );
@@ -205,15 +236,31 @@ const styles = StyleSheet.create({
   subjectName: { fontFamily: FontFamily.bold, fontSize: 15, flex: 1 },
   subjectCount: { fontFamily: FontFamily.semiBold, fontSize: 12, color: Colors.inkMuted },
   teacherRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
     backgroundColor: Colors.paper,
     borderRadius: Radii.md,
     borderWidth: 1,
     padding: 10,
     marginBottom: 8,
   },
+  teacherRowTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  teacherRowActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 6,
+  },
+  historyLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingVertical: 4,
+    paddingRight: 8,
+  },
+  historyLinkText: { fontFamily: FontFamily.semiBold, fontSize: 12, color: Colors.primary },
   teacherName: { fontFamily: FontFamily.semiBold, fontSize: 14, color: Colors.ink, flex: 1 },
   statusPill: {
     flexDirection: 'row',

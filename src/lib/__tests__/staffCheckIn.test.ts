@@ -17,3 +17,14 @@ test('staffCheckInStatus marks unverified check-ins as flagged', () => {
   expect(result.flagged).toBe(true);
   expect(result.label).toContain('flagged');
 });
+
+test('staffCheckInStatus shows a check-in/check-out range once both punches exist', () => {
+  const result = staffCheckInStatus({
+    checkedIn: true,
+    checkInAt: '2026-07-29T10:16:00.000Z',
+    checkOutAt: '2026-07-29T16:30:00.000Z',
+    checkInVerified: true,
+  });
+  expect(result.flagged).toBe(false);
+  expect(result.label).toMatch(/\d{1,2}:\d{2}.*–.*\d{1,2}:\d{2}/);
+});

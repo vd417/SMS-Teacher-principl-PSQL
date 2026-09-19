@@ -287,12 +287,12 @@ export const toPayslip = (d: PayslipDTO): PayslipEntry => ({
   deductions: d.deductions,
   net: d.net,
   status: d.status as PayslipStatus,
-  basic: d.basic,
-  hra: d.hra,
-  allowances: d.allowances,
-  epf: d.epf,
-  profTax: d.prof_tax,
-  otherDeductions: d.other_deductions,
+  basic: d.basic ?? undefined,
+  hra: d.hra ?? undefined,
+  allowances: d.allowances ?? undefined,
+  epf: d.epf ?? undefined,
+  profTax: d.prof_tax ?? undefined,
+  otherDeductions: d.other_deductions ?? undefined,
 });
 
 // ─── Dashboard ───────────────────────────────────────────────────────────────
@@ -487,6 +487,7 @@ export const leaveResponseSchema = z.object({
   id: z.string(),
   requester_id: z.string().nullish(),
   requester_name: z.string().nullish(),
+  requester_role: z.string().nullish(),
   type: z.string(),
   from_date: z.string().nullish(),
   to_date: z.string().nullish(),
@@ -531,8 +532,8 @@ export const fromNewLeave = (r: {
 });
 
 // ─── Approvals ───────────────────────────────────────────────────────────────
-// Backend /approvals returns LeaveResponse[]; the rich approval display fields
-// (requester name/initials, title, detail, priority) are synthesized client-side.
+// Backend /approvals returns LeaveResponse[] (requester_role comes from the
+// requester's UserRoles row); title/detail/priority are synthesized client-side.
 export type ApprovalRequestDTO = z.infer<typeof leaveResponseSchema>;
 export const approvalRequestSchema = leaveResponseSchema;
 export const toApprovalRequest = (d: ApprovalRequestDTO): ApprovalRequest => {
@@ -545,6 +546,7 @@ export const toApprovalRequest = (d: ApprovalRequestDTO): ApprovalRequest => {
     requesterId: d.requester_id ?? '',
     requesterName,
     requesterInitials: initialsFrom(requesterName),
+    requesterRole: d.requester_role?.trim() || 'Teacher',
     title: `${cap(d.type)} leave · ${days} day${days > 1 ? 's' : ''}`,
     detail: d.reason ?? '',
     from: dateOnly(d.from_date),
@@ -648,6 +650,7 @@ const staffEntrySchema = z.object({
   phone: z.string().nullish(),
   checked_in: z.boolean(),
   check_in_at: z.string().nullish(),
+  check_out_at: z.string().nullish(),
   check_in_verified: z.boolean().nullish(),
   role: z.string().nullish(),
   designation: z.string().nullish(),
@@ -666,6 +669,7 @@ const toStaffEntry = (s: z.infer<typeof staffEntrySchema>) => {
       phone: s.phone ?? '',
       checkedIn: s.checked_in,
       checkInAt: s.check_in_at ?? undefined,
+      checkOutAt: s.check_out_at ?? undefined,
       checkInVerified: s.check_in_verified ?? undefined,
       designation,
       role: rawRole,

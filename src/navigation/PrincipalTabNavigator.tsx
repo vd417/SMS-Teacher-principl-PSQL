@@ -15,6 +15,8 @@ import { AnnouncementsScreen } from '../screens/AnnouncementsScreen';
 import { BusScreen } from '../screens/BusScreen';
 import { PrincipalTransportScreen } from '../screens/principal/PrincipalTransportScreen';
 import { PrincipalAttendanceScreen } from '../screens/principal/PrincipalAttendanceScreen';
+import { StaffAttendanceScreen } from '../screens/principal/StaffAttendanceScreen';
+import { StaffAttendanceHistoryScreen } from '../screens/principal/StaffAttendanceHistoryScreen';
 import { AttendancePickSectionScreen } from '../screens/AttendancePickSectionScreen';
 import { AttendanceScreen } from '../screens/AttendanceScreen';
 import { ClassHubScreen } from '../screens/ClassHubScreen';
@@ -48,6 +50,11 @@ const PrincipalHomeStackNavigator = () => (
     <HomeStack.Screen name="PrincipalHomeScreen" component={PrincipalHomeScreen} />
     <HomeStack.Screen name="PrincipalMoreScreen" component={PrincipalMoreScreen} />
     <HomeStack.Screen name="PrincipalAttendanceScreen" component={PrincipalAttendanceScreen} />
+    <HomeStack.Screen name="StaffAttendanceScreen" component={StaffAttendanceScreen} />
+    <HomeStack.Screen
+      name="StaffAttendanceHistoryScreen"
+      component={StaffAttendanceHistoryScreen}
+    />
     <HomeStack.Screen name="AttendancePickSection" component={AttendancePickSectionScreen} />
     <HomeStack.Screen name="AttendanceScreen" component={AttendanceScreen} />
     <HomeStack.Screen name="AnnouncementsScreen" component={AnnouncementsScreen} />

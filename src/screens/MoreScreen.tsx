@@ -15,6 +15,23 @@ import type { ClassSectionPickClassParams } from '../navigation/classSectionFlow
 
 type MoreNav = NativeStackNavigationProp<HomeStackParamList, 'MoreScreen'>;
 
+// react-navigation's `navigate` overloads require the screen name and its params to
+// correlate as one literal pair; a dynamic `keyof HomeStackParamList` from a data-driven
+// list (MORE_ITEMS below) can't satisfy that statically even though each item's own
+// `screen`/`params` do match at runtime. Isolate the necessary cast here rather than at
+// every call site (the recommended pattern for this known react-navigation limitation).
+function navigateToItem(
+  navigation: MoreNav,
+  screen: keyof HomeStackParamList,
+  params?: ClassSectionPickClassParams
+) {
+  if (params) {
+    (navigation.navigate as (screen: string, params?: object) => void)(screen, params);
+  } else {
+    (navigation.navigate as (screen: string) => void)(screen);
+  }
+}
+
 type MoreItem = {
   icon: string;
   label: string;
@@ -179,11 +196,7 @@ export const MoreScreen: React.FC = () => {
             key={item.label}
             item={item}
             index={i}
-            onPress={() =>
-              item.params
-                ? navigation.navigate(item.screen, item.params)
-                : navigation.navigate(item.screen)
-            }
+            onPress={() => navigateToItem(navigation, item.screen, item.params)}
           />
         ))}
       </View>

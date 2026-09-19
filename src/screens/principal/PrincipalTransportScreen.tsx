@@ -16,8 +16,15 @@ import { Colors, Radii } from '../../theme';
 import { FontFamily } from '../../theme/typography';
 import { ScreenHeader, TierGate, Toast } from '../../components';
 import { FleetBusCard } from '../../components/transport/FleetBusCard';
+import { FleetMap } from '../../components/transport/FleetMap';
 import { useTransportFleet } from '@/features/principal/hooks';
-import { useAssignBusTeacher, useUnassignBusTeacher } from '@/features/transport/hooks';
+import {
+  useAssignBusTeacher,
+  useUnassignBusTeacher,
+  useAddTravelingTeacher,
+  useRemoveTravelingTeacher,
+  useTransportFleetPush,
+} from '@/features/transport/hooks';
 import { useRouteGeometry } from '@/features/transport/useRouteGeometry';
 import { useSchoolStaffDirectory } from '@/features/staff/hooks';
 import { isAppError } from '@/lib/errors';
@@ -25,12 +32,15 @@ import { isAppError } from '@/lib/errors';
 export const PrincipalTransportScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const { data: fleet = [], isLoading, isError, refetch, isFetching } = useTransportFleet();
-  const { data: staff = [] } = useSchoolStaffDirectory();
+  const { members: staff = [] } = useSchoolStaffDirectory();
   const assign = useAssignBusTeacher();
   const unassign = useUnassignBusTeacher();
+  const addTraveling = useAddTravelingTeacher();
+  const removeTraveling = useRemoveTravelingTeacher();
+  useTransportFleetPush(fleet.map((b) => b.busId));
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [pickerBusId, setPickerBusId] = useState<string | null>(null);
+  const [picker, setPicker] = useState<{ busId: string; mode: 'duty' | 'traveling' } | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -39,25 +49,39 @@ export const PrincipalTransportScreen: React.FC = () => {
     [fleet]
   );
 
-  const pickerBus = fleet.find((b) => b.busId === pickerBusId);
+  const pickerBus = fleet.find((b) => b.busId === picker?.busId);
   // FleetBus has no separate routeId field in this app's domain model (one bus == one route
   // here), so the bus's own id is passed as the route identifier for road-geometry lookup.
   const { data: selectedRouteGeometry } = useRouteGeometry(expandedId);
 
   const onPickTeacher = (teacherUserId: string) => {
-    if (!pickerBusId) return;
+    if (!picker) return;
     setErrorMsg(null);
-    assign.mutate(
-      { busId: pickerBusId, teacherUserId },
-      {
-        onSuccess: () => {
-          setPickerBusId(null);
-          setToast('Duty teacher assigned');
-        },
-        onError: (e) =>
-          setErrorMsg(isAppError(e) ? e.message : 'Could not assign teacher. Try again.'),
-      }
-    );
+    if (picker.mode === 'duty') {
+      assign.mutate(
+        { busId: picker.busId, teacherUserId },
+        {
+          onSuccess: () => {
+            setPicker(null);
+            setToast('Duty teacher assigned');
+          },
+          onError: (e) =>
+            setErrorMsg(isAppError(e) ? e.message : 'Could not assign teacher. Try again.'),
+        }
+      );
+    } else {
+      addTraveling.mutate(
+        { busId: picker.busId, teacherUserId },
+        {
+          onSuccess: () => {
+            setPicker(null);
+            setToast('Traveling teacher added');
+          },
+          onError: (e) =>
+            setErrorMsg(isAppError(e) ? e.message : 'Could not add teacher. Try again.'),
+        }
+      );
+    }
   };
 
   const onUnassign = (busId: string) => {
@@ -67,6 +91,18 @@ export const PrincipalTransportScreen: React.FC = () => {
       onError: (e) =>
         setErrorMsg(isAppError(e) ? e.message : 'Could not remove assignment. Try again.'),
     });
+  };
+
+  const onRemoveTravelingTeacher = (busId: string, teacherUserId: string) => {
+    setErrorMsg(null);
+    removeTraveling.mutate(
+      { busId, teacherUserId },
+      {
+        onSuccess: () => setToast('Traveling teacher removed'),
+        onError: (e) =>
+          setErrorMsg(isAppError(e) ? e.message : 'Could not remove teacher. Try again.'),
+      }
+    );
   };
 
   return (
@@ -117,21 +153,64 @@ export const PrincipalTransportScreen: React.FC = () => {
           ) : fleet.length === 0 ? (
             <Text style={styles.empty}>No buses configured for this school yet.</Text>
           ) : (
-            fleet.map((bus, i) => (
-              <Animated.View key={bus.busId} entering={FadeInDown.delay(100 + i * 40).springify()}>
-                <Pressable
-                  onPress={() => setExpandedId((id) => (id === bus.busId ? null : bus.busId))}
+            <>
+              <Animated.View entering={FadeInDown.delay(100).springify()}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.busChipRow}
                 >
-                  <FleetBusCard
-                    bus={bus}
-                    expanded={expandedId === bus.busId}
-                    onAssign={() => setPickerBusId(bus.busId)}
-                    onUnassign={() => onUnassign(bus.busId)}
-                    assignBusy={assign.isPending || unassign.isPending}
-                  />
-                </Pressable>
+                  {fleet.map((bus) => {
+                    const selected = expandedId === bus.busId;
+                    return (
+                      <TouchableOpacity
+                        key={bus.busId}
+                        style={[styles.busChip, selected && styles.busChipSelected]}
+                        onPress={() => setExpandedId((id) => (id === bus.busId ? null : bus.busId))}
+                      >
+                        <Text style={[styles.busChipText, selected && styles.busChipTextSelected]}>
+                          {bus.busNo}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
               </Animated.View>
-            ))
+
+              <Animated.View entering={FadeInDown.delay(120).springify()} style={styles.mapWrap}>
+                <FleetMap
+                  buses={fleet}
+                  selectedBusId={expandedId}
+                  onSelectBus={(busId) => setExpandedId((id) => (id === busId ? null : busId))}
+                  routeGeometry={selectedRouteGeometry}
+                />
+              </Animated.View>
+              {fleet.map((bus, i) => (
+                <Animated.View
+                  key={bus.busId}
+                  entering={FadeInDown.delay(140 + i * 40).springify()}
+                >
+                  <Pressable
+                    onPress={() => setExpandedId((id) => (id === bus.busId ? null : bus.busId))}
+                  >
+                    <FleetBusCard
+                      bus={bus}
+                      expanded={expandedId === bus.busId}
+                      onAssign={() => setPicker({ busId: bus.busId, mode: 'duty' })}
+                      onUnassign={() => onUnassign(bus.busId)}
+                      assignBusy={assign.isPending || unassign.isPending}
+                      onAddTravelingTeacher={() =>
+                        setPicker({ busId: bus.busId, mode: 'traveling' })
+                      }
+                      onRemoveTravelingTeacher={(teacherUserId) =>
+                        onRemoveTravelingTeacher(bus.busId, teacherUserId)
+                      }
+                      travelBusy={addTraveling.isPending || removeTraveling.isPending}
+                    />
+                  </Pressable>
+                </Animated.View>
+              ))}
+            </>
           )}
         </TierGate>
 
@@ -141,10 +220,12 @@ export const PrincipalTransportScreen: React.FC = () => {
         </Text>
       </ScrollView>
 
-      <Modal visible={pickerBusId != null} transparent animationType="slide">
+      <Modal visible={picker != null} transparent animationType="slide">
         <View style={styles.modalBackdrop}>
           <View style={[styles.modalSheet, { paddingBottom: insets.bottom + 16 }]}>
-            <Text style={styles.modalTitle}>Assign duty teacher</Text>
+            <Text style={styles.modalTitle}>
+              {picker?.mode === 'traveling' ? 'Add traveling teacher' : 'Assign duty teacher'}
+            </Text>
             {pickerBus ? (
               <Text style={styles.modalSub}>
                 {pickerBus.busNo}
@@ -162,7 +243,7 @@ export const PrincipalTransportScreen: React.FC = () => {
                     key={member.id}
                     style={styles.staffRow}
                     onPress={() => onPickTeacher(member.id)}
-                    disabled={assign.isPending}
+                    disabled={assign.isPending || addTraveling.isPending}
                   >
                     <Text style={styles.staffName}>{member.name}</Text>
                     <Text style={styles.staffRole}>{member.roleLabel}</Text>
@@ -170,7 +251,7 @@ export const PrincipalTransportScreen: React.FC = () => {
                 ))
               )}
             </ScrollView>
-            <TouchableOpacity style={styles.modalCancel} onPress={() => setPickerBusId(null)}>
+            <TouchableOpacity style={styles.modalCancel} onPress={() => setPicker(null)}>
               <Text style={styles.modalCancelText}>Cancel</Text>
             </TouchableOpacity>
           </View>
@@ -186,6 +267,19 @@ const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: Colors.paper },
   screen: { flex: 1 },
   scroll: { paddingHorizontal: 20 },
+  mapWrap: { marginBottom: 16 },
+  busChipRow: { gap: 8, paddingBottom: 10 },
+  busChip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: Radii.full,
+    backgroundColor: Colors.card,
+    borderWidth: 1,
+    borderColor: Colors.rule,
+  },
+  busChipSelected: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  busChipText: { fontFamily: FontFamily.semiBold, fontSize: 13, color: Colors.ink3 },
+  busChipTextSelected: { color: Colors.white },
   summary: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -175,62 +175,65 @@ export const ClassHubScreen: React.FC = () => {
     navigation.navigate('StudentScreen', { studentId, classId });
   };
 
-  const renderStudent = ({ item: student }: { item: Student }) => (
-    <View style={styles.studentRow}>
-      <TouchableOpacity
-        style={styles.studentRowMain}
-        onPress={() => openStudent(student.id)}
-        activeOpacity={0.85}
-      >
-        <Avatar
-          initials={student.initials}
-          size={44}
-          backgroundColor={cs.color}
-          photoUri={student.photoUrl}
-        />
-        <View style={styles.studentInfo}>
-          <Text style={styles.studentName}>{student.name}</Text>
-          <Text style={styles.studentRoll}>Roll #{student.roll || '—'}</Text>
-        </View>
-        <View style={styles.studentRight}>
-          <View
-            style={[
-              styles.attBadge,
-              {
-                backgroundColor:
-                  student.attendance >= 90
-                    ? Colors.presentSoft
-                    : student.attendance >= 75
-                      ? Colors.lateSoft
-                      : Colors.absentSoft,
-              },
-            ]}
-          >
-            <Text
+  const renderStudent = ({ item: student }: { item: Student }) => {
+    const attendancePct = student.attendance ?? 0;
+    return (
+      <View style={styles.studentRow}>
+        <TouchableOpacity
+          style={styles.studentRowMain}
+          onPress={() => openStudent(student.id)}
+          activeOpacity={0.85}
+        >
+          <Avatar
+            initials={student.initials}
+            size={44}
+            backgroundColor={cs.color}
+            photoUri={student.photoUrl}
+          />
+          <View style={styles.studentInfo}>
+            <Text style={styles.studentName}>{student.name}</Text>
+            <Text style={styles.studentRoll}>Roll #{student.roll || '—'}</Text>
+          </View>
+          <View style={styles.studentRight}>
+            <View
               style={[
-                styles.attText,
+                styles.attBadge,
                 {
-                  color:
-                    student.attendance >= 90
-                      ? Colors.present
-                      : student.attendance >= 75
-                        ? Colors.late
-                        : Colors.absent,
+                  backgroundColor:
+                    attendancePct >= 90
+                      ? Colors.presentSoft
+                      : attendancePct >= 75
+                        ? Colors.lateSoft
+                        : Colors.absentSoft,
                 },
               ]}
             >
-              {student.attendance}%
-            </Text>
+              <Text
+                style={[
+                  styles.attText,
+                  {
+                    color:
+                      attendancePct >= 90
+                        ? Colors.present
+                        : attendancePct >= 75
+                          ? Colors.late
+                          : Colors.absent,
+                  },
+                ]}
+              >
+                {student.attendance != null ? `${student.attendance}%` : '—'}
+              </Text>
+            </View>
           </View>
-        </View>
-      </TouchableOpacity>
-      <StudentListContactActions
-        studentName={student.name}
-        parentName={student.parent}
-        parentPhone={student.parentPhone}
-      />
-    </View>
-  );
+        </TouchableOpacity>
+        <StudentListContactActions
+          studentName={student.name}
+          parentName={student.parent}
+          parentPhone={student.parentPhone}
+        />
+      </View>
+    );
+  };
 
   if (isLoading) {
     return (

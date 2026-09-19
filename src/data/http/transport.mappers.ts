@@ -1,5 +1,14 @@
 import { z } from 'zod';
-import type { FleetBus, FleetBusStatus, TransportBusRow } from '@/data/domain';
+import type { BusStop, FleetBus, FleetBusStatus, TransportBusRow } from '@/data/domain';
+
+const fleetStopSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  time: z.string().nullish(),
+  seq: z.number(),
+  lat: z.number(),
+  lng: z.number(),
+});
 
 export const fleetBusSchema = z.object({
   bus_id: z.string(),
@@ -17,6 +26,11 @@ export const fleetBusSchema = z.object({
   last_ping_at: z.string().nullish(),
   teacher_user_id: z.string().nullish(),
   teacher_name: z.string().nullish(),
+  conductor_staff_id: z.string().nullish(),
+  traveling_teachers: z
+    .array(z.object({ teacher_user_id: z.string(), teacher_name: z.string() }))
+    .nullish(),
+  stops: z.array(fleetStopSchema).nullish(),
 });
 
 export const transportBusSchema = z.object({
@@ -53,6 +67,21 @@ export const toFleetBus = (d: z.infer<typeof fleetBusSchema>): FleetBus => ({
   lastPingAt: d.last_ping_at ?? undefined,
   teacherUserId: d.teacher_user_id ?? undefined,
   teacherName: d.teacher_name ?? undefined,
+  conductorStaffId: d.conductor_staff_id ?? undefined,
+  travelingTeachers: d.traveling_teachers?.map((t) => ({
+    teacherUserId: t.teacher_user_id,
+    teacherName: t.teacher_name,
+  })),
+  stops: d.stops?.map(
+    (s): BusStop => ({
+      id: s.id,
+      name: s.name,
+      time: s.time ?? '',
+      order: s.seq,
+      lat: s.lat,
+      lng: s.lng,
+    })
+  ),
 });
 
 export const toTransportBusRow = (d: z.infer<typeof transportBusSchema>): TransportBusRow => ({

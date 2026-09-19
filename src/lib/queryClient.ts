@@ -52,12 +52,15 @@ export const queryKeys = {
   staffDirectory: (tenantId: string) => ['staff', tenantId, 'directory'] as const,
   principalAttendance: (tenantId: string, date: string) =>
     ['principal', tenantId, 'attendance', date] as const,
+  staffAttendanceHistory: (tenantId: string, personId: string) =>
+    ['principal', tenantId, 'staff', personId, 'attendance', 'history'] as const,
   transportFleet: (tenantId: string) => ['principal', tenantId, 'transport', 'fleet'] as const,
   transportBuses: (tenantId: string) => ['principal', tenantId, 'transport', 'buses'] as const,
   dashboard: (tenantId: string) => ['dashboard', tenantId] as const,
   bus: (tenantId: string) => ['bus', tenantId] as const,
   busPosition: (tenantId: string, busId: string) => ['bus', tenantId, busId, 'position'] as const,
   busRoster: (tenantId: string, busId: string) => ['bus', tenantId, busId, 'roster'] as const,
+  myRouteBuses: (tenantId: string) => ['bus', tenantId, 'my-routes'] as const,
   routeGeometry: (tenantId: string, routeId: string) =>
     ['transport', tenantId, 'routeGeometry', routeId] as const,
   schoolLocation: (tenantId: string) => ['myAttendance', tenantId, 'school'] as const,

@@ -21,12 +21,37 @@ test('toFleetBus maps fleet wire row', () => {
     next_stop_name: 'MG Road',
     teacher_user_id: 't1',
     teacher_name: 'Asha Rao',
+    conductor_staff_id: 'c1',
+    traveling_teachers: [{ teacher_user_id: 't2', teacher_name: 'Bob Iyer' }],
+    stops: [
+      { id: 's1', name: 'Gate 1', time: '07:45', seq: 0, lat: 12.9, lng: 77.5 },
+      { id: 's2', name: 'MG Road', time: '08:00', seq: 1, lat: 12.97, lng: 77.59 },
+    ],
   });
   const bus = toFleetBus(row);
   expect(bus.busNo).toBe('WBA-07');
   expect(bus.status).toBe('on_route');
   expect(bus.teacherName).toBe('Asha Rao');
   expect(bus.studentsRiding).toBe(12);
+  expect(bus.conductorStaffId).toBe('c1');
+  expect(bus.travelingTeachers).toEqual([{ teacherUserId: 't2', teacherName: 'Bob Iyer' }]);
+  expect(bus.stops).toEqual([
+    { id: 's1', name: 'Gate 1', time: '07:45', order: 0, lat: 12.9, lng: 77.5 },
+    { id: 's2', name: 'MG Road', time: '08:00', order: 1, lat: 12.97, lng: 77.59 },
+  ]);
+});
+
+test('toFleetBus tolerates a missing traveling_teachers list and stops', () => {
+  const row = fleetBusSchema.parse({
+    bus_id: 'b3',
+    bus_no: 'WBA-03',
+    stop_count: 2,
+    students_riding: 4,
+    status: 'idle',
+  });
+  const bus = toFleetBus(row);
+  expect(bus.travelingTeachers).toBeUndefined();
+  expect(bus.stops).toBeUndefined();
 });
 
 test('toTransportBusRow maps admin bus list row', () => {

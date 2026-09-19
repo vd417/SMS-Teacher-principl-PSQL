@@ -1,5 +1,6 @@
 import type { AssignmentsRepository, NewAssignmentInput } from '@/data/repositories/types';
 import type { HttpClient } from '@/lib/httpClient';
+import type { Page } from '@/lib/envelope';
 import { homeworkCreateBodies } from '@/lib/assignmentHomework';
 import { toAssignment, assignmentSchema, studentSchema } from './mappers';
 import type { Assignment } from '@/data/domain';
@@ -8,7 +9,7 @@ async function listStudentIds(http: HttpClient, classId: string): Promise<string
   const ids: string[] = [];
   let cursor: string | null = null;
   do {
-    const page = await http.getList<unknown>(`/classes/${classId}/students`, {
+    const page: Page<unknown> = await http.getList<unknown>(`/classes/${classId}/students`, {
       params: { limit: 200, cursor: cursor ?? undefined },
     });
     for (const row of page.items) {

@@ -20,6 +20,9 @@ import type {
   Bus,
   BusPosition,
   BoardingRecord,
+  MyRouteBus,
+  FleetBus,
+  TransportBusRow,
   SchoolLocation,
   CheckEvent,
   TeacherAttendanceDay,
@@ -28,6 +31,9 @@ import type {
   PrincipalOverview,
   SchoolAttendance,
   AppNotification,
+  Tenant,
+  ExamTerm,
+  SchoolStaffMember,
 } from '@/data/domain';
 import type { Page } from '@/lib/envelope';
 
@@ -85,7 +91,7 @@ export interface AuthRepository {
   login(identifier: string, password: string): Promise<Session>;
   // The backend returns tokens only; identity is fetched separately via me().
   refresh(refreshToken: string): Promise<{ accessToken: string; refreshToken: string }>;
-  me(): Promise<User>;
+  me(): Promise<{ user: User; tenant: Tenant }>;
   logout(refreshToken: string): Promise<void>;
   requestOtp(identifier: string): Promise<OtpChallenge>;
   verifyOtp(identifier: string, code: string): Promise<Session>;
@@ -165,25 +171,37 @@ export interface TimetableRepository {
   list(): Promise<TimetableSlot[]>;
 }
 export interface ExamsRepository {
+  listTerms(): Promise<ExamTerm[]>;
   list(): Promise<Exam[]>;
   get(id: string): Promise<Exam>;
   create(input: NewExamInput): Promise<Exam>;
   update(id: string, patch: Partial<NewExamInput>): Promise<Exam>;
   remove(id: string): Promise<void>;
 }
+export interface NotifyMarksResult {
+  parentReach: number;
+  studentReach: number;
+  emailsSent: number;
+}
 export interface GradesRepository {
   listByExam(examId: string): Promise<GradeEntry[]>;
   upsert(input: GradeInput): Promise<GradeEntry>;
+  notifyPublished(examPaperId: string): Promise<NotifyMarksResult>;
 }
 export interface AssignmentsRepository {
   list(): Promise<Assignment[]>;
   create(input: NewAssignmentInput): Promise<Assignment>;
   update(id: string, input: NewAssignmentInput): Promise<Assignment>;
 }
+export interface ChatSendInput {
+  text?: string;
+  imageUrl?: string;
+}
 export interface ChatRepository {
   contacts(): Promise<ChatContact[]>;
   messages(contactId: string): Promise<ChatMessage[]>;
-  send(contactId: string, text: string): Promise<ChatMessage>;
+  send(contactId: string, input: ChatSendInput): Promise<ChatMessage>;
+  createThread(input: { name: string; role?: string }): Promise<ChatContact>;
 }
 export interface AnnouncementsRepository {
   list(): Promise<Announcement[]>;
@@ -207,8 +225,9 @@ export interface LeaveRepository {
   list(): Promise<LeaveRequest[]>;
   create(input: NewLeaveInput): Promise<LeaveRequest>;
 }
+export type ApprovalListStatus = 'pending' | 'approved' | 'rejected';
 export interface ApprovalsRepository {
-  list(): Promise<ApprovalRequest[]>;
+  list(status?: ApprovalListStatus): Promise<ApprovalRequest[]>;
   decide(id: string, decision: 'approved' | 'rejected', note?: string): Promise<ApprovalRequest>;
 }
 export interface DashboardRepository {
@@ -217,12 +236,26 @@ export interface DashboardRepository {
 export interface PrincipalRepository {
   overview(): Promise<PrincipalOverview>;
   attendance(date: string): Promise<SchoolAttendance>;
+  staffAttendanceHistory(personId: string, limit?: number): Promise<TeacherAttendanceDay[]>;
+  transportFleet(): Promise<FleetBus[]>;
+  listTransportBuses(): Promise<TransportBusRow[]>;
+  assignBusTeacher(busId: string, teacherUserId: string): Promise<void>;
+  unassignBusTeacher(busId: string): Promise<void>;
+  addTravelingTeacher(busId: string, teacherUserId: string): Promise<void>;
+  removeTravelingTeacher(busId: string, teacherUserId: string): Promise<void>;
+}
+export interface TeachersRepository {
+  list(): Promise<SchoolStaffMember[]>;
+}
+export interface StaffRepository {
+  list(): Promise<SchoolStaffMember[]>;
 }
 export interface BusRepository {
   assignedBus(): Promise<Bus>;
   position(busId: string): Promise<BusPosition>;
   roster(busId: string): Promise<BoardingRecord[]>;
   saveBoarding(busId: string, records: BoardingRecord[]): Promise<void>;
+  myRoutes(): Promise<MyRouteBus[]>;
 }
 
 export interface Repositories {
@@ -244,6 +277,8 @@ export interface Repositories {
   approvals: ApprovalsRepository;
   dashboard: DashboardRepository;
   principal: PrincipalRepository;
+  teachers: TeachersRepository;
+  staff: StaffRepository;
   bus: BusRepository;
   myAttendance: MyAttendanceRepository;
 }

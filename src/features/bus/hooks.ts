@@ -20,7 +20,19 @@ export function useBusPosition(busId: string) {
     queryKey: queryKeys.busPosition(tenantId, busId),
     queryFn: () => repos.bus.position(busId),
     enabled: busId !== '',
-    refetchInterval: 3000,
+    // TransportFleetHub push keeps this fresh; this is just a fallback if the socket drops.
+    refetchInterval: 20000,
+  });
+}
+
+export function useMyRouteBuses() {
+  const repos = useRepositories();
+  const tenantId = useTenantId();
+  return useQuery({
+    queryKey: queryKeys.myRouteBuses(tenantId),
+    queryFn: () => repos.bus.myRoutes(),
+    // TransportFleetHub push keeps rows fresh; this is just a fallback if the socket drops.
+    refetchInterval: 20000,
   });
 }
 

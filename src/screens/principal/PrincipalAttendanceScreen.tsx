@@ -5,7 +5,8 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
-  TouchableOpacity,
+  Pressable,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,24 +15,20 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors, Radii, Shadows } from '../../theme';
 import { FontFamily } from '../../theme/typography';
-import { ScreenHeader, TeacherSubjectDrawer, SearchField } from '../../components';
+import DateTimePicker, { type DateTimePickerEvent } from '@react-native-community/datetimepicker';
+import { ScreenHeader, SearchField } from '../../components';
 import { AttendanceGradeCard } from '../../components/attendance/AttendanceGradeCard';
 import { GradeListViewMore } from '../../components/attendance/GradeListViewMore';
 import { hiddenGradeCount, visibleGradeItems } from '../../components/attendance/gradeList';
 import { usePrincipalAttendance } from '@/features/principal/hooks';
 import { useClasses } from '@/features/classes/hooks';
-import { formatLongDate } from '@/lib/date';
+import { formatLongDate, parseISO, todayISO } from '@/lib/date';
 import { classGroupKey } from '@/lib/classLabel';
 import { filterGradesBySearch } from '@/lib/gradeSearch';
-import { splitStaffByCategory, staffDisplayLabel } from '@/lib/staffCategory';
-import { filterStaffBySearch } from '@/lib/staffSearch';
-import { staffCheckInStatus } from '@/lib/staffCheckIn';
 import { compareGrades, sortBySection } from '@/lib/gradeSort';
 import { useStudentSearchAcrossClasses } from '@/features/students/useStudentSearch';
 
 import { StudentSearchMatchRow } from '../../components/attendance/StudentSearchMatchRow';
-import { useFeature } from '@/features/plan/hooks';
-import { TIER_META } from '@/lib/gating';
 import type { PrincipalHomeStackParamList } from '../../navigation/types';
 
 type PAttendanceNav = NativeStackNavigationProp<
@@ -51,13 +48,13 @@ type GradeGroup = {
 export const PrincipalAttendanceScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<PAttendanceNav>();
-  const { data, isLoading, isError } = usePrincipalAttendance();
+  const [selectedDate, setSelectedDate] = useState(todayISO());
+  const { data, isLoading, isError } = usePrincipalAttendance(selectedDate);
   const { data: classList = [] } = useClasses();
 
-  const [staffView, setStaffView] = useState<'teaching' | 'support' | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [gradesExpanded, setGradesExpanded] = useState(false);
-  const geofence = useFeature('attendance.geofence');
 
   const {
     matches: studentMatches,
@@ -71,10 +68,6 @@ export const PrincipalAttendanceScreen: React.FC = () => {
     () => Object.fromEntries((data?.classes ?? []).map((c) => [c.classId, c])),
     [data?.classes]
   );
-
-  const allStaff = data?.staff ?? [];
-  const { teaching: teachingStaff, nonTeaching: supportStaff } = splitStaffByCategory(allStaff);
-  const presentCount = (list: typeof allStaff) => list.filter((s) => s.checkedIn).length;
 
   const gradeGroups = useMemo<GradeGroup[]>(() => {
     const map = new Map<string, GradeGroup>();
@@ -136,43 +129,14 @@ export const PrincipalAttendanceScreen: React.FC = () => {
     [gradeGroups, searchQuery]
   );
 
-  const filteredTeachingStaff = useMemo(
-    () => filterStaffBySearch(teachingStaff, searchQuery),
-    [teachingStaff, searchQuery]
-  );
-  const filteredSupportStaff = useMemo(
-    () => filterStaffBySearch(supportStaff, searchQuery),
-    [supportStaff, searchQuery]
-  );
-
   const hasClassMatches = filteredGradeGroups.length > 0;
-  const hasStaffMatches = filteredTeachingStaff.length > 0 || filteredSupportStaff.length > 0;
   const hasStudentMatches = studentMatches.length > 0;
-  const hasAnySearchMatch = hasClassMatches || hasStaffMatches || hasStudentMatches;
+  const hasAnySearchMatch = hasClassMatches || hasStudentMatches;
   const showGradeCards = !isSearching || hasClassMatches;
   const showStudentResults = isSearching && (hasStudentMatches || studentSearchLoading);
-  const showStaffInline = isSearching && hasStaffMatches;
-  const showStaffCategoryCards = !isSearching && allStaff.length > 0;
   const showNoSearchResults = isSearching && !studentSearchLoading && !hasAnySearchMatch;
   const displayGradeGroups = visibleGradeItems(filteredGradeGroups, gradesExpanded, isSearching);
   const hiddenGrades = hiddenGradeCount(filteredGradeGroups, gradesExpanded, isSearching);
-
-  const inlineStaffMatches = useMemo(
-    () =>
-      isSearching
-        ? [
-            ...filteredTeachingStaff.map((member) => ({
-              ...member,
-              category: 'teaching' as const,
-            })),
-            ...filteredSupportStaff.map((member) => ({
-              ...member,
-              category: 'support' as const,
-            })),
-          ]
-        : [],
-    [isSearching, filteredTeachingStaff, filteredSupportStaff]
-  );
 
   const dateLabel = data?.date ? formatLongDate(data.date) : 'Today';
 
@@ -191,8 +155,36 @@ export const PrincipalAttendanceScreen: React.FC = () => {
         </Animated.View>
 
         <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.dateRow}>
-          <Ionicons name="calendar-outline" size={16} color={Colors.inkMuted} />
-          <Text style={styles.dateText}>{dateLabel}</Text>
+          <Pressable
+            style={styles.dateRowPress}
+            onPress={() => setShowDatePicker(true)}
+            accessibilityLabel="Change date"
+          >
+            <Ionicons name="calendar-outline" size={16} color={Colors.inkMuted} />
+            <Text style={styles.dateText}>{dateLabel}</Text>
+          </Pressable>
+          {selectedDate !== todayISO() ? (
+            <Pressable onPress={() => setSelectedDate(todayISO())}>
+              <Text style={styles.todayLink}>Today</Text>
+            </Pressable>
+          ) : null}
+          {showDatePicker ? (
+            <DateTimePicker
+              value={parseISO(selectedDate)}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              maximumDate={new Date()}
+              onChange={(_e: DateTimePickerEvent, picked?: Date) => {
+                if (Platform.OS === 'android') setShowDatePicker(false);
+                if (picked) setSelectedDate(todayISO(picked));
+              }}
+            />
+          ) : null}
+          {Platform.OS === 'ios' && showDatePicker ? (
+            <Pressable onPress={() => setShowDatePicker(false)} style={styles.datePickerDone}>
+              <Text style={styles.todayLink}>Done</Text>
+            </Pressable>
+          ) : null}
         </Animated.View>
 
         {isError ? (
@@ -211,19 +203,9 @@ export const PrincipalAttendanceScreen: React.FC = () => {
               </View>
             </Animated.View>
 
-            {!geofence.allowed && (
-              <View style={styles.geoBanner}>
-                <Ionicons name="information-circle-outline" size={16} color={Colors.inkMuted} />
-                <Text style={styles.geoBannerText}>
-                  Staff GPS check-in details require the {TIER_META.platinum.label} plan. Checked-in
-                  status may be hidden on your current plan.
-                </Text>
-              </View>
-            )}
-
             <View style={styles.searchWrap}>
               <SearchField
-                placeholder="Search class, section, staff, or student..."
+                placeholder="Search class, section, or student..."
                 value={searchQuery}
                 onChangeText={(text) => {
                   setSearchQuery(text);
@@ -277,113 +259,9 @@ export const PrincipalAttendanceScreen: React.FC = () => {
                 onCollapse={() => setGradesExpanded(false)}
               />
             )}
-
-            {showStaffInline && <Text style={styles.section}>Staff</Text>}
-            {showStaffInline &&
-              inlineStaffMatches.map((member) => {
-                const status = staffCheckInStatus(member);
-                return (
-                  <View key={member.teacherId} style={styles.staffMatchRow}>
-                    <View
-                      style={[
-                        styles.staffMatchIcon,
-                        {
-                          backgroundColor:
-                            member.category === 'teaching' ? Colors.primary : Colors.teal,
-                        },
-                      ]}
-                    >
-                      <Text style={styles.staffMatchInitials}>{member.initials}</Text>
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.staffMatchName}>{member.name}</Text>
-                      <Text style={styles.staffMatchMeta}>
-                        {member.category === 'teaching' ? 'Teaching' : 'Non-teaching'}
-                        {' · '}
-                        {staffDisplayLabel(member)}
-                      </Text>
-                    </View>
-                    <View
-                      style={[
-                        styles.staffMatchStatus,
-                        {
-                          backgroundColor: member.checkedIn
-                            ? status.flagged
-                              ? Colors.lateSoft
-                              : Colors.presentSoft
-                            : Colors.paper2,
-                        },
-                      ]}
-                    >
-                      <Text
-                        style={[
-                          styles.staffMatchStatusText,
-                          {
-                            color: member.checkedIn
-                              ? status.flagged
-                                ? Colors.late
-                                : Colors.present
-                              : Colors.inkMuted,
-                          },
-                        ]}
-                      >
-                        {status.label}
-                      </Text>
-                    </View>
-                  </View>
-                );
-              })}
-            {showStaffCategoryCards && teachingStaff.length > 0 && (
-              <Animated.View entering={FadeInDown.springify()}>
-                <TouchableOpacity
-                  style={styles.staffCard}
-                  activeOpacity={0.88}
-                  onPress={() => setStaffView('teaching')}
-                >
-                  <View style={[styles.staffIcon, { backgroundColor: Colors.primary }]}>
-                    <Ionicons name="school" size={18} color={Colors.white} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.staffCardTitle}>Teaching staff</Text>
-                    <Text style={styles.staffCardMeta}>
-                      {presentCount(teachingStaff)}/{teachingStaff.length} checked in
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={18} color={Colors.inkSoft} />
-                </TouchableOpacity>
-              </Animated.View>
-            )}
-            {showStaffCategoryCards && supportStaff.length > 0 && (
-              <Animated.View entering={FadeInDown.delay(60).springify()}>
-                <TouchableOpacity
-                  style={styles.staffCard}
-                  activeOpacity={0.88}
-                  onPress={() => setStaffView('support')}
-                >
-                  <View style={[styles.staffIcon, { backgroundColor: Colors.teal }]}>
-                    <Ionicons name="people" size={18} color={Colors.white} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.staffCardTitle}>Non-teaching staff</Text>
-                    <Text style={styles.staffCardMeta}>
-                      {presentCount(supportStaff)}/{supportStaff.length} checked in
-                    </Text>
-                  </View>
-                  <Ionicons name="chevron-forward" size={18} color={Colors.inkSoft} />
-                </TouchableOpacity>
-              </Animated.View>
-            )}
           </>
         )}
       </ScrollView>
-
-      <TeacherSubjectDrawer
-        visible={staffView !== null}
-        title={staffView === 'support' ? 'Non-teaching staff' : 'Teaching staff'}
-        staff={staffView === 'support' ? supportStaff : teachingStaff}
-        initialSearch={searchQuery}
-        onClose={() => setStaffView(null)}
-      />
     </View>
   );
 };
@@ -395,10 +273,17 @@ const styles = StyleSheet.create({
   dateRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 12,
     paddingHorizontal: 2,
     marginBottom: 2,
   },
+  dateRowPress: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  todayLink: { fontFamily: FontFamily.semiBold, fontSize: 13, color: Colors.primary },
+  datePickerDone: { paddingVertical: 4, paddingHorizontal: 4 },
   dateText: {
     fontFamily: FontFamily.medium,
     fontSize: 13,
@@ -413,22 +298,6 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 8,
     ...Shadows.card,
-  },
-  geoBanner: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-    backgroundColor: Colors.paper2,
-    borderRadius: Radii.md,
-    padding: 12,
-    marginBottom: 4,
-  },
-  geoBannerText: {
-    flex: 1,
-    fontFamily: FontFamily.regular,
-    fontSize: 12,
-    color: Colors.inkMuted,
-    lineHeight: 17,
   },
   totalPct: { fontFamily: FontFamily.extraBold, fontSize: 40, color: Colors.white },
   totalMeta: { flex: 1, gap: 4 },
@@ -449,64 +318,4 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: 12,
   },
-  staffCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: Colors.white,
-    borderRadius: Radii.md,
-    padding: 14,
-    marginBottom: 8,
-    ...Shadows.card,
-  },
-  staffIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: Radii.md,
-    backgroundColor: Colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  staffCardTitle: { fontFamily: FontFamily.bold, fontSize: 15, color: Colors.ink },
-  staffCardMeta: {
-    fontFamily: FontFamily.regular,
-    fontSize: 12,
-    color: Colors.inkMuted,
-    marginTop: 2,
-  },
-  staffMatchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    backgroundColor: Colors.white,
-    borderRadius: Radii.md,
-    padding: 12,
-    marginBottom: 8,
-    ...Shadows.card,
-  },
-  staffMatchIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: Radii.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  staffMatchInitials: {
-    fontFamily: FontFamily.bold,
-    fontSize: 12,
-    color: Colors.white,
-  },
-  staffMatchName: { fontFamily: FontFamily.semiBold, fontSize: 14, color: Colors.ink },
-  staffMatchMeta: {
-    fontFamily: FontFamily.regular,
-    fontSize: 12,
-    color: Colors.inkMuted,
-    marginTop: 2,
-  },
-  staffMatchStatus: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: Radii.full,
-  },
-  staffMatchStatusText: { fontFamily: FontFamily.bold, fontSize: 12 },
 });

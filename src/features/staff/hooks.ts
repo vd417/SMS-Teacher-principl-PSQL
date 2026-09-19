@@ -18,6 +18,7 @@ function staffEntryToMember(entry: StaffAttendanceEntry): SchoolStaffMember {
     subtitle: label,
     checkedIn: entry.checkedIn,
     checkInAt: entry.checkInAt,
+    checkOutAt: entry.checkOutAt,
     checkInVerified: entry.checkInVerified,
   };
 }

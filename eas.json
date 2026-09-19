@@ -35,6 +35,17 @@
         "EXPO_PUBLIC_API_BASE_URL": "https://api.schooldesk.app/v1",
         "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       }
+    },
+    "lan-apk": {
+      "distribution": "internal",
+      "autoIncrement": true,
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_BASE_URL": "http://192.168.0.103:5162/v1",
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      }
     }
   },
   "submit": {

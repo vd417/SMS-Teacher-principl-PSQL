@@ -188,61 +188,9 @@ test('filters class cards by grade or section search', async () => {
   renderScreen(repos);
 
   await waitFor(() => expect(screen.getByText('IV')).toBeTruthy());
-  fireEvent.changeText(
-    screen.getByPlaceholderText('Search class, section, staff, or student...'),
-    'vi'
-  );
+  fireEvent.changeText(screen.getByPlaceholderText('Search class, section, or student...'), 'vi');
   expect(screen.queryByText('IV')).toBeNull();
   expect(screen.getByText('VI')).toBeTruthy();
-});
-
-test('filters staff by name, subject, or role and shows inline results', async () => {
-  const staffAttendance: SchoolAttendance = {
-    ...attendanceData,
-    staff: [
-      {
-        teacherId: 't1',
-        name: 'Alice Smith',
-        initials: 'AS',
-        subject: 'Mathematics',
-        phone: '',
-        checkedIn: true,
-        designation: 'Teacher',
-      },
-      {
-        teacherId: 't2',
-        name: 'Bob Guard',
-        initials: 'BG',
-        subject: '',
-        phone: '',
-        checkedIn: false,
-        role: 'Security',
-      },
-    ],
-  };
-  const repos = {
-    principal: { attendance: jest.fn(async () => staffAttendance) },
-    classes: { list: jest.fn(async () => classList) },
-  } as unknown as Repositories;
-
-  renderScreen(repos);
-
-  await waitFor(() => expect(screen.getByText('Teaching staff')).toBeTruthy());
-
-  fireEvent.changeText(
-    screen.getByPlaceholderText('Search class, section, staff, or student...'),
-    'alice'
-  );
-  expect(screen.getByText('Alice Smith')).toBeTruthy();
-  expect(screen.getByText(/Teaching · Mathematics/)).toBeTruthy();
-  expect(screen.queryByText('Teaching staff')).toBeNull();
-
-  fireEvent.changeText(
-    screen.getByPlaceholderText('Search class, section, staff, or student...'),
-    'security'
-  );
-  expect(screen.getByText('Bob Guard')).toBeTruthy();
-  expect(screen.getByText(/Non-teaching · Security/)).toBeTruthy();
 });
 
 test('search bypasses View more collapsed limit for grade matches', async () => {
@@ -290,62 +238,9 @@ test('search bypasses View more collapsed limit for grade matches', async () => 
   await waitFor(() => expect(screen.getByText('View more (2 classes)')).toBeTruthy());
   expect(screen.queryByText('VII')).toBeNull();
 
-  fireEvent.changeText(
-    screen.getByPlaceholderText('Search class, section, staff, or student...'),
-    'vii'
-  );
+  fireEvent.changeText(screen.getByPlaceholderText('Search class, section, or student...'), 'vii');
   expect(screen.getByText('VII')).toBeTruthy();
   expect(screen.queryByText('View more (2 classes)')).toBeNull();
-});
-
-test('classifies HOD and teachers as Teaching staff, not Non-teaching', async () => {
-  const staffAttendance: SchoolAttendance = {
-    ...attendanceData,
-    staff: [
-      {
-        teacherId: 't1',
-        name: 'Rina Pandey',
-        initials: 'RP',
-        subject: 'Science',
-        phone: '',
-        checkedIn: false,
-        role: 'HOD',
-      },
-      {
-        teacherId: 't2',
-        name: 'Amit Yadav',
-        initials: 'AY',
-        subject: 'Math',
-        phone: '',
-        checkedIn: false,
-        role: 'Senior Teacher',
-      },
-      {
-        teacherId: 's1',
-        name: 'Gate Guard',
-        initials: 'GG',
-        subject: '',
-        phone: '',
-        checkedIn: false,
-        role: 'Security',
-      },
-    ],
-  };
-
-  const repos = {
-    principal: { attendance: jest.fn(async () => staffAttendance) },
-    classes: { list: jest.fn(async () => classList) },
-  } as unknown as Repositories;
-
-  renderScreen(repos);
-
-  await waitFor(() => expect(screen.getByText('0/2 checked in')).toBeTruthy());
-  expect(screen.getByText('0/1 checked in')).toBeTruthy();
-
-  fireEvent.press(screen.getByText('Teaching staff'));
-  await waitFor(() => expect(screen.getByText('Rina Pandey')).toBeTruthy());
-  expect(screen.getByText('Amit Yadav')).toBeTruthy();
-  expect(screen.queryByText('Gate Guard')).toBeNull();
 });
 
 test('filters students by name and navigates to AttendanceScreen on tap', async () => {
@@ -378,7 +273,7 @@ test('filters students by name and navigates to AttendanceScreen on tap', async 
   await waitFor(() => expect(screen.getByText('IV')).toBeTruthy());
 
   fireEvent.changeText(
-    screen.getByPlaceholderText('Search class, section, staff, or student...'),
+    screen.getByPlaceholderText('Search class, section, or student...'),
     'ankit'
   );
 

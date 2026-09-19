@@ -6,6 +6,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { ScreenHeader, Card } from '../components';
+import { useAuth } from '@/features/auth/AuthProvider';
 
 const SETTINGS_SECTIONS = [
   {

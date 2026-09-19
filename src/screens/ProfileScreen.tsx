@@ -77,7 +77,13 @@ const MENU_ITEMS = [
   },
 ] as const;
 
-type ProfileMenuItem = (typeof MENU_ITEMS)[number] & { feature?: string };
+type ProfileMenuItem = {
+  icon: string;
+  label: string;
+  screen: keyof ProfileStackParamList;
+  color: string;
+  feature?: string;
+};
 
 function ProfileMenuRow({
   item,
@@ -161,7 +167,7 @@ export const ProfileScreen: React.FC = () => {
           {
             icon: 'business-outline',
             label: 'Switch School',
-            screen: 'SwitchSchool',
+            screen: 'SwitchSchool' as const,
             color: Colors.primary,
           },
         ]

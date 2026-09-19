@@ -89,6 +89,7 @@ export type PrincipalHomeStackParamList = {
   PrincipalHomeScreen: undefined;
   PrincipalMoreScreen: undefined;
   PrincipalAttendanceScreen: undefined;
+  StaffAttendanceScreen: undefined;
   AttendancePickSection: ClassSectionPickSectionParams;
   AttendanceScreen: { classId: string };
   AnnouncementsScreen: undefined;
@@ -105,6 +106,7 @@ export type PrincipalHomeStackParamList = {
   LibraryScreen: undefined;
   MyAttendanceScreen: undefined;
   PrincipalTransportScreen: undefined;
+  StaffAttendanceHistoryScreen: { personId: string; name: string };
 };
 
 // Shared class→section pick flow (attendance, marks, timetable stacks)

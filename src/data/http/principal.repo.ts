@@ -1,5 +1,4 @@
 import type { PrincipalRepository } from '@/data/repositories/types';
-import type { FleetBus, TransportBusRow } from '@/data/domain';
 import type { HttpClient } from '@/lib/httpClient';
 import { deviceUtcOffsetMinutes } from '@/lib/date';
 import {
@@ -14,6 +13,7 @@ import {
   toSchoolAttendance,
   schoolAttendanceSchema,
 } from './mappers';
+import { toDay, type TeacherAttendanceDayDTO } from './myAttendance.repo';
 
 export function httpPrincipal(http: HttpClient): PrincipalRepository {
   const offsetParams = () => ({ offset_minutes: deviceUtcOffsetMinutes() });
@@ -27,6 +27,12 @@ export function httpPrincipal(http: HttpClient): PrincipalRepository {
       http
         .get('/principal/attendance', { params: { date, ...offsetParams() } })
         .then((x) => toSchoolAttendance(schoolAttendanceSchema.parse(x))),
+    staffAttendanceHistory: (personId, limit) =>
+      http
+        .get<TeacherAttendanceDayDTO[]>(`/principal/staff/${personId}/attendance/history`, {
+          params: { limit, ...offsetParams() },
+        })
+        .then((rows) => rows.map(toDay)),
     transportFleet: () =>
       http
         .get<unknown[]>('/transport/fleet')
@@ -41,5 +47,15 @@ export function httpPrincipal(http: HttpClient): PrincipalRepository {
         .then(() => undefined),
     unassignBusTeacher: (busId) =>
       http.delete(`/transport/buses/${busId}/teacher`).then(() => undefined),
+    // Many-to-many live-view grant, distinct from the single Bus Duty escort
+    // (assignBusTeacher above) — any number of teachers can be added per bus.
+    addTravelingTeacher: (busId, teacherUserId) =>
+      http
+        .put(`/transport/buses/${busId}/traveling-teachers/${teacherUserId}`)
+        .then(() => undefined),
+    removeTravelingTeacher: (busId, teacherUserId) =>
+      http
+        .delete(`/transport/buses/${busId}/traveling-teachers/${teacherUserId}`)
+        .then(() => undefined),
   };
 }

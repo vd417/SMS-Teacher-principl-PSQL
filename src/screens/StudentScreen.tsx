@@ -23,6 +23,7 @@ import { Skeleton } from '@/ui/state/Skeleton';
 import { ErrorState } from '@/ui/state/ErrorState';
 import { pickImageFromLibrary, takePhotoFromCamera } from '@/lib/pickImage';
 import { authErrorMessage } from '@/features/auth/authErrors';
+import { classLabel } from '@/lib/classLabel';
 import { dialPhoneNumber } from '@/lib/phoneLink';
 import type { HomeStackParamList } from '../navigation/types';
 

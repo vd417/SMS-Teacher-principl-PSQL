@@ -84,6 +84,7 @@ export const StaffDirectoryScreen: React.FC = () => {
                 : staffCheckInStatus({
                     checkedIn: member.checkedIn,
                     checkInAt: member.checkInAt,
+                    checkOutAt: member.checkOutAt,
                     checkInVerified: member.checkInVerified,
                   });
             const isTeacher = teacherIds.has(member.id);

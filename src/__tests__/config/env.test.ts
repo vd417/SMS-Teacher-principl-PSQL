@@ -36,16 +36,18 @@ describe('loadEnv', () => {
     expect(out.configError).toBeNull();
   });
 
-  it('passes through the optional maps key and sentry dsn', () => {
+  it('passes through the optional maps key, map id, and sentry dsn', () => {
     const out = loadEnv(
       {
         EXPO_PUBLIC_API_BASE_URL: 'https://a.com/v1',
         EXPO_PUBLIC_GOOGLE_MAPS_API_KEY: 'k',
+        EXPO_PUBLIC_GOOGLE_MAPS_MAP_ID: 'm',
         EXPO_PUBLIC_SENTRY_DSN: 'd',
       },
       false
     );
     expect(out.GOOGLE_MAPS_API_KEY).toBe('k');
+    expect(out.GOOGLE_MAPS_MAP_ID).toBe('m');
     expect(out.SENTRY_DSN).toBe('d');
     expect(out.configError).toBeNull();
   });
