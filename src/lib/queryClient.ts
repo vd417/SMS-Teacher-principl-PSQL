@@ -58,6 +58,8 @@ export const queryKeys = {
   bus: (tenantId: string) => ['bus', tenantId] as const,
   busPosition: (tenantId: string, busId: string) => ['bus', tenantId, busId, 'position'] as const,
   busRoster: (tenantId: string, busId: string) => ['bus', tenantId, busId, 'roster'] as const,
+  routeGeometry: (tenantId: string, routeId: string) =>
+    ['transport', tenantId, 'routeGeometry', routeId] as const,
   schoolLocation: (tenantId: string) => ['myAttendance', tenantId, 'school'] as const,
   myAttendanceToday: (tenantId: string) => ['myAttendance', tenantId, 'today'] as const,
   myAttendanceHistory: (tenantId: string, limit: number) =>
