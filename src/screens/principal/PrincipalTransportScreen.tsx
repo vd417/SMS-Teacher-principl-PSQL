@@ -18,6 +18,7 @@ import { ScreenHeader, TierGate, Toast } from '../../components';
 import { FleetBusCard } from '../../components/transport/FleetBusCard';
 import { useTransportFleet } from '@/features/principal/hooks';
 import { useAssignBusTeacher, useUnassignBusTeacher } from '@/features/transport/hooks';
+import { useRouteGeometry } from '@/features/transport/useRouteGeometry';
 import { useSchoolStaffDirectory } from '@/features/staff/hooks';
 import { isAppError } from '@/lib/errors';
 
@@ -39,6 +40,9 @@ export const PrincipalTransportScreen: React.FC = () => {
   );
 
   const pickerBus = fleet.find((b) => b.busId === pickerBusId);
+  // FleetBus has no separate routeId field in this app's domain model (one bus == one route
+  // here), so the bus's own id is passed as the route identifier for road-geometry lookup.
+  const { data: selectedRouteGeometry } = useRouteGeometry(expandedId);
 
   const onPickTeacher = (teacherUserId: string) => {
     if (!pickerBusId) return;

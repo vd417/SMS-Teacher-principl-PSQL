@@ -21,6 +21,7 @@ import {
   useBusRoster,
   useSaveBoarding,
 } from '@/features/bus/hooks';
+import { useRouteGeometry } from '@/features/transport/useRouteGeometry';
 import { isAppError } from '@/lib/errors';
 import type { BoardingRecord, BoardingStatus } from '@/data/domain';
 
@@ -47,6 +48,12 @@ export const BusScreen: React.FC = () => {
   const { data: position } = useBusPosition(busId);
   const { data: roster } = useBusRoster(busId);
   const save = useSaveBoarding(busId);
+  // The read-only "other routes" FleetMap has no built-in selection, so add a minimal local
+  // selection here purely to give road-geometry lookup a bus to key off. MyRouteBus also has no
+  // separate routeId field (one bus == one route in this app's domain model), so the bus's own
+  // id is passed as the route identifier, same convention as PrincipalTransportScreen.
+  const [selectedReadOnlyBusId, setSelectedReadOnlyBusId] = useState<string | null>(null);
+  const { data: selectedReadOnlyRouteGeometry } = useRouteGeometry(selectedReadOnlyBusId);
 
   const [draft, setDraft] = useState<BoardingRecord[]>([]);
   const [toastVisible, setToastVisible] = useState(false);
