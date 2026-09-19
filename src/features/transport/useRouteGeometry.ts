@@ -23,14 +23,37 @@ const http = createHttpClient({
 
 const routeGeometryRepo = httpRouteGeometry(http);
 
+// Query errors (e.g. a non-2xx from a wrong/unmapped id) leave TanStack Query's `data` as
+// `undefined` — the same value it has while genuinely still loading. Callers (FleetMap /
+// FleetMap.web) gate both the road polyline (`status === 'available'`) and the "Route
+// unavailable" badge (`status === 'unavailable'`) on `data?.status`, so an error must be
+// surfaced as an explicit unavailable-shaped DTO, not silently collapsed into "still loading".
+function toUnavailable(routeId: string): RouteGeometryDTO {
+  return {
+    routeId,
+    status: 'unavailable',
+    format: null,
+    geometry: null,
+    distanceMeters: null,
+    durationSeconds: null,
+    stopSequenceHash: '',
+    generatedAt: null,
+  };
+}
+
 export function useRouteGeometry(
   routeId: string | null | undefined
 ): UseQueryResult<RouteGeometryDTO> {
   const tenantId = useTenantId();
-  return useQuery({
+  const query = useQuery({
     queryKey: queryKeys.routeGeometry(tenantId, routeId ?? ''),
     queryFn: () => routeGeometryRepo.get(routeId as string),
     enabled: !!routeId,
     staleTime: 60_000,
   });
+
+  const effectiveData =
+    query.data ?? (query.isError && routeId ? toUnavailable(routeId) : query.data);
+
+  return { ...query, data: effectiveData } as UseQueryResult<RouteGeometryDTO>;
 }
