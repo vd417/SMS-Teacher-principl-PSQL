@@ -22,7 +22,24 @@ Move the teacher app off the legacy `sms-backend` (SQL Server) and onto `sms-api
   - an HS256 JWT (15 min) plus an opaque rotating refresh token (30 days)
   - a `tenant_id` claim plus an optional `X-Tenant-Id` header, enforced through Postgres RLS
   - hubs `/hubs/live` and `/hubs/transport-fleet`
-- `docs/api/teacher-api.md` in `sms-api` is stale; for example, login returns tokens only. **The source of truth is the controllers, authorization policies, DTOs and PostgreSQL procs/schema.**
+- `docs/api/teacher-api.md` in `sms-api` is stale; for example, login returns tokens only. It is **not** authoritative. The source of truth is described in §5.
+
+### Repositories and baseline
+
+| Repo | Path | Branch | Commit at spec time | Remote | Changed by this work |
+|---|---|---|---|---|---|
+| `sms-teacher-app` | `D:\convert\SMS backend\sms-teacher-app` | `main` | `b9da198` (+ spec commits) | `vd417/SMS-Teacher-principl-PSQL` | yes |
+| `sms-api` | `D:\convert\SMS backend\sms-api` | `postgres-migration` (PostgreSQL) | `34af78e` | `vd417/SMS-PSQL` | yes |
+
+- No other repo is changed. That includes `sms-backend` (the old SQL Server path), `sms-admin`, `sms-staff`, `sms-student-parent-app` and `sms-catreadmin`.
+- All backend work targets `sms-api` on `postgres-migration`. Nothing targets the SQL Server path.
+- When implementation starts, record the branch, `HEAD` commit and clean/dirty state of both repos in the parity-matrix doc header. If a repo is dirty or its branch has moved, stop and ask before proceeding.
+
+### No behaviour regression
+
+- Existing teacher-app functionality must keep working.
+- Do not rewrite navigation, authentication, offline/NetInfo behaviour, the session and tenant handling, or existing UI unless a matrix row requires it for the wiring.
+- Do not remove backend endpoints merely because the teacher app stops calling them. Other apps may depend on them.
 
 ### Non-goals
 
@@ -43,6 +60,8 @@ Move the teacher app off the legacy `sms-backend` (SQL Server) and onto `sms-api
 8. The completed parity matrix must be reviewed and approved **before any app or backend fix is implemented**.
 9. Keep the `lan-apk` configuration untouched unless E2E wiring actually requires a change.
 10. All commits stay local and unpushed until the user explicitly approves the final commits.
+11. **Nothing is built before the plan is approved.** After this spec is approved, produce only the implementation plan. Do not modify application code, migrations, tests, seed data or configuration until the user separately approves the plan.
+12. The 2026-07-24 gaps are **evidence to re-check, not requirements**. Each one is first verified against the current `sms-api` code and real HTTP behaviour. Only a gap that still exists and affects a shipped app feature can become a fix.
 
 ## 3. Local environment (no Docker)
 
@@ -74,7 +93,8 @@ A C# console project added to `Sms.slnx`.
 - **Idempotency:**
   - Every row uses a deterministic GUID and is written with `INSERT … ON CONFLICT DO NOTHING`.
   - Before relying on each `ON CONFLICT`, verify the real primary and unique constraints in `db/postgres/04_tables.sql`, `05_constraints.sql` and the migrations.
-  - A second run must insert zero rows. The tool prints inserted/skipped counts per table.
+  - The tool prints inserted/skipped counts per table.
+  - **Acceptance:** running `Sms.DevSeed` twice against the same `_dev` database produces zero additional business rows and does not alter any existing seeded IDs or data. Verify this by comparing per-table row counts and a checksum of the seed-tenant rows before and after the second run.
 - **Schema verification:** every seed table and column is checked against the real PostgreSQL schema before implementation. Where the domain has a proc, prefer calling it, for example the tenancy and auth procs in `09_auth_procs.sql` and `10_tenancy_procs.sql`.
 - **Contents:**
   - Plan tier platinum, so no screen is hidden by plan tier.
@@ -112,6 +132,7 @@ A C# console project added to `Sms.slnx`.
   - ⚠️ **incorrect data**: the contract matches but the value is wrong, e.g. always 0 or null, the wrong tenant, or empty because of the query
   - 🔒 **auth mismatch**
   - 💤 **not-used**: kept in a separate table of teacher-audience routes the app never calls; informational only.
+- **Source of truth, in this order:** controller → authorization policy → DTO → SQL proc/schema → actual HTTP response → the app's zod schema. The old `teacher-api.md` is never authoritative. Every mismatch is documented in the matrix before it is fixed.
 - **Method:**
   1. **Static:** read the controller attribute, then the policy, then the DTO, then the SQL proc.
   2. **Live:** a capture script calls each route as teacher A, teacher B and principal against the seeded API. It saves raw JSON **redacted of tokens, passwords, cookies and any credentials**, and parses it with the app's real zod schemas. Captures only touch seed-tenant data and keep RLS in place.
@@ -134,7 +155,12 @@ A C# console project added to `Sms.slnx`.
     - auth rows assert both the allowed and the denied role
     - rows touching tenant data include a cross-tenant check
   - Fixes go in the layer that is actually wrong (proc, DAO, service or DTO).
-  - SQL changes ship as new numbered migrations (`db/postgres/migrations/0005_…`) and never as edits to the baseline files.
+  - SQL changes ship as new numbered migrations (`db/postgres/migrations/0005_…` onward) and never as edits to the baseline files.
+  - **Migration safety:**
+    - Already-applied migrations (`0001`–`0004`) and the baseline are never modified.
+    - Each new migration must work on a clean database (`init`, which is what the integration fixture runs) **and** upgrade an existing development database (`migrate` on a disposable copy that sits at `0004`).
+    - Numbering and ordering are verified with `Sms.PgMigrator status` before the work counts as complete.
+    - Applying to `sms_dev` stays approval-gated (constraint 3).
   - Changes are additive only: never rename or remove fields, because `sms-admin`, `sms-staff` and `sms-student-parent-app` share these endpoints. A fix that would break another client is raised with the user.
   - Gate: `dotnet test` passes before each commit.
 - **App (`sms-teacher-app`):**
@@ -169,22 +195,33 @@ A C# console project added to `Sms.slnx`.
      - geofenced punch
      - chat message
      - bus boarding
-  4. **Authorization, with explicit expected statuses from the matrix:**
-     - teacher B roll-call → `403 not_roll_call_teacher`
-     - a teacher calling `/principal/*` or `/transport/*` → `403`
-     - the principal → `200`
-     - a mismatched `X-Tenant-Id` → `403`
-     - the other seed school's data never appears
+  4. **Tenant and role checks, all through the real HTTP API and never by querying the database directly, with explicit expected statuses from the matrix:**
+     - Teacher A can read their own school's classes, students, timetable and attendance.
+     - Teacher A cannot reach School B ("Dev Seed Other School"):
+       - requesting a School B class or student by ID returns the matrix's expected status (404 or 403)
+       - School B rows never appear in any list
+       - a mismatched `X-Tenant-Id` returns `403`
+     - Teacher B roll-call → `403 not_roll_call_teacher`.
+     - A teacher calling `/principal/*` or `/transport/*` → `403`, and the principal → `200`.
   5. **Principal:**
      - overview, student and staff attendance plus history
      - approve teacher B's leave, after which teacher B sees it approved
      - fleet and buses, assigning and unassigning the bus teacher
      - route geometry
-  6. **Realtime:**
-     - `/hubs/live`: an attendance POST produces `live_event{type:"attendance"}`, and an announcement produces `{type:"announcement"}`.
-     - `/hubs/transport-fleet`: `JoinBus(seedBus)` returns `true`, and a trip ping produces `position_update`.
+  6. **Realtime.** The verified flow is: action through the app's HTTP layer → `sms-api` → SignalR hub → an authenticated client receives the expected event. It uses the real hub URL derived by the app's own `liveEvents` and `transportHub` code, with a real JWT passed as `access_token`. Each check waits at most 10 s, and a timeout is a failure.
+     - `/hubs/live`:
+       - The principal client is connected.
+       - Teacher A posts class attendance.
+       - The principal receives `live_event` with `type:"attendance"`.
+       - The principal posts an announcement, and teacher A's client receives `live_event` with `type:"announcement"`.
+       - A School B client receives neither event.
+     - `/hubs/transport-fleet`:
+       - The principal connects and `JoinBus(seedBus)` returns `true`.
+       - A trip start and ping on the seed bus through `/v1/transport/*` delivers `position_update` for that bus to the principal.
+- **Hard requirement.** `npm run e2e:sms-api` must pass from a clean environment: a freshly seeded `_dev` database and a freshly started API. It must run with **no SKIP, no mocked API, no mocked SignalR and no test-only endpoint**.
 - **Rules:**
   - Every step asserts an explicit expected status, and there is no SKIP.
+  - A pre-flight check calls `GET /health/ready` and fails the whole run (non-zero exit) if `sms-api` is unreachable or not ready. An unavailable backend can never produce a green result.
   - The suite is repeatable on the same seeded database, using run-scoped or idempotent writes.
   - It only touches seed-tenant data.
   - It never logs tokens or passwords.
@@ -196,9 +233,11 @@ A C# console project added to `Sms.slnx`.
 2. Every row is ✅, fixed, or explicitly deferred with the user's sign-off.
 3. `dotnet test` passes in `sms-api`.
 4. `npm test`, `tsc --noEmit` and lint pass in the app.
-5. `npm run e2e:sms-api` passes twice in a row on the seeded `sms_dev`.
-6. A manual check succeeds: the LAN APK or Expo Go logs in as the teacher and as the principal against the local API.
-7. All commits stay local until the user approves them.
+5. `npm run e2e:sms-api` passes twice in a row on the seeded `sms_dev`, from a clean start, with no SKIP or mocks.
+6. New migrations are verified on a clean database and as an upgrade from `0004`, and their ordering is confirmed.
+7. There are no behaviour regressions in existing teacher-app features.
+8. A manual check succeeds: the LAN APK or Expo Go logs in as the teacher and as the principal against the local API.
+9. All commits stay local until the user approves them.
 
 ## 9. Risks
 
