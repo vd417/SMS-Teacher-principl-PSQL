@@ -18,5 +18,13 @@
   - eslint: 0 errors, 84 warnings.
 - **Pre-existing API gate state:** the build has 0 warnings and 0 errors. Unit tests: 450 passed. Integration tests: 804 passed. Nothing skipped.
 
+## Seed evidence (Task 4, 2026-09-27)
+
+- The seed tool is `sms-api` `tools/Sms.DevSeed`, at worktree commit `79b158e`.
+- **First run** against `sms_dev`: exit 0, `Total inserted: 111`, 0 skipped in every table.
+  - Rows per table: Tenants 2, SchoolLocations 1, Users 6, UserRoles 6, Teachers 4, Classes 3, Students 23, Subjects 3, ClassSubjects 6, TimetableSlots 35, Exams 1, ExamClasses 2, ExamPapers 3, LeaveRequests 1, Announcements 1, TransportRoutes 1, RouteStops 3, Buses 1, BusStops 3, BusAssignments 1, StudentBusAssignments 5.
+- **Second run:** exit 0, `Total inserted: 0`, so the seed is idempotent.
+- **Real `POST /v1/auth/login`** against the worktree API on :5162: teacher.a, teacher.b, multi, other.teacher and principal all returned 200. Only the status code was printed; no tokens.
+
 ## Rows
 (filled in by Task 7)
