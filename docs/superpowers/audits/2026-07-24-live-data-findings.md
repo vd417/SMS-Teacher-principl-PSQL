@@ -1,3 +1,5 @@
+Superseded by 2026-09-26-sms-api-parity-matrix.md.
+
 # Live-Data Findings — sms-teacher-app (2026-07-24)
 
 Classification: (a) app-side wiring gap · (b) backend gap · (c) acceptable derived value
