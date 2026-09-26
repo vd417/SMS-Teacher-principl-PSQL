@@ -17,6 +17,13 @@ module.exports = [
     },
   },
   {
+    // CommonJS jest configs (see metro.config.js's own such override in eslint-config-expo/flat).
+    files: ['jest.e2e.config.js', 'jest.capture.config.js'],
+    languageOptions: {
+      globals: { __dirname: 'readonly', module: 'readonly', require: 'readonly' },
+    },
+  },
+  {
     ignores: ['node_modules/**', 'dist/**', '.expo/**', 'android/**', 'ios/**'],
   },
 ];
