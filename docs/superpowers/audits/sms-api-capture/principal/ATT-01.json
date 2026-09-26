@@ -1,0 +1,11 @@
+{
+  "rowId": "ATT-01",
+  "role": "principal",
+  "method": "GET",
+  "path": "/classes/1ccd3cff-e251-5c06-be20-327a29a88b53/attendance?date=2026-09-25",
+  "status": 200,
+  "zod": "ok",
+  "body": {
+    "data": []
+  }
+}

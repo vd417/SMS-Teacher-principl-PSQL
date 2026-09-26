@@ -1,0 +1,11 @@
+{
+  "rowId": "BUS-05",
+  "role": "teacherB",
+  "method": "GET",
+  "path": "/bus/traveling",
+  "status": 200,
+  "zod": "ok",
+  "body": {
+    "data": []
+  }
+}

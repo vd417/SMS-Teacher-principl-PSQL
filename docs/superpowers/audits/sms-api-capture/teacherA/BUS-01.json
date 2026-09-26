@@ -1,0 +1,43 @@
+{
+  "rowId": "BUS-01",
+  "role": "teacherA",
+  "method": "GET",
+  "path": "/bus/assigned",
+  "status": 200,
+  "zod": "ok",
+  "body": {
+    "data": {
+      "id": "cb64ef53-346c-5fd3-bd39-46507f208dae",
+      "bus_no": "DS-01",
+      "route_name": "Dev Seed Route 1",
+      "driver": "Dev Seed Driver",
+      "driver_phone": "+919000000999",
+      "stops": [
+        {
+          "id": "800ed402-0cfb-5e7b-9950-115ae0eec897",
+          "name": "Shivaji Nagar",
+          "time": null,
+          "seq": 1,
+          "lat": 18.5308,
+          "lng": 73.8475
+        },
+        {
+          "id": "8e0d5c04-af0f-5b23-b2a3-aaad0a915869",
+          "name": "FC Road",
+          "time": null,
+          "seq": 2,
+          "lat": 18.5236,
+          "lng": 73.8412
+        },
+        {
+          "id": "28132893-cbf6-5cd4-98c8-c273c17c0ecb",
+          "name": "Campus Gate",
+          "time": null,
+          "seq": 3,
+          "lat": 18.5204,
+          "lng": 73.8567
+        }
+      ]
+    }
+  }
+}

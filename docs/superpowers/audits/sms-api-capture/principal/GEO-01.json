@@ -1,0 +1,20 @@
+{
+  "rowId": "GEO-01",
+  "role": "principal",
+  "method": "GET",
+  "path": "/transport/routes/d7f4317d-b93d-53d1-97fe-d4eb925f2871/geometry",
+  "status": 200,
+  "zod": "n/a",
+  "body": {
+    "data": {
+      "route_id": "d7f4317d-b93d-53d1-97fe-d4eb925f2871",
+      "status": "available",
+      "format": "google-encoded-polyline",
+      "geometry": "{hbpB}ivaMf@_DVqAd@eDH{@NQz@sEPu@ZQN[v@cEJINA`@FnFjDdAv@d@l@XTnCbBx@`@pF`DbLrGLLWRs@dB_CtIx@Z^VHTHp@@`AEf@`Bd@tB^e@pC]vC@PGj@QnHcEi@kMuB_B_@e@QaAi@?O\\aBXmATkBJcAVmKP}BPiAPk@^w@^q@|AyEdAcCbLrGb@}@j@cCHs@TwAVaDDoACsAIcA[sAuAeEvFs@z@KXGPAp@Wt@QJMJo@Hg@Nq@{AgB[Qg@UE]z@g@RQCgADsAt@BDG",
+      "distance_meters": 5142,
+      "duration_seconds": 1118,
+      "stop_sequence_hash": "[REDACTED]",
+      "generated_at": "2026-09-26T21:13:28.158Z"
+    }
+  }
+}

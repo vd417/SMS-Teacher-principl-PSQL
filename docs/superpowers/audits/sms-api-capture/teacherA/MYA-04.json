@@ -1,0 +1,15 @@
+{
+  "rowId": "MYA-04",
+  "role": "teacherA",
+  "method": "GET",
+  "path": "/me/attendance/summary?month=2026-09",
+  "status": 200,
+  "zod": "ok",
+  "body": {
+    "data": {
+      "days_present": 0,
+      "days_flagged": 0,
+      "total_hours": 0
+    }
+  }
+}

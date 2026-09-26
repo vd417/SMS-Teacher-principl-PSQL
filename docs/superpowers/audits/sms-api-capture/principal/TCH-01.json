@@ -1,0 +1,88 @@
+{
+  "rowId": "TCH-01",
+  "role": "principal",
+  "method": "GET",
+  "path": "/teachers?status=active",
+  "status": 200,
+  "zod": "ok",
+  "body": {
+    "data": [
+      {
+        "id": "eaf1d858-dec5-5240-af97-366e5e860d45",
+        "tenant_id": "8ea5da54-aba9-55ab-bac7-662205f376cc",
+        "name": "Asha Kulkarni",
+        "gender": null,
+        "department": null,
+        "designation": "Mathematics Teacher",
+        "subjects": [
+          "Mathematics"
+        ],
+        "class_teacher": "IX-A",
+        "phone": null,
+        "email": "teacher.a@seed.schooldesk.test",
+        "exp": 0,
+        "rating": 0,
+        "attendance_pct": 0,
+        "result": 0,
+        "load": 0,
+        "status": "active",
+        "avatar_hue": 0,
+        "top": false,
+        "employee_code": "DS-T001",
+        "photo_url": null,
+        "user_id": "62b32d84-c9c0-51b7-a443-7d71234ef2a6"
+      },
+      {
+        "id": "f1c2c180-9963-52cf-b5fa-580434bf1e79",
+        "tenant_id": "8ea5da54-aba9-55ab-bac7-662205f376cc",
+        "name": "Bharat Menon",
+        "gender": null,
+        "department": null,
+        "designation": "Science Teacher",
+        "subjects": [
+          "Science"
+        ],
+        "class_teacher": "IX-B",
+        "phone": null,
+        "email": "teacher.b@seed.schooldesk.test",
+        "exp": 0,
+        "rating": 0,
+        "attendance_pct": 0,
+        "result": 0,
+        "load": 0,
+        "status": "active",
+        "avatar_hue": 0,
+        "top": false,
+        "employee_code": "DS-T002",
+        "photo_url": null,
+        "user_id": "15d97e47-5510-5cd9-b430-53f201d8c759"
+      },
+      {
+        "id": "29c0488a-edd0-5e94-8756-604fe448789d",
+        "tenant_id": "8ea5da54-aba9-55ab-bac7-662205f376cc",
+        "name": "Maya Fernandes",
+        "gender": null,
+        "department": null,
+        "designation": "English Teacher",
+        "subjects": [
+          "English"
+        ],
+        "class_teacher": "",
+        "phone": null,
+        "email": "multi@seed.schooldesk.test",
+        "exp": 0,
+        "rating": 0,
+        "attendance_pct": 0,
+        "result": 0,
+        "load": 0,
+        "status": "active",
+        "avatar_hue": 0,
+        "top": false,
+        "employee_code": "DS-T003",
+        "photo_url": null,
+        "user_id": "58b023b1-7929-53fa-80b5-dc9fa0a2a296"
+      }
+    ],
+    "next_cursor": null
+  }
+}

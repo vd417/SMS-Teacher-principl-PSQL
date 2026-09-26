@@ -1,0 +1,15 @@
+{
+  "rowId": "GEO-01",
+  "role": "teacherB",
+  "method": "GET",
+  "path": "/transport/routes/d7f4317d-b93d-53d1-97fe-d4eb925f2871/geometry",
+  "status": 403,
+  "zod": "n/a",
+  "body": {
+    "error": {
+      "code": "forbidden",
+      "message": "Not authorized to view this route.",
+      "details": null
+    }
+  }
+}

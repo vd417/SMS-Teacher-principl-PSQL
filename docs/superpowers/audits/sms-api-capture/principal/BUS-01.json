@@ -1,0 +1,15 @@
+{
+  "rowId": "BUS-01",
+  "role": "principal",
+  "method": "GET",
+  "path": "/bus/assigned",
+  "status": 404,
+  "zod": "n/a",
+  "body": {
+    "error": {
+      "code": "not_found",
+      "message": "no assigned bus",
+      "details": null
+    }
+  }
+}

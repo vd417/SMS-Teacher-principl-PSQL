@@ -1,0 +1,16 @@
+{
+  "rowId": "MYA-01",
+  "role": "teacherB",
+  "method": "GET",
+  "path": "/me/attendance/school-location",
+  "status": 200,
+  "zod": "ok",
+  "body": {
+    "data": {
+      "lat": 18.5204,
+      "lng": 73.8567,
+      "radius_meters": 200,
+      "name": "Dev Seed Campus"
+    }
+  }
+}

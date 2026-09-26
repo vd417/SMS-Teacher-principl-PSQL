@@ -1,0 +1,59 @@
+{
+  "rowId": "PRN-01",
+  "role": "principal",
+  "method": "GET",
+  "path": "/principal/overview",
+  "status": 200,
+  "zod": "ok",
+  "body": {
+    "data": {
+      "kpis": {
+        "students_present_pct": 0,
+        "staff_present": 0,
+        "staff_total": 3,
+        "pending_approvals": 1
+      },
+      "staff": [
+        {
+          "teacher_id": "eaf1d858-dec5-5240-af97-366e5e860d45",
+          "name": "Asha Kulkarni",
+          "initials": "AK",
+          "subject": "Mathematics",
+          "phone": null,
+          "checked_in": false,
+          "check_in_at": null,
+          "check_out_at": null,
+          "check_in_verified": false,
+          "role": null,
+          "designation": "Mathematics Teacher"
+        },
+        {
+          "teacher_id": "f1c2c180-9963-52cf-b5fa-580434bf1e79",
+          "name": "Bharat Menon",
+          "initials": "BM",
+          "subject": "Science",
+          "phone": null,
+          "checked_in": false,
+          "check_in_at": null,
+          "check_out_at": null,
+          "check_in_verified": false,
+          "role": null,
+          "designation": "Science Teacher"
+        },
+        {
+          "teacher_id": "29c0488a-edd0-5e94-8756-604fe448789d",
+          "name": "Maya Fernandes",
+          "initials": "MF",
+          "subject": "English",
+          "phone": null,
+          "checked_in": false,
+          "check_in_at": null,
+          "check_out_at": null,
+          "check_in_verified": false,
+          "role": null,
+          "designation": "English Teacher"
+        }
+      ]
+    }
+  }
+}

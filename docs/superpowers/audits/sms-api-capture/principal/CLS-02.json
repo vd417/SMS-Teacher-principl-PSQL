@@ -1,0 +1,27 @@
+{
+  "rowId": "CLS-02",
+  "role": "principal",
+  "method": "GET",
+  "path": "/classes/1ccd3cff-e251-5c06-be20-327a29a88b53",
+  "status": 200,
+  "zod": "ok",
+  "body": {
+    "data": {
+      "id": "1ccd3cff-e251-5c06-be20-327a29a88b53",
+      "tenant_id": "8ea5da54-aba9-55ab-bac7-662205f376cc",
+      "name": "IX-A",
+      "grade": "IX",
+      "section": "A",
+      "subject": "Mathematics",
+      "room": "R101",
+      "student_count": 10,
+      "class_teacher_id": "eaf1d858-dec5-5240-af97-366e5e860d45",
+      "next_period": null,
+      "subjects": [
+        "English",
+        "Mathematics",
+        "Science"
+      ]
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "rowId": "STF-01",
+  "role": "teacherA",
+  "method": "GET",
+  "path": "/staff",
+  "status": 403,
+  "zod": "n/a",
+  "body": null
+}

@@ -1,0 +1,35 @@
+{
+  "rowId": "AUTH-05",
+  "role": "principal",
+  "method": "GET",
+  "path": "/auth/me",
+  "status": 200,
+  "zod": "ok",
+  "body": {
+    "data": {
+      "id": "2783683e-f449-5064-a07e-319d86ecbe05",
+      "tenant_id": "8ea5da54-aba9-55ab-bac7-662205f376cc",
+      "roles": [
+        "school.principal"
+      ],
+      "is_platform": false,
+      "name": "Priya Deshmukh",
+      "email": "principal@seed.schooldesk.test",
+      "phone": null,
+      "employee": null,
+      "classroom": null,
+      "joined": "2026",
+      "tenant_name": "SchoolDesk Dev Seed",
+      "tenant_logo_url": null,
+      "tenant_image_url": null,
+      "tier": "platinum",
+      "plan_name": "Platinum",
+      "must_set_password": "[REDACTED]",
+      "title": "Principal",
+      "photo_url": null,
+      "student_id": null,
+      "role_key": null,
+      "duty_post": null
+    }
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "rowId": "MYA-02",
+  "role": "teacherA",
+  "method": "GET",
+  "path": "/me/attendance/today?date=2026-09-25",
+  "status": 200,
+  "zod": "ok",
+  "body": {
+    "data": {
+      "date": "2026-09-25",
+      "check_in": null,
+      "check_out": null
+    }
+  }
+}
