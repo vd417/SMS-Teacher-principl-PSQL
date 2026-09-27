@@ -422,3 +422,18 @@ export interface TeacherAttendanceSummary {
   daysFlagged: number; // days with any unverified punch
   totalHours: number; // sum of (checkOut - checkIn)
 }
+
+// ─── PTM (parent-teacher meetings) ──────────────────────────────────────────
+export type PtmStatus = 'pending' | 'confirmed';
+export interface PtmMeeting {
+  id: string;
+  date: string; // YYYY-MM-DD
+  time: string; // HH:mm
+  teacher: string;
+  teacherId: string | null;
+  subject: string | null;
+  studentId: string;
+  studentName: string;
+  mode: string;
+  status: PtmStatus;
+}

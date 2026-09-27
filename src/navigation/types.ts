@@ -45,6 +45,8 @@ export type HomeStackParamList = {
   ChatScreen: undefined;
   ChatThreadScreen: { contactId: string };
   StaffDirectoryScreen: undefined;
+  PtmScreen: undefined;
+  PtmNewScreen: undefined;
 };
 
 // Classes stack params

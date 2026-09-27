@@ -31,6 +31,8 @@ import type {
   LeaveRequest,
   LeaveType,
   LeaveStatus,
+  PtmMeeting,
+  PtmStatus,
   ApprovalRequest,
   PrincipalOverview,
   SchoolStaffMember,
@@ -529,6 +531,46 @@ export const fromNewLeave = (r: {
   reason: r.reason,
   ...(r.substitute !== undefined && { substitute: r.substitute }),
   ...(r.attachmentUrls?.length ? { attachment_urls: r.attachmentUrls } : {}),
+});
+
+// ─── PTM (parent-teacher meetings) ──────────────────────────────────────────
+export const ptmMeetingSchema = z.object({
+  id: z.string(),
+  date: z.string(),
+  time: z.string(),
+  teacher: z.string(),
+  subject: z.string().nullable(),
+  child: z.string(),
+  mode: z.string(),
+  status: z.string(),
+  student_name: z.string(),
+  teacher_id: z.string().nullable(),
+});
+export type PtmMeetingDTO = z.infer<typeof ptmMeetingSchema>;
+export const toPtmMeeting = (d: PtmMeetingDTO): PtmMeeting => ({
+  id: d.id,
+  date: dateOnly(d.date) || d.date,
+  time: d.time,
+  teacher: d.teacher,
+  teacherId: d.teacher_id,
+  subject: d.subject,
+  studentId: d.child,
+  studentName: d.student_name,
+  mode: d.mode,
+  status: d.status as PtmStatus,
+});
+export const fromNewPtm = (r: {
+  studentId: string;
+  subject?: string;
+  date: string;
+  time: string;
+  mode: string;
+}): Record<string, unknown> => ({
+  student_id: r.studentId,
+  ...(r.subject !== undefined && r.subject !== '' && { subject: r.subject }),
+  date: r.date,
+  time: r.time,
+  mode: r.mode,
 });
 
 // ─── Approvals ───────────────────────────────────────────────────────────────

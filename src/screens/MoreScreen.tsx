@@ -68,6 +68,14 @@ const MORE_ITEMS: MoreItem[] = [
     soft: Colors.coralSoft,
   },
   {
+    icon: 'people-circle-outline',
+    label: 'PTM',
+    screen: 'PtmScreen',
+    feature: 'academics',
+    color: Colors.pink,
+    soft: Colors.pinkSoft,
+  },
+  {
     icon: 'megaphone-outline',
     label: 'Announcements',
     screen: 'AnnouncementsScreen',

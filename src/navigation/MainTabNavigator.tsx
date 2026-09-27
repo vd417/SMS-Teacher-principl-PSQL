@@ -34,6 +34,8 @@ import { LibraryScreen } from '../screens/LibraryScreen';
 import { MoreScreen } from '../screens/MoreScreen';
 import { StaffDirectoryScreen } from '../screens/StaffDirectoryScreen';
 import { BusScreen } from '../screens/BusScreen';
+import { PtmScreen } from '../screens/PtmScreen';
+import { PtmNewScreen } from '../screens/PtmNewScreen';
 import type {
   MainTabParamList,
   HomeStackParamList,
@@ -75,6 +77,8 @@ const HomeStackNavigator = () => (
     <HomeStack.Screen name="ChatScreen" component={ChatScreen} />
     <HomeStack.Screen name="ChatThreadScreen" component={ChatThreadScreen} />
     <HomeStack.Screen name="StaffDirectoryScreen" component={StaffDirectoryScreen} />
+    <HomeStack.Screen name="PtmScreen" component={PtmScreen} />
+    <HomeStack.Screen name="PtmNewScreen" component={PtmNewScreen} />
   </HomeStack.Navigator>
 );
 

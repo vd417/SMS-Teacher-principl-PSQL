@@ -46,6 +46,7 @@ export const queryKeys = {
   library: (tenantId: string) => ['library', tenantId] as const,
   payroll: (tenantId: string) => ['payroll', tenantId] as const,
   leave: (tenantId: string) => ['leave', tenantId] as const,
+  ptm: (tenantId: string) => ['ptm', tenantId] as const,
   approvals: (tenantId: string) => ['approvals', tenantId] as const,
   principalOverview: (tenantId: string) => ['principal', tenantId, 'overview'] as const,
   teachers: (tenantId: string) => ['teachers', tenantId] as const,
