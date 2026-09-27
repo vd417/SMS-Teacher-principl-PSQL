@@ -34,6 +34,7 @@ import type {
   Tenant,
   ExamTerm,
   SchoolStaffMember,
+  PtmMeeting,
 } from '@/data/domain';
 import type { Page } from '@/lib/envelope';
 
@@ -64,6 +65,13 @@ export interface NewLeaveInput {
   to: string;
   reason: string;
   substitute?: string;
+}
+export interface NewPtmInput {
+  studentId: string;
+  subject?: string;
+  date: string;
+  time: string;
+  mode: string;
 }
 export interface NewAnnouncementInput {
   title: string;
@@ -225,6 +233,11 @@ export interface LeaveRepository {
   list(): Promise<LeaveRequest[]>;
   create(input: NewLeaveInput): Promise<LeaveRequest>;
 }
+export interface PtmRepository {
+  list(): Promise<PtmMeeting[]>;
+  create(input: NewPtmInput): Promise<PtmMeeting>;
+  remove(id: string): Promise<void>;
+}
 export type ApprovalListStatus = 'pending' | 'approved' | 'rejected';
 export interface ApprovalsRepository {
   list(status?: ApprovalListStatus): Promise<ApprovalRequest[]>;
@@ -274,6 +287,7 @@ export interface Repositories {
   library: LibraryRepository;
   payroll: PayrollRepository;
   leave: LeaveRepository;
+  ptm: PtmRepository;
   approvals: ApprovalsRepository;
   dashboard: DashboardRepository;
   principal: PrincipalRepository;

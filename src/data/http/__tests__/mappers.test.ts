@@ -22,6 +22,8 @@ import {
   toNotification,
   attendanceRecordSchema,
   toAttendanceRecord,
+  ptmMeetingSchema,
+  toPtmMeeting,
 } from '../mappers';
 
 test('toStudent injects classId, stringifies roll, derives initials', () => {
@@ -455,5 +457,32 @@ test('toAttendanceRecord normalizes mixed-case and single-letter statuses', () =
     studentId: 's1',
     status: 'P',
     date: '2026-07-29',
+  });
+});
+
+test('toPtmMeeting maps a null subject and teacher_id through, and child/student_name to domain names', () => {
+  const dto = ptmMeetingSchema.parse({
+    id: 'ptm-1',
+    date: '2026-08-27',
+    time: '10:30',
+    teacher: 'Mrs. Rao',
+    teacher_id: null,
+    subject: null,
+    child: 'student-1',
+    mode: 'In person',
+    status: 'confirmed',
+    student_name: 'Aarav Sharma',
+  });
+  expect(toPtmMeeting(dto)).toEqual({
+    id: 'ptm-1',
+    date: '2026-08-27',
+    time: '10:30',
+    teacher: 'Mrs. Rao',
+    teacherId: null,
+    subject: null,
+    studentId: 'student-1',
+    studentName: 'Aarav Sharma',
+    mode: 'In person',
+    status: 'confirmed',
   });
 });

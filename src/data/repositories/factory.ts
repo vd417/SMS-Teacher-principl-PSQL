@@ -16,6 +16,7 @@ import { httpGrades } from '@/data/http/grades.repo';
 import { httpAttendance } from '@/data/http/attendance.repo';
 import { httpChat } from '@/data/http/chat.repo';
 import { httpLeave } from '@/data/http/leave.repo';
+import { httpPtm } from '@/data/http/ptm.repo';
 import { httpBus } from '@/data/http/bus.repo';
 import { httpMyAttendance } from '@/data/http/myAttendance.repo';
 import { httpApprovals } from '@/data/http/approvals.repo';
@@ -40,6 +41,7 @@ export function createHttpRepositories(http: HttpClient): Repositories {
     library: httpLibrary(http),
     payroll: httpPayroll(http),
     leave: httpLeave(http),
+    ptm: httpPtm(http),
     approvals: httpApprovals(http),
     dashboard: httpDashboard(http),
     principal: httpPrincipal(http),
