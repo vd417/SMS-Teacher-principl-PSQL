@@ -469,7 +469,7 @@ test('toPtmMeeting maps a null subject and teacher_id through, and child/student
     teacher_id: null,
     subject: null,
     child: 'student-1',
-    mode: 'in_person',
+    mode: 'In person',
     status: 'confirmed',
     student_name: 'Aarav Sharma',
   });
@@ -482,7 +482,7 @@ test('toPtmMeeting maps a null subject and teacher_id through, and child/student
     subject: null,
     studentId: 'student-1',
     studentName: 'Aarav Sharma',
-    mode: 'in_person',
+    mode: 'In person',
     status: 'confirmed',
   });
 });

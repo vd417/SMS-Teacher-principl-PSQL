@@ -13,7 +13,7 @@ const row = {
   teacher_id: 'teacher-1',
   subject: 'Math',
   child: 'student-1',
-  mode: 'in_person',
+  mode: 'In person',
   status: 'pending',
   student_name: 'Aarav Sharma',
 };
@@ -47,7 +47,7 @@ test('list GET maps a snake_case envelope to the domain type', async () => {
       subject: 'Math',
       studentId: 'student-1',
       studentName: 'Aarav Sharma',
-      mode: 'in_person',
+      mode: 'In person',
       status: 'pending',
     },
   ]);

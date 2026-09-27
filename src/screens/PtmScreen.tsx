@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,8 +7,10 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
-import { ScreenHeader, Pill } from '../components';
+import { ScreenHeader, Pill, Toast } from '../components';
 import { usePtmMeetings, useDeletePtm } from '@/features/ptm/hooks';
+import { useAuth } from '@/features/auth/AuthProvider';
+import { isAppError } from '@/lib/errors';
 import { Skeleton } from '@/ui/state/Skeleton';
 import { ErrorState } from '@/ui/state/ErrorState';
 import { EmptyState } from '@/ui/state/EmptyState';
@@ -41,8 +43,11 @@ function sortByDateTime(meetings: PtmMeeting[]): PtmMeeting[] {
 export const PtmScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<PtmNav>();
+  const { session } = useAuth();
+  const isPrincipal = session?.user.role === 'principal';
   const { data: meetings = [], isLoading, isError, refetch } = usePtmMeetings();
   const deletePtm = useDeletePtm();
+  const [errorToast, setErrorToast] = useState<string | null>(null);
 
   const sorted = sortByDateTime(meetings);
 
@@ -55,87 +60,103 @@ export const PtmScreen: React.FC = () => {
         {
           text: 'Yes, cancel',
           style: 'destructive',
-          onPress: () => deletePtm.mutate(meeting.id),
+          onPress: () =>
+            deletePtm.mutate(meeting.id, {
+              onError: (e) =>
+                setErrorToast(
+                  isAppError(e) ? e.message : 'Could not cancel the meeting. Try again.'
+                ),
+            }),
         },
       ]
     );
   };
 
   return (
-    <ScrollView
-      style={styles.screen}
-      contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 16, paddingBottom: 40 }]}
-      showsVerticalScrollIndicator={false}
-    >
-      <Animated.View entering={FadeInDown.delay(50).springify()}>
-        <ScreenHeader
-          title="Parent-Teacher Meetings"
-          subtitle={`${sorted.length} meeting${sorted.length === 1 ? '' : 's'}`}
-          showBack
-          rightComponent={
-            <TouchableOpacity
-              style={styles.addBtn}
-              onPress={() => navigation.navigate('PtmNewScreen')}
-              accessibilityLabel="New meeting"
-            >
-              <Ionicons name="add" size={22} color={Colors.white} />
-            </TouchableOpacity>
-          }
-        />
-      </Animated.View>
+    <>
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 16, paddingBottom: 40 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        <Animated.View entering={FadeInDown.delay(50).springify()}>
+          <ScreenHeader
+            title="Parent-Teacher Meetings"
+            subtitle={`${sorted.length} meeting${sorted.length === 1 ? '' : 's'}`}
+            showBack
+            rightComponent={
+              isPrincipal ? undefined : (
+                <TouchableOpacity
+                  style={styles.addBtn}
+                  onPress={() => navigation.navigate('PtmNewScreen')}
+                  accessibilityLabel="New meeting"
+                >
+                  <Ionicons name="add" size={22} color={Colors.white} />
+                </TouchableOpacity>
+              )
+            }
+          />
+        </Animated.View>
 
-      {isLoading ? (
-        <>
-          {[0, 1, 2].map((i) => (
-            <Skeleton key={i} height={90} radius={12} />
-          ))}
-        </>
-      ) : isError ? (
-        <ErrorState onRetry={refetch} />
-      ) : sorted.length === 0 ? (
-        <EmptyState label="No parent-teacher meetings scheduled yet." />
-      ) : (
-        sorted.map((meeting, i) => (
-          <Animated.View key={meeting.id} entering={FadeInDown.delay(100 + i * 60).springify()}>
-            <View style={styles.card}>
-              <View style={styles.cardHeader}>
-                <Text style={styles.studentName} numberOfLines={1}>
-                  {meeting.studentName}
-                </Text>
-                <Pill
-                  label={STATUS_LABELS[meeting.status]}
-                  color={STATUS_COLORS[meeting.status]}
-                  backgroundColor={STATUS_SOFT[meeting.status]}
-                  size="sm"
-                />
+        {isLoading ? (
+          <>
+            {[0, 1, 2].map((i) => (
+              <Skeleton key={i} height={90} radius={12} />
+            ))}
+          </>
+        ) : isError ? (
+          <ErrorState onRetry={refetch} />
+        ) : sorted.length === 0 ? (
+          <EmptyState label="No parent-teacher meetings scheduled yet." />
+        ) : (
+          sorted.map((meeting, i) => (
+            <Animated.View key={meeting.id} entering={FadeInDown.delay(100 + i * 60).springify()}>
+              <View style={styles.card}>
+                <View style={styles.cardHeader}>
+                  <Text style={styles.studentName} numberOfLines={1}>
+                    {meeting.studentName}
+                  </Text>
+                  <Pill
+                    label={STATUS_LABELS[meeting.status]}
+                    color={STATUS_COLORS[meeting.status]}
+                    backgroundColor={STATUS_SOFT[meeting.status]}
+                    size="sm"
+                  />
+                </View>
+                <Text style={styles.subject}>{meeting.subject || '—'}</Text>
+                <View style={styles.metaRow}>
+                  <View style={styles.metaItem}>
+                    <Ionicons name="calendar-outline" size={13} color={Colors.inkMuted} />
+                    <Text style={styles.metaText}>{meeting.date}</Text>
+                  </View>
+                  <View style={styles.metaItem}>
+                    <Ionicons name="time-outline" size={13} color={Colors.inkMuted} />
+                    <Text style={styles.metaText}>{meeting.time}</Text>
+                  </View>
+                  <View style={styles.metaItem}>
+                    <Ionicons name="videocam-outline" size={13} color={Colors.inkMuted} />
+                    <Text style={styles.metaText}>{meeting.mode}</Text>
+                  </View>
+                </View>
+                <TouchableOpacity
+                  style={styles.cancelBtn}
+                  onPress={() => onCancel(meeting)}
+                  disabled={deletePtm.isPending}
+                >
+                  <Text style={styles.cancelBtnText}>Cancel meeting</Text>
+                </TouchableOpacity>
               </View>
-              <Text style={styles.subject}>{meeting.subject || '—'}</Text>
-              <View style={styles.metaRow}>
-                <View style={styles.metaItem}>
-                  <Ionicons name="calendar-outline" size={13} color={Colors.inkMuted} />
-                  <Text style={styles.metaText}>{meeting.date}</Text>
-                </View>
-                <View style={styles.metaItem}>
-                  <Ionicons name="time-outline" size={13} color={Colors.inkMuted} />
-                  <Text style={styles.metaText}>{meeting.time}</Text>
-                </View>
-                <View style={styles.metaItem}>
-                  <Ionicons name="videocam-outline" size={13} color={Colors.inkMuted} />
-                  <Text style={styles.metaText}>{meeting.mode}</Text>
-                </View>
-              </View>
-              <TouchableOpacity
-                style={styles.cancelBtn}
-                onPress={() => onCancel(meeting)}
-                disabled={deletePtm.isPending}
-              >
-                <Text style={styles.cancelBtnText}>Cancel meeting</Text>
-              </TouchableOpacity>
-            </View>
-          </Animated.View>
-        ))
-      )}
-    </ScrollView>
+            </Animated.View>
+          ))
+        )}
+      </ScrollView>
+      <Toast
+        visible={!!errorToast}
+        message={errorToast ?? ''}
+        type="error"
+        onHide={() => setErrorToast(null)}
+      />
+    </>
   );
 };
 

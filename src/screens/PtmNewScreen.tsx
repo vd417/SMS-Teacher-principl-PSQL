@@ -25,6 +25,7 @@ import { deriveColorSet } from '../theme/derive';
 import { classLabel } from '@/lib/classLabel';
 import { todayISO } from '@/lib/date';
 import { ptmSchema, PtmSchemaType } from '../validation/schemas';
+import { isAppError } from '@/lib/errors';
 
 // The backend/parent app render `mode` verbatim (and the parent app picks its icon with
 // `mode.startsWith('Video')`), so these must be the exact human-readable strings sent on
@@ -87,6 +88,7 @@ export const PtmNewScreen: React.FC = () => {
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
   const [toastVisible, setToastVisible] = useState(false);
+  const [errorToast, setErrorToast] = useState<string | null>(null);
 
   const { data: classes = [] } = useClasses();
   const createPtm = useCreatePtm();
@@ -127,6 +129,8 @@ export const PtmNewScreen: React.FC = () => {
           setToastVisible(true);
           setTimeout(() => navigation.goBack(), 1200);
         },
+        onError: (e) =>
+          setErrorToast(isAppError(e) ? e.message : 'Could not schedule the meeting. Try again.'),
       }
     );
   };
@@ -285,6 +289,12 @@ export const PtmNewScreen: React.FC = () => {
         message="Meeting scheduled!"
         type="success"
         onHide={() => setToastVisible(false)}
+      />
+      <Toast
+        visible={!!errorToast}
+        message={errorToast ?? ''}
+        type="error"
+        onHide={() => setErrorToast(null)}
       />
     </View>
   );
