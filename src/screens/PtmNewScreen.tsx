@@ -26,11 +26,10 @@ import { classLabel } from '@/lib/classLabel';
 import { todayISO } from '@/lib/date';
 import { ptmSchema, PtmSchemaType } from '../validation/schemas';
 
-const MODES: { value: string; label: string }[] = [
-  { value: 'in_person', label: 'In person' },
-  { value: 'video_call', label: 'Video call' },
-  { value: 'phone_call', label: 'Phone call' },
-];
+// The backend/parent app render `mode` verbatim (and the parent app picks its icon with
+// `mode.startsWith('Video')`), so these must be the exact human-readable strings sent on
+// the wire — not codes mapped to labels.
+const MODES = ['In person', 'Video call', 'Phone call'];
 
 function parseHm(value: string): Date {
   const [h, m] = value.split(':').map(Number);
@@ -106,7 +105,7 @@ export const PtmNewScreen: React.FC = () => {
       subject: '',
       date: todayISO(),
       time: '',
-      mode: 'in_person',
+      mode: 'In person',
     },
   });
 
@@ -249,15 +248,15 @@ export const PtmNewScreen: React.FC = () => {
             render={({ field: { onChange, value } }) => (
               <View style={styles.chipGrid}>
                 {MODES.map((m) => {
-                  const isSelected = value === m.value;
+                  const isSelected = value === m;
                   return (
                     <TouchableOpacity
-                      key={m.value}
+                      key={m}
                       style={[styles.chip, isSelected && styles.chipActive]}
-                      onPress={() => onChange(m.value)}
+                      onPress={() => onChange(m)}
                     >
                       <Text style={[styles.chipText, isSelected && styles.chipActiveText]}>
-                        {m.label}
+                        {m}
                       </Text>
                     </TouchableOpacity>
                   );

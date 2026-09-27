@@ -66,17 +66,20 @@ test('create POST sends the new-meeting body and maps the created row', async ()
         ok: true,
         status: 201,
         statusText: 'Created',
-        json: async () => ({ data: row }),
+        json: async () => ({ data: { ...row, mode: 'Video call' } }),
       };
     }),
   });
 
+  // `mode` is human-readable display text — the parent app renders it verbatim and
+  // derives its icon from `mode.startsWith('Video')` — so the wire value must be the
+  // exact label chosen in the UI, not a machine code.
   const saved = await httpPtm(http).create({
     studentId: 'student-1',
     subject: 'Math',
     date: '2026-08-27',
     time: '10:30',
-    mode: 'in_person',
+    mode: 'Video call',
   });
 
   expect(calls[0]).toEqual({
@@ -87,9 +90,10 @@ test('create POST sends the new-meeting body and maps the created row', async ()
       subject: 'Math',
       date: '2026-08-27',
       time: '10:30',
-      mode: 'in_person',
+      mode: 'Video call',
     },
   });
+  expect(saved.mode).toBe('Video call');
   expect(saved.studentName).toBe('Aarav Sharma');
   expect(saved.studentId).toBe('student-1');
   expect(saved.status).toBe('pending');
