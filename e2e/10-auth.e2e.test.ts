@@ -1,6 +1,6 @@
 import { SEED } from './support/config';
 import { raw } from './support/raw';
-import { actorFor, loginAs } from './support/session';
+import { loginAs, switchSchoolAs } from './support/session';
 
 describe('auth against sms-api (matrix AUTH-*)', () => {
   test('login → /auth/me maps the teacher and the tenant', async () => {
@@ -49,7 +49,7 @@ describe('auth against sms-api (matrix AUTH-*)', () => {
     const schools = await m.repos.auth.listMySchools();
     expect(schools.map((s) => s.name).sort()).toEqual([SEED.otherSchool, SEED.mainSchool].sort());
     const other = schools.find((s) => s.name === SEED.otherSchool)!;
-    const switched = actorFor(await m.repos.auth.switchSchool(other.id));
+    const switched = await switchSchoolAs(m, other.id);
     expect(switched.session.tenant.name).toBe(SEED.otherSchool);
     expect((await switched.repos.classes.list()).map((c) => c.name)).toEqual(['IX-A']);
   });
