@@ -26,6 +26,18 @@
 - **Second run:** exit 0, `Total inserted: 0`, so the seed is idempotent.
 - **Real `POST /v1/auth/login`** against the worktree API on :5162: teacher.a, teacher.b, multi, other.teacher and principal all returned 200. Only the status code was printed; no tokens.
 
+## CHECKPOINT 1 decision (2026-09-27)
+
+The user approved the matrix and the proposed fix list ("go", accepting the defaults offered for each scope decision):
+
+- **SD-1 — No.** Teachers do not get the non-teaching staff directory. **A-9 applies**: the app stops calling `GET /staff` for teachers. The route's policy is unchanged.
+- **SD-2 — Default semantics.** `total` = active student headcount. `present` = distinct students marked present or late in any period that day. **B-2 applies**, and PRN-01 `students_present_pct` follows the same rule.
+- **SD-3 — No new column.** Routed-bus stops have no scheduled time, and the app shows none (**A-8**).
+- **SD-4 — Keep.** Boarding requires an active trip started by a driver or the principal. The e2e test starts a trip before BUS-04.
+- **SD-5 — Ownership out of scope.** The PAY-01 `GET /payslips?user_id=` cross-user read is recorded as a **separate security ticket** (not fixed in this work).
+- **SD-6 — Keep** daily roll-call as a separate flow.
+- **SD-7 — Out of scope.** Dashboard stats stay school-wide.
+
 ## Rows
 ### Summary (Task 7, 2026-09-27) — for CHECKPOINT 1
 
