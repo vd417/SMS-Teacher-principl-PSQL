@@ -360,3 +360,34 @@ The old doc lists 32 backend gaps as table rows classed `b`. They are numbered b
 
 The old doc's "priority list" item 11 (no settings endpoint) was never counted among the 32 rows. `GET`/`PATCH /v1/me/settings` now exists (MeSchoolsController.cs:14/18) and the app does not call it. It is listed under 💤 and is not in scope here.
 
+
+## Fix status at completion (2026-09-28)
+
+All 18 approved fixes are implemented. Nothing is pushed; both branches are local.
+
+| Fix | Owner | Commit | Repo |
+|---|---|---|---|
+| B-1 | backend | d581cae | sms-api |
+| B-2 | backend | 554c206 | sms-api |
+| B-3 | backend | dfafca4 | sms-api |
+| B-4 | backend | ccf31d1 | sms-api |
+| B-5 | backend | 388cfac | sms-api |
+| B-6 | seed | 2ba5ec0 | sms-api |
+| NEW-1 | backend | fa4a9fc | sms-api |
+| NEW-2 | seed | 2ba5ec0 | sms-api |
+| NEW-3 | backend | 60f2402 | sms-api |
+| A-1 | app | a21adbe | sms-teacher-app |
+| A-2 | app | 3c9b759 | sms-teacher-app |
+| A-3, A-4 | app | 696bfc2 | sms-teacher-app |
+| A-5 | app | e83bf92 | sms-teacher-app |
+| A-6 | app | 687327d | sms-teacher-app |
+| A-7, A-8 | app | f606130 | sms-teacher-app |
+| A-9 | app | dd10fd3 | sms-teacher-app |
+| B-3 follow-up (app side) | app | 0a65241 | sms-teacher-app |
+
+Verification at completion: sms-api `dotnet test Sms.slnx` 461 unit + 818 integration, 0 failed (run at 10:11 IST / 04:41 UTC, when the IST and UTC dates matched, so the R8 Reporting time-of-day flake did not apply and those tests passed). App `npx jest` 404 passed / 0 failed, `npx tsc --noEmit` clean, `npx eslint .` 0 errors / 84 warnings. e2e gate 45/45 on two consecutive runs, repeated after the final B-3 fix.
+
+### Open items, not fixed (decisions for the user)
+
+- **NEW-4 — every e2e run poisons the dev seed.** The principal teacher-reassignment deletes and re-inserts `BusAssignments` with a fresh `Id`, so PRN-06's restore leaves a semantically correct row (same teacher, same bus) under a random `Id`. The unique `IX_BusAssignments_Teacher` then blocks the seeder's canonical row and `DevSeed` refuses with the shadow error until the stray row is deleted by hand. Confirmed reproducible. Options: match the seed row on `(TenantId, TeacherUserId, BusId)`; make the restore reinstate the original `Id`; or accept the manual repair.
+- **A-3 half-applied create.** `exams.repo.create()` posts the paper then sends a follow-up `PATCH {status}` for a non-`upcoming` status. If the PATCH fails, the promise rejects and the optimistic entry rolls back, but the paper exists server-side as `upcoming` — so a user who retries creates a duplicate. Only reachable via the non-default status path. Options: delete the created paper on PATCH failure, or surface partial success distinctly from failure.
