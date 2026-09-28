@@ -27,12 +27,26 @@ export function httpExams(http: HttpClient): ExamsRepository {
             status: input.status,
           })
         )
-        .then((x) => toExam(examPaperSchema.parse(x))),
+        .then((x) => toExam(examPaperSchema.parse(x)))
+        .then(async (created) => {
+          // A-3 (EXM-04): CreateExamPaperRequest has no `status` field, so the
+          // API silently drops it and always saves the paper as `upcoming`.
+          // Send a follow-up PATCH when a non-default status was requested.
+          if (input.status !== 'upcoming' && input.status !== created.status) {
+            const patched = await http.patch(`/exam-papers/${created.id}`, {
+              status: input.status,
+            });
+            return toExam(examPaperSchema.parse(patched));
+          }
+          return created;
+        }),
     update: (id, patch) =>
       http
+        // A-4 (EXM-05): UpdateExamPaperRequest has no `class_id` field, so a
+        // class change on edit is silently dropped. Never send it.
         .patch(
           `/exam-papers/${id}`,
-          toExamDTO({ ...patch, classId: patch.classId, maxMarks: patch.maxMarks })
+          toExamDTO({ ...patch, classId: undefined, maxMarks: patch.maxMarks })
         )
         .then((x) => toExam(examPaperSchema.parse(x))),
     remove: (id) => http.delete(`/exam-papers/${id}`),
