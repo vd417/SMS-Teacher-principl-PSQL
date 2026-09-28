@@ -29,6 +29,15 @@ export const leaveSchema = z.object({
   substitute: z.string().optional(),
 });
 
+export const ptmSchema = z.object({
+  classId: z.string().min(1, 'Please select a class'),
+  studentId: z.string().min(1, 'Please select a student'),
+  subject: z.string().optional(),
+  date: z.string().min(1, 'Date is required'),
+  time: z.string().min(1, 'Time is required'),
+  mode: z.string().min(1, 'Please select a mode'),
+});
+
 export const chatMessageSchema = z.object({
   message: z.string().min(1, 'Message cannot be empty').max(500, 'Message too long'),
 });
@@ -37,3 +46,4 @@ export type ExamSchemaType = z.infer<typeof examSchema>;
 export type AssignmentSchemaType = z.infer<typeof assignmentSchema>;
 export type LeaveSchemaType = z.infer<typeof leaveSchema>;
 export type ChatMessageSchemaType = z.infer<typeof chatMessageSchema>;
+export type PtmSchemaType = z.infer<typeof ptmSchema>;
