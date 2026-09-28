@@ -72,6 +72,9 @@ export interface NewAnnouncementInput {
 }
 export interface GradeInput {
   studentId: string;
+  /** Sent as `student_name` on PUT /grades (A-5/GRD-02): dbo.grade_upsert
+   * writes it verbatim and NULLs a previously stored name when it is omitted. */
+  studentName: string;
   examId: string;
   marks: number;
 }

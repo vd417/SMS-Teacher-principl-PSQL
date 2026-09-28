@@ -12,6 +12,7 @@ export function httpGrades(http: HttpClient): GradesRepository {
       http
         .put('/grades', {
           student_id: input.studentId,
+          student_name: input.studentName,
           exam_paper_id: input.examId,
           marks: input.marks,
         })

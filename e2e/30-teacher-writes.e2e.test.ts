@@ -67,10 +67,15 @@ test('ATT-06 → ATT-04: period attendance saves and reads back', async () => {
 test('GRD-02 → GRD-01 + GRD-03: marks upsert, read back, notify', async () => {
   const paper = await seedPaper(a);
   const student = (await a.repos.students.listByClass(paper.classId, { limit: 1 })).items[0];
-  await a.repos.grades.upsert({ studentId: student.id, examId: paper.id, marks: 42 });
-  expect(
-    (await a.repos.grades.listByExam(paper.id)).find((g) => g.studentId === student.id)?.marks
-  ).toBe(42);
+  await a.repos.grades.upsert({
+    studentId: student.id,
+    studentName: student.name,
+    examId: paper.id,
+    marks: 42,
+  });
+  const saved = (await a.repos.grades.listByExam(paper.id)).find((g) => g.studentId === student.id);
+  expect(saved?.marks).toBe(42);
+  expect(saved?.studentName).toBe(student.name);
   await expect(a.repos.grades.notifyPublished(paper.id)).resolves.toEqual(
     expect.objectContaining({ parentReach: expect.any(Number) })
   );

@@ -86,7 +86,12 @@ export const MarksEntryScreen: React.FC = () => {
     try {
       await Promise.all(
         toSave.map((s) =>
-          upsert.mutateAsync({ studentId: s.id, examId, marks: Number(marks[s.id]) })
+          upsert.mutateAsync({
+            studentId: s.id,
+            studentName: s.name,
+            examId,
+            marks: Number(marks[s.id]),
+          })
         )
       );
       const allDone = toSave.length === students.length && students.length > 0;
