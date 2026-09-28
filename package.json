@@ -13,7 +13,6 @@
     "prepare": "husky",
     "test": "jest",
     "test:watch": "jest --watch",
-    "smoke:teacher": "node scripts/smoke/teacher-smoke.mjs",
     "e2e:sms-api": "jest -c jest.e2e.config.js --runInBand",
     "capture:sms-api": "jest -c jest.capture.config.js --runInBand"
   },
