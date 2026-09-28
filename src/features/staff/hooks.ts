@@ -42,30 +42,23 @@ export function useSchoolStaffDirectory() {
     enabled: !isPrincipal,
   });
 
-  const staffQ = useQuery({
-    queryKey: queryKeys.staffDirectory(tenantId),
-    queryFn: () => repos.staff.list(),
-    enabled: !isPrincipal,
-  });
-
+  // A-9 (STF-01): GET /staff is school.principal-only (SD-1: teachers do not
+  // get the non-teaching staff directory), so it always 403s for a teacher.
+  // Never call it outside the principal branch above.
   const members = useMemo(() => {
     const rows: SchoolStaffMember[] = isPrincipal
       ? (principalQ.data?.staff ?? []).map(staffEntryToMember)
-      : mergeSchoolStaffDirectory(teachersQ.data ?? [], staffQ.data ?? []);
+      : mergeSchoolStaffDirectory(teachersQ.data ?? [], []);
 
     if (!selfName) return rows;
     return rows.filter((m) => m.name.trim().toLowerCase() !== selfName);
-  }, [isPrincipal, principalQ.data, teachersQ.data, staffQ.data, selfName]);
+  }, [isPrincipal, principalQ.data, teachersQ.data, selfName]);
 
   return {
     members,
-    isLoading: isPrincipal ? principalQ.isLoading : teachersQ.isLoading || staffQ.isLoading,
-    isError: isPrincipal ? principalQ.isError : teachersQ.isError || staffQ.isError,
-    isFetching: isPrincipal ? principalQ.isFetching : teachersQ.isFetching || staffQ.isFetching,
-    refetch: isPrincipal
-      ? principalQ.refetch
-      : async () => {
-          await Promise.all([teachersQ.refetch(), staffQ.refetch()]);
-        },
+    isLoading: isPrincipal ? principalQ.isLoading : teachersQ.isLoading,
+    isError: isPrincipal ? principalQ.isError : teachersQ.isError,
+    isFetching: isPrincipal ? principalQ.isFetching : teachersQ.isFetching,
+    refetch: isPrincipal ? principalQ.refetch : teachersQ.refetch,
   };
 }
