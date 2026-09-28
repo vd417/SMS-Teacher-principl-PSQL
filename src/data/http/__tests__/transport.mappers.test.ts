@@ -66,3 +66,25 @@ test('toTransportBusRow maps admin bus list row', () => {
   expect(bus.studentsAssigned).toBe(8);
   expect(bus.teacherName).toBe('Bob');
 });
+
+test('A-7: toFleetBus maps route_id, which /transport/fleet already sends but the old schema stripped', () => {
+  const row = fleetBusSchema.parse({
+    bus_id: 'b1',
+    bus_no: 'WBA-07',
+    route_id: 'route-1',
+    stop_count: 5,
+    students_riding: 12,
+    status: 'idle',
+  });
+  expect(toFleetBus(row).routeId).toBe('route-1');
+});
+
+test('A-7: toTransportBusRow maps route_id, which /transport/buses already sends but the old schema stripped', () => {
+  const row = transportBusSchema.parse({
+    bus_id: 'b2',
+    bus_no: 'WBA-02',
+    route_id: 'route-2',
+    students_assigned: 8,
+  });
+  expect(toTransportBusRow(row).routeId).toBe('route-2');
+});

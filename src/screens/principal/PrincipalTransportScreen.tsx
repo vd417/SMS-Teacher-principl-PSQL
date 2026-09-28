@@ -50,9 +50,10 @@ export const PrincipalTransportScreen: React.FC = () => {
   );
 
   const pickerBus = fleet.find((b) => b.busId === picker?.busId);
-  // FleetBus has no separate routeId field in this app's domain model (one bus == one route
-  // here), so the bus's own id is passed as the route identifier for road-geometry lookup.
-  const { data: selectedRouteGeometry } = useRouteGeometry(expandedId);
+  // A-7: GET /transport/routes/{routeId}/geometry 403s on a bus id — pass the
+  // real route_id, which /transport/fleet already sends (fleetBusSchema kept it).
+  const expandedRouteId = fleet.find((b) => b.busId === expandedId)?.routeId ?? null;
+  const { data: selectedRouteGeometry } = useRouteGeometry(expandedRouteId);
 
   const onPickTeacher = (teacherUserId: string) => {
     if (!picker) return;

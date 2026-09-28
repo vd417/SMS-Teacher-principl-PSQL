@@ -13,6 +13,8 @@ const fleetStopSchema = z.object({
 export const fleetBusSchema = z.object({
   bus_id: z.string(),
   bus_no: z.string(),
+  // A-7: /transport/fleet already sends this; the schema used to strip it.
+  route_id: z.string().nullish(),
   route_name: z.string().nullish(),
   driver: z.string().nullish(),
   driver_phone: z.string().nullish(),
@@ -36,6 +38,8 @@ export const fleetBusSchema = z.object({
 export const transportBusSchema = z.object({
   bus_id: z.string(),
   bus_no: z.string(),
+  // A-7: /transport/buses already sends this; the schema used to strip it.
+  route_id: z.string().nullish(),
   route_name: z.string().nullish(),
   driver: z.string().nullish(),
   driver_phone: z.string().nullish(),
@@ -54,6 +58,7 @@ function normalizeFleetStatus(raw: string): FleetBusStatus {
 export const toFleetBus = (d: z.infer<typeof fleetBusSchema>): FleetBus => ({
   busId: d.bus_id,
   busNo: d.bus_no,
+  routeId: d.route_id ?? undefined,
   routeName: d.route_name ?? undefined,
   driver: d.driver ?? undefined,
   driverPhone: d.driver_phone ?? undefined,
@@ -87,6 +92,7 @@ export const toFleetBus = (d: z.infer<typeof fleetBusSchema>): FleetBus => ({
 export const toTransportBusRow = (d: z.infer<typeof transportBusSchema>): TransportBusRow => ({
   busId: d.bus_id,
   busNo: d.bus_no,
+  routeId: d.route_id ?? undefined,
   routeName: d.route_name ?? undefined,
   driver: d.driver ?? undefined,
   driverPhone: d.driver_phone ?? undefined,

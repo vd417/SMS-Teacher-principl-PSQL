@@ -313,7 +313,9 @@ export type BoardingStatus = 'pending' | 'boarded' | 'absent';
 export interface BusStop {
   id: string;
   name: string;
-  time: string; // scheduled time, e.g. "07:45"
+  /** Scheduled time, e.g. "07:45". Always null for a routed bus — RouteStops
+   * has no Time column (SD-3) — so the app shows no per-stop time. */
+  time: string | null;
   order: number;
   lat: number;
   lng: number;
@@ -325,6 +327,8 @@ export interface Bus {
   driver: string;
   driverPhone: string;
   stops: BusStop[];
+  /** dbo.TransportRoutes.Id, for GET /transport/routes/{routeId}/geometry (A-7). */
+  routeId?: string;
 }
 export interface BusPosition {
   busId: string;
@@ -359,6 +363,8 @@ export interface FleetBus {
   travelingTeachers?: { teacherUserId: string; teacherName: string }[];
   /** Ordered stops for drawing this bus's route on the fleet map, when the backend provides them. */
   stops?: BusStop[];
+  /** dbo.TransportRoutes.Id, for GET /transport/routes/{routeId}/geometry (A-7). */
+  routeId?: string;
 }
 /** A bus tied to one of the teacher's classes, for read-only live location (not necessarily their duty bus). */
 export interface MyRouteBus {
@@ -371,6 +377,8 @@ export interface MyRouteBus {
   speedKmh?: number;
   nextStopName?: string;
   lastPingAt?: string;
+  /** dbo.TransportRoutes.Id, for GET /transport/routes/{routeId}/geometry (A-7). */
+  routeId?: string;
 }
 export interface TransportBusRow {
   busId: string;
@@ -382,6 +390,8 @@ export interface TransportBusRow {
   studentsAssigned: number;
   teacherUserId?: string;
   teacherName?: string;
+  /** dbo.TransportRoutes.Id, for GET /transport/routes/{routeId}/geometry (A-7). */
+  routeId?: string;
 }
 export interface BoardingRecord {
   studentId: string;
