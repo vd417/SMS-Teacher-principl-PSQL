@@ -17,6 +17,8 @@ export interface ClassListCardProps {
   onOpenAttendance: () => void;
   homeworkCount?: number;
   examCount?: number;
+  /** Overrides `cls.subject` with the signed-in teacher's own subject(s) for this class (A-1). */
+  subject?: string;
 }
 
 export const ClassListCard: React.FC<ClassListCardProps> = ({
@@ -27,6 +29,7 @@ export const ClassListCard: React.FC<ClassListCardProps> = ({
   onOpenAttendance,
   homeworkCount,
   examCount,
+  subject,
 }) => {
   const cs = classCardColorSet(cls.id);
   const { data: attendanceRecords } = useAttendance(cls.id, today);
@@ -39,7 +42,7 @@ export const ClassListCard: React.FC<ClassListCardProps> = ({
           <View style={styles.header}>
             <View style={{ flex: 1 }}>
               <Text style={styles.className}>{classLabel(cls.name, cls.section, ' – ')}</Text>
-              <Text style={styles.subject}>{cls.subject}</Text>
+              <Text style={styles.subject}>{subject ?? cls.subject}</Text>
             </View>
             <View style={styles.iconBadge}>
               <Ionicons name="school" size={22} color={cs.color} />
