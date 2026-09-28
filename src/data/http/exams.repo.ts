@@ -33,10 +33,31 @@ export function httpExams(http: HttpClient): ExamsRepository {
           // API silently drops it and always saves the paper as `upcoming`.
           // Send a follow-up PATCH when a non-default status was requested.
           if (input.status !== 'upcoming' && input.status !== created.status) {
-            const patched = await http.patch(`/exam-papers/${created.id}`, {
-              status: input.status,
-            });
-            return toExam(examPaperSchema.parse(patched));
+            try {
+              const patched = await http.patch(`/exam-papers/${created.id}`, {
+                status: input.status,
+              });
+              return toExam(examPaperSchema.parse(patched));
+            } catch (patchErr) {
+              // A-3: the paper now exists server-side as `upcoming` even though
+              // the caller will see this create() reject. Roll back by deleting
+              // it so a retry cannot create a duplicate paper. If the rollback
+              // itself fails, do not swallow it — the paper is an orphan and the
+              // id must be surfaced so it is diagnosable.
+              try {
+                await http.delete(`/exam-papers/${created.id}`);
+              } catch (deleteErr) {
+                const deleteMessage =
+                  deleteErr instanceof Error ? deleteErr.message : String(deleteErr);
+                throw new Error(
+                  `Exam paper ${created.id} was created but its status update failed and the ` +
+                    `rollback delete also failed (${deleteMessage}); it is orphaned as ` +
+                    `'upcoming' and must be cleaned up manually.`,
+                  { cause: patchErr }
+                );
+              }
+              throw patchErr;
+            }
           }
           return created;
         }),

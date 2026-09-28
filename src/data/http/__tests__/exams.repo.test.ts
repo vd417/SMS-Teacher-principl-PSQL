@@ -144,6 +144,109 @@ test('EXM-04: create with the default upcoming status does not send a follow-up 
   expect(calls.map((c) => c.method)).toEqual(['POST']);
 });
 
+test('A-3: create rolls back (DELETEs) the just-created paper when the follow-up PATCH fails, and rejects', async () => {
+  const calls: { url: string; method?: string }[] = [];
+  const http = createHttpClient({
+    baseUrl: 'https://api.test/v1',
+    getAuth: () => ({ accessToken: 't', tenantId: 'tenant-1' }),
+    fetchImpl: mockFetch(async (url, init) => {
+      const method = init?.method ?? 'GET';
+      calls.push({ url, method });
+      if (method === 'POST') {
+        return {
+          ok: true,
+          status: 201,
+          statusText: 'Created',
+          json: async () => ({ data: { ...createdRow, status: 'upcoming' } }),
+        };
+      }
+      if (method === 'PATCH') {
+        return {
+          ok: false,
+          status: 500,
+          statusText: 'Internal Server Error',
+          json: async () => ({ error: { code: 'http_500', message: 'patch failed' } }),
+        };
+      }
+      if (method === 'DELETE') {
+        return { ok: true, status: 204, statusText: 'No Content', json: async () => undefined };
+      }
+      throw new Error(`unexpected method ${method}`);
+    }),
+  });
+
+  await expect(
+    httpExams(http).create({
+      title: 'Unit test 2',
+      classId: 'c1',
+      subject: 'Music',
+      date: '2026-08-27',
+      time: '09:00',
+      duration: 45,
+      maxMarks: 20,
+      topics: ['Rhythm'],
+      status: 'draft',
+    })
+  ).rejects.toThrow();
+
+  expect(calls.map((c) => c.method)).toEqual(['POST', 'PATCH', 'DELETE']);
+  const del = calls.find((c) => c.method === 'DELETE');
+  expect(del?.url).toContain('/exam-papers/paper-1');
+});
+
+test('A-3: create rejects with an error naming the orphaned paper id when both the PATCH and the rollback DELETE fail', async () => {
+  const calls: { method?: string }[] = [];
+  const http = createHttpClient({
+    baseUrl: 'https://api.test/v1',
+    getAuth: () => ({ accessToken: 't', tenantId: 'tenant-1' }),
+    fetchImpl: mockFetch(async (_url, init) => {
+      const method = init?.method ?? 'GET';
+      calls.push({ method });
+      if (method === 'POST') {
+        return {
+          ok: true,
+          status: 201,
+          statusText: 'Created',
+          json: async () => ({ data: { ...createdRow, status: 'upcoming' } }),
+        };
+      }
+      if (method === 'PATCH') {
+        return {
+          ok: false,
+          status: 500,
+          statusText: 'Internal Server Error',
+          json: async () => ({ error: { code: 'http_500', message: 'patch failed' } }),
+        };
+      }
+      if (method === 'DELETE') {
+        return {
+          ok: false,
+          status: 500,
+          statusText: 'Internal Server Error',
+          json: async () => ({ error: { code: 'http_500', message: 'delete failed' } }),
+        };
+      }
+      throw new Error(`unexpected method ${method}`);
+    }),
+  });
+
+  await expect(
+    httpExams(http).create({
+      title: 'Unit test 2',
+      classId: 'c1',
+      subject: 'Music',
+      date: '2026-08-27',
+      time: '09:00',
+      duration: 45,
+      maxMarks: 20,
+      topics: ['Rhythm'],
+      status: 'draft',
+    })
+  ).rejects.toThrow(/paper-1/);
+
+  expect(calls.map((c) => c.method)).toEqual(['POST', 'PATCH', 'DELETE']);
+});
+
 test('EXM-05: update never sends class_id, because UpdateExamPaperRequest has no class_id field', async () => {
   const calls: { url: string; method?: string; body: unknown }[] = [];
   const http = createHttpClient({
