@@ -231,6 +231,25 @@ test('toApprovalRequest maps requester_role, falling back to Teacher', () => {
   expect(withoutRole.requesterRole).toBe('Teacher');
 });
 
+test('APR-01: toApprovalRequest maps a namespaced requester_role to a human label', () => {
+  const a = toApprovalRequest(
+    approvalRequestSchema.parse({
+      id: 'a7',
+      requester_id: 'u9',
+      requester_name: 'Bharat Menon',
+      requester_role: 'school.teacher',
+      type: 'casual',
+      from_date: '2026-07-01',
+      to_date: '2026-07-01',
+      status: 'pending',
+      applied_on: '2026-06-20',
+      priority: 'high',
+    })
+  );
+  expect(a.requesterRole).toBe('Teacher');
+  expect(a.priority).toBe('high');
+});
+
 test('toApprovalRequest maps decided_by_name', () => {
   const dto = approvalRequestSchema.parse({
     id: 'a3',
