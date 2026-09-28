@@ -30,7 +30,7 @@ export const fleetBusSchema = z.object({
   teacher_name: z.string().nullish(),
   conductor_staff_id: z.string().nullish(),
   traveling_teachers: z
-    .array(z.object({ teacher_user_id: z.string(), teacher_name: z.string() }))
+    .array(z.object({ teacher_user_id: z.string(), teacher_name: z.string().nullish() }))
     .nullish(),
   stops: z.array(fleetStopSchema).nullish(),
 });
@@ -75,7 +75,7 @@ export const toFleetBus = (d: z.infer<typeof fleetBusSchema>): FleetBus => ({
   conductorStaffId: d.conductor_staff_id ?? undefined,
   travelingTeachers: d.traveling_teachers?.map((t) => ({
     teacherUserId: t.teacher_user_id,
-    teacherName: t.teacher_name,
+    teacherName: t.teacher_name ?? '',
   })),
   stops: d.stops?.map(
     (s): BusStop => ({
