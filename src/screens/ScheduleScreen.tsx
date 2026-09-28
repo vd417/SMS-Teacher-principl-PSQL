@@ -8,6 +8,8 @@ import { Colors, Radii } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { ScreenHeader } from '../components';
 import { useTimetable } from '@/features/timetable/hooks';
+import { slotsTaughtByTeacher } from '@/lib/homeworkSubjects';
+import { useAuth } from '@/features/auth/AuthProvider';
 import { deriveColorSet } from '@/theme/derive';
 import { Skeleton } from '@/ui/state/Skeleton';
 import { ErrorState } from '@/ui/state/ErrorState';
@@ -60,9 +62,30 @@ export function cellFor(timetable: TimetableSlot[], day: WeekDay, period: number
   };
 }
 
+/**
+ * `GET /timetable` returns every slot the caller can see, which for a class
+ * teacher includes other teachers' periods in her own class (TT-01). Filter
+ * to the signed-in teacher's own slots first, so `cellFor` never has to
+ * arbitrarily pick between two slots sharing a day and period.
+ */
+export function cellForTeacher(
+  timetable: TimetableSlot[],
+  day: WeekDay,
+  period: number,
+  teacherName?: string | null
+): Lesson | null {
+  return cellFor(slotsTaughtByTeacher(timetable, teacherName), day, period);
+}
+
 export const ScheduleScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
-  const { data: timetable = [], isLoading, isError, refetch } = useTimetable();
+  const { session } = useAuth();
+  const teacherName = session?.user.name;
+  const { data: rawTimetable = [], isLoading, isError, refetch } = useTimetable();
+  const timetable = useMemo(
+    () => slotsTaughtByTeacher(rawTimetable, teacherName),
+    [rawTimetable, teacherName]
+  );
 
   useFocusEffect(
     useCallback(() => {

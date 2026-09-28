@@ -1,4 +1,4 @@
-import { cellFor, periodBellTimes } from '../ScheduleScreen';
+import { cellFor, periodBellTimes, cellForTeacher } from '../ScheduleScreen';
 import type { TimetableSlot } from '@/data/domain';
 
 jest.mock('@react-native-async-storage/async-storage', () => ({
@@ -39,4 +39,39 @@ test('cellFor returns the lesson scheduled in the exact day and period', () => {
 test('periodBellTimes uses published slot times (not hardcoded 08:00)', () => {
   expect(periodBellTimes([mondayMath], 1)).toEqual({ start: '08:15', end: '09:00' });
   expect(periodBellTimes([mondayMath], 2)).toEqual({ start: '—', end: '—' });
+});
+
+test('TT-01: a class teacher only sees her own periods, not another teacher sharing the same day+period in her class', () => {
+  const herOwnMathSlot: TimetableSlot = {
+    id: 'slot-1',
+    day: 'Mon',
+    period: 1,
+    subject: 'Mathematics',
+    classId: 'ix-a',
+    className: 'IX-A',
+    room: '101',
+    startTime: '08:15',
+    endTime: '09:00',
+    teacherName: 'Asha Kulkarni',
+  };
+  const otherTeachersScienceSlot: TimetableSlot = {
+    id: 'slot-2',
+    day: 'Mon',
+    period: 1,
+    subject: 'Science',
+    classId: 'ix-a',
+    className: 'IX-A',
+    room: '102',
+    startTime: '08:15',
+    endTime: '09:00',
+    teacherName: 'Bharat Menon',
+  };
+  const all = [otherTeachersScienceSlot, herOwnMathSlot];
+
+  // Unfiltered, cellFor picks whichever slot comes first for the shared day+period.
+  expect(cellFor(all, 'Mon', 1)?.subject).toBe('Science');
+
+  // cellForTeacher (what ScheduleScreen renders from) filters to the signed-in
+  // teacher's own slots first, using the existing slotsTaughtByTeacher helper.
+  expect(cellForTeacher(all, 'Mon', 1, 'Asha Kulkarni')?.subject).toBe('Mathematics');
 });
