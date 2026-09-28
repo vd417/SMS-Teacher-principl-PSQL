@@ -102,7 +102,10 @@ describe('teacher A reads (matrix CLS/STU/ATT/TT/EXM/…)', () => {
       expect.objectContaining({ totalClasses: expect.any(Number) })
     );
     await expectResolvesArray(a.repos.teachers.list());
-    await expectResolvesArray(a.repos.staff.list());
+    // SD-1/A-9: teachers do not get the non-teaching staff directory. GET /staff stays
+    // principal-only, so a teacher is correctly rejected; the app no longer makes this
+    // call for teachers at all (src/features/staff/hooks.ts).
+    await expect(a.repos.staff.list()).rejects.toMatchObject({ status: 403 });
     await expectResolvesArray(a.repos.bus.myRoutes());
   });
 });
