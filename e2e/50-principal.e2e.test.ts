@@ -82,6 +82,7 @@ test('PRN-04/05/06/07: fleet + reassign duty teacher and restore', async () => {
   // AppError, and restoring via raw() in finally is best-effort: the bus's DB state never actually
   // changes (the 500 happens before/during the write), so there is nothing to undo, but the
   // restore call is still attempted per R17 in case a future backend fix makes the assign succeed.
+  let primaryError: unknown;
   try {
     const assign = await raw(p, 'PUT', `/transport/buses/${bus.busId}/teacher`, {
       body: { teacher_user_id: b.session.user.id },
@@ -90,11 +91,37 @@ test('PRN-04/05/06/07: fleet + reassign duty teacher and restore', async () => {
     expect(
       (await p.repos.principal.transportFleet()).find((x) => x.busId === bus.busId)?.teacherName
     ).toBe(SEED.teacherB.name);
+  } catch (e) {
+    primaryError = e;
   } finally {
-    await raw(p, 'PUT', `/transport/buses/${bus.busId}/teacher`, {
-      body: { teacher_user_id: a.session.user.id },
-    }).catch(() => undefined);
+    // Restore must never fail silently: a swallowed restore failure here is how a
+    // broken restore went unnoticed and left the dev seed poisoned for later runs.
+    // A primary failure above still takes priority in what gets rethrown, but a
+    // restore failure is never discarded — it is thrown when there is no primary
+    // error, and logged loudly when there is one so it isn't lost.
+    try {
+      const restore = await raw(p, 'PUT', `/transport/buses/${bus.busId}/teacher`, {
+        body: { teacher_user_id: a.session.user.id },
+      });
+      if (restore.status !== 200 && !primaryError) {
+        throw new Error(
+          `PRN-06 restore failed: PUT /transport/buses/${bus.busId}/teacher returned ` +
+            `${restore.status} while restoring teacher A duty. Seed may be left dirty.`
+        );
+      }
+      if (restore.status !== 200 && primaryError) {
+        console.error(
+          `PRN-06 restore ALSO failed (status ${restore.status}) while an earlier ` +
+            `assertion in this test was already failing; seed may be left dirty.`
+        );
+      }
+    } catch (restoreErr) {
+      if (!primaryError) throw restoreErr;
+
+      console.error('PRN-06 restore ALSO threw:', restoreErr);
+    }
   }
+  if (primaryError) throw primaryError;
   expect(
     (await p.repos.principal.transportFleet()).find((x) => x.busId === bus.busId)?.teacherName
   ).toBe(SEED.teacherA.name);
