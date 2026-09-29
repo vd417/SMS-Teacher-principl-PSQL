@@ -64,6 +64,36 @@ test('401 triggers a single refresh then retries once', async () => {
   expect(calls).toBe(2);
 });
 
+test('aborts and throws a timeout AppError after timeoutMs', async () => {
+  jest.useFakeTimers();
+  const fetchImpl = ((_url: string, init: RequestInit) =>
+    new Promise<Response>((_resolve, reject) => {
+      init.signal?.addEventListener('abort', () =>
+        reject(new DOMException('Aborted', 'AbortError'))
+      );
+    })) as unknown as typeof fetch;
+  const http = createHttpClient({
+    baseUrl: '',
+    getAuth: () => ({ accessToken: 'a', tenantId: 't' }),
+    fetchImpl,
+    timeoutMs: 5000,
+  });
+  const assertion = expect(http.get('/slow')).rejects.toMatchObject({ code: 'timeout', status: 0 });
+  jest.advanceTimersByTime(5000);
+  await assertion;
+  jest.useRealTimers();
+});
+
+test('a fast response does not trip the timeout', async () => {
+  const http = createHttpClient({
+    baseUrl: '',
+    getAuth: () => ({ accessToken: 'a', tenantId: 't' }),
+    fetchImpl: async () => res(200, { data: { ok: true } }),
+    timeoutMs: 5000,
+  });
+  expect(await http.get('/x')).toEqual({ ok: true });
+});
+
 test('refresh failure calls onAuthLost and throws', async () => {
   const onAuthLost = jest.fn();
   const http = createHttpClient({
