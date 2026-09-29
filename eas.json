@@ -22,7 +22,7 @@
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://api.schooldesk.app/v1"
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.sms.catretech.me/v1"
       }
     },
     "production-apk": {
@@ -32,7 +32,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://api.schooldesk.app/v1",
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.sms.catretech.me/v1",
         "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       }
     },
