@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
-import { QueryClientProvider } from '@tanstack/react-query';
+import { View, ActivityIndicator, StyleSheet, AppState } from 'react-native';
+import { QueryClientProvider, focusManager } from '@tanstack/react-query';
 import { queryClient } from '@/lib/queryClient';
 import { env } from '@/config/env';
 import { createHttpClient } from '@/lib/httpClient';
+import { initConnectivity } from '@/lib/connectivity';
 import { authSnapshot } from '@/lib/authSnapshot';
 import { authBridge } from '@/features/auth/authBridge';
 import { createHttpRepositories } from '@/data/repositories/factory';
@@ -17,6 +18,10 @@ export const AppProviders: React.FC<{ children: React.ReactNode }> = ({ children
   const [repositories, setRepositories] = useState<Repositories | null>(null);
 
   useEffect(() => {
+    // Wire NetInfo into react-query's onlineManager (pause/resume by connectivity)
+    // and the app's connectivity store (offline/reconnecting UI).
+    initConnectivity();
+
     // getAuth reads the live snapshot AuthProvider keeps current, so every request
     // carries the latest token + tenant with no startup race. onRefresh/onAuthLost
     // delegate to AuthProvider via authBridge (registered when it mounts).
@@ -29,6 +34,12 @@ export const AppProviders: React.FC<{ children: React.ReactNode }> = ({ children
       },
     });
     setRepositories(createHttpRepositories(http));
+
+    // Refetch stale queries when the app returns to the foreground.
+    const sub = AppState.addEventListener('change', (state) => {
+      focusManager.setFocused(state === 'active');
+    });
+    return () => sub.remove();
   }, []);
 
   if (!repositories) {
