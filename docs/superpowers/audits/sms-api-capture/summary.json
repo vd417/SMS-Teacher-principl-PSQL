@@ -1,0 +1,758 @@
+[
+  {
+    "rowId": "AUTH-05",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "AUTH-10",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "CLS-01",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "CLS-02",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "STU-01",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "STU-02",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "ATT-01",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "ATT-02",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "ATT-03",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "ATT-04",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "TT-01",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "EXM-01",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "EXM-02",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "EXM-03",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "GRD-01",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "ASG-01",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "CHT-01",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "CHT-02",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "ANN-01",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "NTF-01",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "CAL-01",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "LIB-01",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "PAY-01",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "LEV-01",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "APR-01",
+    "role": "teacherA",
+    "status": 403,
+    "zod": "n/a"
+  },
+  {
+    "rowId": "DSH-01",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "PRN-01",
+    "role": "teacherA",
+    "status": 403,
+    "zod": "n/a"
+  },
+  {
+    "rowId": "PRN-02",
+    "role": "teacherA",
+    "status": 403,
+    "zod": "n/a"
+  },
+  {
+    "rowId": "PRN-03",
+    "role": "teacherA",
+    "status": 403,
+    "zod": "n/a"
+  },
+  {
+    "rowId": "PRN-04",
+    "role": "teacherA",
+    "status": 403,
+    "zod": "n/a"
+  },
+  {
+    "rowId": "PRN-05",
+    "role": "teacherA",
+    "status": 403,
+    "zod": "n/a"
+  },
+  {
+    "rowId": "GEO-01",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "n/a"
+  },
+  {
+    "rowId": "TCH-01",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "STF-01",
+    "role": "teacherA",
+    "status": 403,
+    "zod": "n/a"
+  },
+  {
+    "rowId": "BUS-01",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "BUS-02",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "BUS-03",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "BUS-05",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "MYA-01",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "MYA-02",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "MYA-03",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "MYA-04",
+    "role": "teacherA",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "AUTH-05",
+    "role": "teacherB",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "AUTH-10",
+    "role": "teacherB",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "CLS-01",
+    "role": "teacherB",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "CLS-02",
+    "role": "teacherB",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "STU-01",
+    "role": "teacherB",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "STU-02",
+    "role": "teacherB",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "ATT-01",
+    "role": "teacherB",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "ATT-02",
+    "role": "teacherB",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "ATT-03",
+    "role": "teacherB",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "ATT-04",
+    "role": "teacherB",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "TT-01",
+    "role": "teacherB",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "EXM-01",
+    "role": "teacherB",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "EXM-02",
+    "role": "teacherB",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "EXM-03",
+    "role": "teacherB",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "GRD-01",
+    "role": "teacherB",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "ASG-01",
+    "role": "teacherB",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "CHT-01",
+    "role": "teacherB",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "CHT-02",
+    "role": "teacherB",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "ANN-01",
+    "role": "teacherB",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "NTF-01",
+    "role": "teacherB",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "CAL-01",
+    "role": "teacherB",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "LIB-01",
+    "role": "teacherB",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "PAY-01",
+    "role": "teacherB",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "LEV-01",
+    "role": "teacherB",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "APR-01",
+    "role": "teacherB",
+    "status": 403,
+    "zod": "n/a"
+  },
+  {
+    "rowId": "DSH-01",
+    "role": "teacherB",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "PRN-01",
+    "role": "teacherB",
+    "status": 403,
+    "zod": "n/a"
+  },
+  {
+    "rowId": "PRN-02",
+    "role": "teacherB",
+    "status": 403,
+    "zod": "n/a"
+  },
+  {
+    "rowId": "PRN-03",
+    "role": "teacherB",
+    "status": 403,
+    "zod": "n/a"
+  },
+  {
+    "rowId": "PRN-04",
+    "role": "teacherB",
+    "status": 403,
+    "zod": "n/a"
+  },
+  {
+    "rowId": "PRN-05",
+    "role": "teacherB",
+    "status": 403,
+    "zod": "n/a"
+  },
+  {
+    "rowId": "GEO-01",
+    "role": "teacherB",
+    "status": 403,
+    "zod": "n/a"
+  },
+  {
+    "rowId": "TCH-01",
+    "role": "teacherB",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "STF-01",
+    "role": "teacherB",
+    "status": 403,
+    "zod": "n/a"
+  },
+  {
+    "rowId": "BUS-01",
+    "role": "teacherB",
+    "status": 404,
+    "zod": "n/a"
+  },
+  {
+    "rowId": "BUS-02",
+    "role": "teacherB",
+    "status": 403,
+    "zod": "n/a"
+  },
+  {
+    "rowId": "BUS-03",
+    "role": "teacherB",
+    "status": 403,
+    "zod": "n/a"
+  },
+  {
+    "rowId": "BUS-05",
+    "role": "teacherB",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "MYA-01",
+    "role": "teacherB",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "MYA-02",
+    "role": "teacherB",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "MYA-03",
+    "role": "teacherB",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "MYA-04",
+    "role": "teacherB",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "AUTH-05",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "AUTH-10",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "CLS-01",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "CLS-02",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "STU-01",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "STU-02",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "ATT-01",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "ATT-02",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "ATT-03",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "ATT-04",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "TT-01",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "EXM-01",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "EXM-02",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "EXM-03",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "GRD-01",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "ASG-01",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "CHT-01",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "CHT-02",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "ANN-01",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "NTF-01",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "CAL-01",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "LIB-01",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "PAY-01",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "LEV-01",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "APR-01",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "DSH-01",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "PRN-01",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "PRN-02",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "PRN-03",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "PRN-04",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "PRN-05",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "GEO-01",
+    "role": "principal",
+    "status": 200,
+    "zod": "n/a"
+  },
+  {
+    "rowId": "TCH-01",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "STF-01",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "BUS-01",
+    "role": "principal",
+    "status": 404,
+    "zod": "n/a"
+  },
+  {
+    "rowId": "BUS-02",
+    "role": "principal",
+    "status": 403,
+    "zod": "n/a"
+  },
+  {
+    "rowId": "BUS-03",
+    "role": "principal",
+    "status": 403,
+    "zod": "n/a"
+  },
+  {
+    "rowId": "BUS-05",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "MYA-01",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "MYA-02",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "MYA-03",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  },
+  {
+    "rowId": "MYA-04",
+    "role": "principal",
+    "status": 200,
+    "zod": "ok"
+  }
+]

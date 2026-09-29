@@ -1,0 +1,12 @@
+{
+  "rowId": "STF-01",
+  "role": "principal",
+  "method": "GET",
+  "path": "/staff",
+  "status": 200,
+  "zod": "ok",
+  "body": {
+    "data": [],
+    "next_cursor": null
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "rowId": "PRN-03",
+  "role": "principal",
+  "method": "GET",
+  "path": "/principal/staff/eaf1d858-dec5-5240-af97-366e5e860d45/attendance/history",
+  "status": 200,
+  "zod": "ok",
+  "body": {
+    "data": []
+  }
+}

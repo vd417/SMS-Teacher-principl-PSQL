@@ -1,0 +1,34 @@
+{
+  "rowId": "STU-02",
+  "role": "principal",
+  "method": "GET",
+  "path": "/students/babfce85-ed57-51ee-b8d4-d6b7ec2c4509",
+  "status": 200,
+  "zod": "ok",
+  "body": {
+    "data": {
+      "id": "babfce85-ed57-51ee-b8d4-d6b7ec2c4509",
+      "tenant_id": "8ea5da54-aba9-55ab-bac7-662205f376cc",
+      "admission_no": "DS-A-01",
+      "name": "Aarav Shah",
+      "gender": null,
+      "grade": "IX",
+      "section": "A",
+      "class_label": "IX-A",
+      "roll": 1,
+      "guardian_name": "Guardian of Aarav Shah",
+      "guardian_phone": "+91900000110",
+      "guardian_email": null,
+      "attendance_pct": null,
+      "fee_status": "due",
+      "fee_due": 0,
+      "status": "active",
+      "house": null,
+      "avatar_hue": 0,
+      "dob": null,
+      "email": null,
+      "address": null,
+      "photo_url": null
+    }
+  }
+}

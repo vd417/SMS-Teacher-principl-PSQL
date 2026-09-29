@@ -1,0 +1,29 @@
+{
+  "rowId": "EXM-01",
+  "role": "teacherB",
+  "method": "GET",
+  "path": "/exams",
+  "status": 200,
+  "zod": "ok",
+  "body": {
+    "data": [
+      {
+        "id": "1748b7ea-f08a-5682-94a3-27156e427b1d",
+        "tenant_id": "8ea5da54-aba9-55ab-bac7-662205f376cc",
+        "name": "Dev Seed Unit Test 1",
+        "type": "unit",
+        "grades": "IX",
+        "from_date": "2026-11-02T00:00:00.000Z",
+        "to_date": "2026-11-06T00:00:00.000Z",
+        "subject_count": 2,
+        "status": "draft",
+        "marks_entered_pct": 0,
+        "published": true,
+        "class_ids": [
+          "1ccd3cff-e251-5c06-be20-327a29a88b53",
+          "62f85523-bf00-5b30-8c90-53c29740e65f"
+        ]
+      }
+    ]
+  }
+}

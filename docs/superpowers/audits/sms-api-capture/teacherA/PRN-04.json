@@ -1,0 +1,9 @@
+{
+  "rowId": "PRN-04",
+  "role": "teacherA",
+  "method": "GET",
+  "path": "/transport/fleet",
+  "status": 403,
+  "zod": "n/a",
+  "body": null
+}

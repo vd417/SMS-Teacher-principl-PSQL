@@ -1,0 +1,47 @@
+{
+  "rowId": "BUS-03",
+  "role": "teacherA",
+  "method": "GET",
+  "path": "/bus/cb64ef53-346c-5fd3-bd39-46507f208dae/roster",
+  "status": 200,
+  "zod": "ok",
+  "body": {
+    "data": [
+      {
+        "student_id": "babfce85-ed57-51ee-b8d4-d6b7ec2c4509",
+        "student_name": "Aarav Shah",
+        "initials": "AS",
+        "stop_id": "ffded14f-4f0d-5ae0-9816-1ac08a434231",
+        "status": "pending"
+      },
+      {
+        "student_id": "b729857a-c9e6-5041-80ec-064304600950",
+        "student_name": "Diya Patil",
+        "initials": "DP",
+        "stop_id": "743c4ae5-f7c2-5edf-8ce7-b62101fb3241",
+        "status": "pending"
+      },
+      {
+        "student_id": "aeacd20f-132f-5504-afdf-be4ffba68ebb",
+        "student_name": "Ishaan Rao",
+        "initials": "IR",
+        "stop_id": "fc0b17e8-bf69-51c4-b61e-47a84b784fca",
+        "status": "pending"
+      },
+      {
+        "student_id": "0e954bbf-9eb5-5bac-81a7-a1c153d33c36",
+        "student_name": "Kavya Joshi",
+        "initials": "KJ",
+        "stop_id": "ffded14f-4f0d-5ae0-9816-1ac08a434231",
+        "status": "pending"
+      },
+      {
+        "student_id": "c50d20cb-8614-557a-8571-b34141751661",
+        "student_name": "Rohan Das",
+        "initials": "RD",
+        "stop_id": "743c4ae5-f7c2-5edf-8ce7-b62101fb3241",
+        "status": "pending"
+      }
+    ]
+  }
+}

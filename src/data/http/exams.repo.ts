@@ -27,12 +27,47 @@ export function httpExams(http: HttpClient): ExamsRepository {
             status: input.status,
           })
         )
-        .then((x) => toExam(examPaperSchema.parse(x))),
+        .then((x) => toExam(examPaperSchema.parse(x)))
+        .then(async (created) => {
+          // A-3 (EXM-04): CreateExamPaperRequest has no `status` field, so the
+          // API silently drops it and always saves the paper as `upcoming`.
+          // Send a follow-up PATCH when a non-default status was requested.
+          if (input.status !== 'upcoming' && input.status !== created.status) {
+            try {
+              const patched = await http.patch(`/exam-papers/${created.id}`, {
+                status: input.status,
+              });
+              return toExam(examPaperSchema.parse(patched));
+            } catch (patchErr) {
+              // A-3: the paper now exists server-side as `upcoming` even though
+              // the caller will see this create() reject. Roll back by deleting
+              // it so a retry cannot create a duplicate paper. If the rollback
+              // itself fails, do not swallow it — the paper is an orphan and the
+              // id must be surfaced so it is diagnosable.
+              try {
+                await http.delete(`/exam-papers/${created.id}`);
+              } catch (deleteErr) {
+                const deleteMessage =
+                  deleteErr instanceof Error ? deleteErr.message : String(deleteErr);
+                throw new Error(
+                  `Exam paper ${created.id} was created but its status update failed and the ` +
+                    `rollback delete also failed (${deleteMessage}); it is orphaned as ` +
+                    `'upcoming' and must be cleaned up manually.`,
+                  { cause: patchErr }
+                );
+              }
+              throw patchErr;
+            }
+          }
+          return created;
+        }),
     update: (id, patch) =>
       http
+        // A-4 (EXM-05): UpdateExamPaperRequest has no `class_id` field, so a
+        // class change on edit is silently dropped. Never send it.
         .patch(
           `/exam-papers/${id}`,
-          toExamDTO({ ...patch, classId: patch.classId, maxMarks: patch.maxMarks })
+          toExamDTO({ ...patch, classId: undefined, maxMarks: patch.maxMarks })
         )
         .then((x) => toExam(examPaperSchema.parse(x))),
     remove: (id) => http.delete(`/exam-papers/${id}`),

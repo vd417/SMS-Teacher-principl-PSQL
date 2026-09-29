@@ -1,0 +1,35 @@
+{
+  "rowId": "AUTH-05",
+  "role": "teacherA",
+  "method": "GET",
+  "path": "/auth/me",
+  "status": 200,
+  "zod": "ok",
+  "body": {
+    "data": {
+      "id": "62b32d84-c9c0-51b7-a443-7d71234ef2a6",
+      "tenant_id": "8ea5da54-aba9-55ab-bac7-662205f376cc",
+      "roles": [
+        "school.teacher"
+      ],
+      "is_platform": false,
+      "name": "Asha Kulkarni",
+      "email": "teacher.a@seed.schooldesk.test",
+      "phone": null,
+      "employee": "DS-T001",
+      "classroom": "IX-A",
+      "joined": "2026",
+      "tenant_name": "SchoolDesk Dev Seed",
+      "tenant_logo_url": null,
+      "tenant_image_url": null,
+      "tier": "platinum",
+      "plan_name": "Platinum",
+      "must_set_password": "[REDACTED]",
+      "title": "Mathematics Teacher",
+      "photo_url": null,
+      "student_id": null,
+      "role_key": null,
+      "duty_post": null
+    }
+  }
+}

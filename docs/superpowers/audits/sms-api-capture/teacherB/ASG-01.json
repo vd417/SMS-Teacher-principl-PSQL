@@ -1,0 +1,11 @@
+{
+  "rowId": "ASG-01",
+  "role": "teacherB",
+  "method": "GET",
+  "path": "/assignments",
+  "status": 200,
+  "zod": "ok",
+  "body": {
+    "data": []
+  }
+}

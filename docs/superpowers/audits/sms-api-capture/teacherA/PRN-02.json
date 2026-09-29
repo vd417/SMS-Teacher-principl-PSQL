@@ -1,0 +1,9 @@
+{
+  "rowId": "PRN-02",
+  "role": "teacherA",
+  "method": "GET",
+  "path": "/principal/attendance?date=2026-09-25",
+  "status": 403,
+  "zod": "n/a",
+  "body": null
+}

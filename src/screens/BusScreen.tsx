@@ -49,18 +49,20 @@ export const BusScreen: React.FC = () => {
   const { data: bus, isLoading, isError } = useAssignedBus();
   const busId = bus?.id ?? '';
   const { data: position } = useBusPosition(busId);
-  const { data: ownBusRouteGeometry } = useRouteGeometry(busId || null);
+  // A-7: GET /transport/routes/{routeId}/geometry 403s on a bus id — pass the
+  // real route_id (from BUS-01, now that the backend returns it on BusResponse).
+  const { data: ownBusRouteGeometry } = useRouteGeometry(bus?.routeId ?? null);
   const { data: roster } = useBusRoster(busId);
   const save = useSaveBoarding(busId);
   const { data: myRoutes = [] } = useMyRouteBuses();
   const readOnlyBuses = myRoutes.filter((b) => !b.isDutyTeacher);
   useTransportFleetPush([...(busId ? [busId] : []), ...readOnlyBuses.map((b) => b.busId)]);
   // The read-only "other routes" FleetMap has no built-in selection, so add a minimal local
-  // selection here purely to give road-geometry lookup a bus to key off. MyRouteBus also has no
-  // separate routeId field (one bus == one route in this app's domain model), so the bus's own
-  // id is passed as the route identifier, same convention as PrincipalTransportScreen.
+  // selection here purely to give road-geometry lookup a bus to key off.
   const [selectedReadOnlyBusId, setSelectedReadOnlyBusId] = useState<string | null>(null);
-  const { data: selectedReadOnlyRouteGeometry } = useRouteGeometry(selectedReadOnlyBusId);
+  const selectedReadOnlyRouteId =
+    readOnlyBuses.find((b) => b.busId === selectedReadOnlyBusId)?.routeId ?? null;
+  const { data: selectedReadOnlyRouteGeometry } = useRouteGeometry(selectedReadOnlyRouteId);
 
   const [draft, setDraft] = useState<BoardingRecord[]>([]);
   const [toastVisible, setToastVisible] = useState(false);

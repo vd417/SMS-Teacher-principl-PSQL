@@ -1,0 +1,66 @@
+{
+  "rowId": "EXM-02",
+  "role": "teacherB",
+  "method": "GET",
+  "path": "/exam-papers",
+  "status": 200,
+  "zod": "ok",
+  "body": {
+    "data": [
+      {
+        "id": "862db33a-cfd1-571e-b101-eb2ca5ac78f0",
+        "tenant_id": "8ea5da54-aba9-55ab-bac7-662205f376cc",
+        "exam_id": "1748b7ea-f08a-5682-94a3-27156e427b1d",
+        "class_id": "1ccd3cff-e251-5c06-be20-327a29a88b53",
+        "name": "IX-A Mathematics",
+        "subject": "Mathematics",
+        "subject_id": "8fd9dcae-695c-5b1a-9f0b-c6b4eee6953f",
+        "date": "2026-11-02T00:00:00.000Z",
+        "start_time": "09:00",
+        "duration_min": 60,
+        "max_marks": 50,
+        "room": null,
+        "invigilator1": "Asha Kulkarni",
+        "invigilator2": null,
+        "status": "upcoming",
+        "topics": "Algebra"
+      },
+      {
+        "id": "f63c39dc-331a-57e1-8d12-7beb6cebae45",
+        "tenant_id": "8ea5da54-aba9-55ab-bac7-662205f376cc",
+        "exam_id": "1748b7ea-f08a-5682-94a3-27156e427b1d",
+        "class_id": "62f85523-bf00-5b30-8c90-53c29740e65f",
+        "name": "IX-B Mathematics",
+        "subject": "Mathematics",
+        "subject_id": "8fd9dcae-695c-5b1a-9f0b-c6b4eee6953f",
+        "date": "2026-11-02T00:00:00.000Z",
+        "start_time": "09:00",
+        "duration_min": 60,
+        "max_marks": 50,
+        "room": null,
+        "invigilator1": "Asha Kulkarni",
+        "invigilator2": null,
+        "status": "upcoming",
+        "topics": "Algebra"
+      },
+      {
+        "id": "031a5e77-b2a4-531f-a2b6-9ec0a4fbcf91",
+        "tenant_id": "8ea5da54-aba9-55ab-bac7-662205f376cc",
+        "exam_id": "1748b7ea-f08a-5682-94a3-27156e427b1d",
+        "class_id": "1ccd3cff-e251-5c06-be20-327a29a88b53",
+        "name": "IX-A Science",
+        "subject": "Science",
+        "subject_id": "6df3921c-95f0-5da3-8b4b-0ffe9c8787fb",
+        "date": "2026-11-03T00:00:00.000Z",
+        "start_time": "09:00",
+        "duration_min": 60,
+        "max_marks": 50,
+        "room": null,
+        "invigilator1": "Bharat Menon",
+        "invigilator2": null,
+        "status": "upcoming",
+        "topics": "Algebra"
+      }
+    ]
+  }
+}

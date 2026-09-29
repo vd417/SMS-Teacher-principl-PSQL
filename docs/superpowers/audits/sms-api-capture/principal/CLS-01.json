@@ -1,0 +1,46 @@
+{
+  "rowId": "CLS-01",
+  "role": "principal",
+  "method": "GET",
+  "path": "/classes",
+  "status": 200,
+  "zod": "ok",
+  "body": {
+    "data": [
+      {
+        "id": "1ccd3cff-e251-5c06-be20-327a29a88b53",
+        "tenant_id": "8ea5da54-aba9-55ab-bac7-662205f376cc",
+        "name": "IX-A",
+        "grade": "IX",
+        "section": "A",
+        "subject": "Mathematics",
+        "room": "R101",
+        "student_count": 10,
+        "class_teacher_id": "eaf1d858-dec5-5240-af97-366e5e860d45",
+        "next_period": null,
+        "subjects": [
+          "English",
+          "Mathematics",
+          "Science"
+        ]
+      },
+      {
+        "id": "62f85523-bf00-5b30-8c90-53c29740e65f",
+        "tenant_id": "8ea5da54-aba9-55ab-bac7-662205f376cc",
+        "name": "IX-B",
+        "grade": "IX",
+        "section": "B",
+        "subject": "Mathematics",
+        "room": "R102",
+        "student_count": 10,
+        "class_teacher_id": "f1c2c180-9963-52cf-b5fa-580434bf1e79",
+        "next_period": null,
+        "subjects": [
+          "English",
+          "Mathematics",
+          "Science"
+        ]
+      }
+    ]
+  }
+}

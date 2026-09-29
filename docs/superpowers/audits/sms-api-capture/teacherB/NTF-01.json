@@ -1,0 +1,11 @@
+{
+  "rowId": "NTF-01",
+  "role": "teacherB",
+  "method": "GET",
+  "path": "/notifications",
+  "status": 200,
+  "zod": "ok",
+  "body": {
+    "data": []
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "rowId": "EXM-03",
+  "role": "teacherB",
+  "method": "GET",
+  "path": "/exam-papers/862db33a-cfd1-571e-b101-eb2ca5ac78f0",
+  "status": 200,
+  "zod": "ok",
+  "body": {
+    "data": {
+      "id": "862db33a-cfd1-571e-b101-eb2ca5ac78f0",
+      "tenant_id": "8ea5da54-aba9-55ab-bac7-662205f376cc",
+      "exam_id": "1748b7ea-f08a-5682-94a3-27156e427b1d",
+      "class_id": "1ccd3cff-e251-5c06-be20-327a29a88b53",
+      "name": "IX-A Mathematics",
+      "subject": "Mathematics",
+      "subject_id": "8fd9dcae-695c-5b1a-9f0b-c6b4eee6953f",
+      "date": "2026-11-02T00:00:00.000Z",
+      "start_time": "09:00",
+      "duration_min": 60,
+      "max_marks": 50,
+      "room": null,
+      "invigilator1": "Asha Kulkarni",
+      "invigilator2": null,
+      "status": "upcoming",
+      "topics": "Algebra"
+    }
+  }
+}

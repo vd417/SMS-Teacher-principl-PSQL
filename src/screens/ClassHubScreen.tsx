@@ -29,6 +29,7 @@ import { Skeleton } from '@/ui/state/Skeleton';
 import { ErrorState } from '@/ui/state/ErrorState';
 import { EmptyState } from '@/ui/state/EmptyState';
 import { classLabel, classGroupKey } from '@/lib/classLabel';
+import { classSubjectForTeacher } from '@/lib/classSubjects';
 import { compareGrades, compareSections } from '@/lib/gradeSort';
 import { todayISO } from '@/lib/date';
 import type { Class, Student, WeekDay } from '@/data/domain';
@@ -293,6 +294,9 @@ export const ClassHubScreen: React.FC = () => {
               today={today}
               onOpenClass={() => openClass(cls.id)}
               onOpenAttendance={() => openAttendance(cls.id)}
+              subject={
+                isPrincipal ? undefined : classSubjectForTeacher(cls, timetable, session?.user.name)
+              }
               homeworkCount={isPrincipal ? (homeworkByClass.get(cls.id) ?? 0) : undefined}
               examCount={isPrincipal ? (examsByClass.get(cls.id) ?? 0) : undefined}
             />

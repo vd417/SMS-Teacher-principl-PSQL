@@ -1,0 +1,17 @@
+{
+  "rowId": "DSH-01",
+  "role": "teacherA",
+  "method": "GET",
+  "path": "/dashboard/stats",
+  "status": 200,
+  "zod": "ok",
+  "body": {
+    "data": {
+      "total_students": 20,
+      "total_classes": 2,
+      "attendance_today": 0,
+      "pending_assignments": 0,
+      "upcoming_exams": 3
+    }
+  }
+}

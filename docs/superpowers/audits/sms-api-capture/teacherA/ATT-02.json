@@ -1,0 +1,25 @@
+{
+  "rowId": "ATT-02",
+  "role": "teacherA",
+  "method": "GET",
+  "path": "/classes/1ccd3cff-e251-5c06-be20-327a29a88b53/attendance/roll-call?date=2026-09-25",
+  "status": 200,
+  "zod": "ok",
+  "body": {
+    "data": {
+      "date": "2026-09-25T00:00:00.000Z",
+      "day": "Fri",
+      "period": 1,
+      "subject": "Mathematics",
+      "start_time": "09:00",
+      "end_time": "09:45",
+      "teacher_id": "eaf1d858-dec5-5240-af97-366e5e860d45",
+      "teacher_name": "Asha Kulkarni",
+      "class_teacher_id": "eaf1d858-dec5-5240-af97-366e5e860d45",
+      "class_teacher_name": "Asha Kulkarni",
+      "can_mark": true,
+      "reason": "class_teacher",
+      "marked": false
+    }
+  }
+}

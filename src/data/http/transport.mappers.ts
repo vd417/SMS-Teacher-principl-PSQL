@@ -13,6 +13,8 @@ const fleetStopSchema = z.object({
 export const fleetBusSchema = z.object({
   bus_id: z.string(),
   bus_no: z.string(),
+  // A-7: /transport/fleet already sends this; the schema used to strip it.
+  route_id: z.string().nullish(),
   route_name: z.string().nullish(),
   driver: z.string().nullish(),
   driver_phone: z.string().nullish(),
@@ -28,7 +30,7 @@ export const fleetBusSchema = z.object({
   teacher_name: z.string().nullish(),
   conductor_staff_id: z.string().nullish(),
   traveling_teachers: z
-    .array(z.object({ teacher_user_id: z.string(), teacher_name: z.string() }))
+    .array(z.object({ teacher_user_id: z.string(), teacher_name: z.string().nullish() }))
     .nullish(),
   stops: z.array(fleetStopSchema).nullish(),
 });
@@ -36,6 +38,8 @@ export const fleetBusSchema = z.object({
 export const transportBusSchema = z.object({
   bus_id: z.string(),
   bus_no: z.string(),
+  // A-7: /transport/buses already sends this; the schema used to strip it.
+  route_id: z.string().nullish(),
   route_name: z.string().nullish(),
   driver: z.string().nullish(),
   driver_phone: z.string().nullish(),
@@ -54,6 +58,7 @@ function normalizeFleetStatus(raw: string): FleetBusStatus {
 export const toFleetBus = (d: z.infer<typeof fleetBusSchema>): FleetBus => ({
   busId: d.bus_id,
   busNo: d.bus_no,
+  routeId: d.route_id ?? undefined,
   routeName: d.route_name ?? undefined,
   driver: d.driver ?? undefined,
   driverPhone: d.driver_phone ?? undefined,
@@ -70,7 +75,7 @@ export const toFleetBus = (d: z.infer<typeof fleetBusSchema>): FleetBus => ({
   conductorStaffId: d.conductor_staff_id ?? undefined,
   travelingTeachers: d.traveling_teachers?.map((t) => ({
     teacherUserId: t.teacher_user_id,
-    teacherName: t.teacher_name,
+    teacherName: t.teacher_name ?? '',
   })),
   stops: d.stops?.map(
     (s): BusStop => ({
@@ -87,6 +92,7 @@ export const toFleetBus = (d: z.infer<typeof fleetBusSchema>): FleetBus => ({
 export const toTransportBusRow = (d: z.infer<typeof transportBusSchema>): TransportBusRow => ({
   busId: d.bus_id,
   busNo: d.bus_no,
+  routeId: d.route_id ?? undefined,
   routeName: d.route_name ?? undefined,
   driver: d.driver ?? undefined,
   driverPhone: d.driver_phone ?? undefined,

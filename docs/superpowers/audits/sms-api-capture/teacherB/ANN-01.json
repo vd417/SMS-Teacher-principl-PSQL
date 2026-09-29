@@ -1,0 +1,29 @@
+{
+  "rowId": "ANN-01",
+  "role": "teacherB",
+  "method": "GET",
+  "path": "/announcements",
+  "status": 200,
+  "zod": "ok",
+  "body": {
+    "data": [
+      {
+        "id": "66e340f8-db99-5de6-ba15-0b80038144b5",
+        "tenant_id": "8ea5da54-aba9-55ab-bac7-662205f376cc",
+        "title": "Dev Seed Welcome",
+        "body": "Welcome to the SchoolDesk dev seed school.",
+        "date": "2026-09-26T08:00:00.000Z",
+        "from": "Priya Deshmukh",
+        "role": "principal",
+        "type": "info",
+        "pinned": false,
+        "audience": "all",
+        "reach": 0,
+        "emails": null,
+        "phones": null,
+        "attachment_file_name": null,
+        "attachment_content_type": null
+      }
+    ]
+  }
+}

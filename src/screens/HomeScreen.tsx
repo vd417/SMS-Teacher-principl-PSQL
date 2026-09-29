@@ -42,6 +42,8 @@ import { deriveColorSet } from '@/theme/derive';
 import { navigateToMoreScreen } from '@/lib/navigateToMore';
 import { Skeleton } from '@/ui/state/Skeleton';
 import { classLabel } from '@/lib/classLabel';
+import { classSubjectForTeacher } from '@/lib/classSubjects';
+import { useTimetable } from '@/features/timetable/hooks';
 import type { Class } from '@/data/domain';
 import type { HomeStackParamList } from '../navigation/types';
 
@@ -84,7 +86,8 @@ const ClassCard: React.FC<{
   today: string;
   index: number;
   onPress: () => void;
-}> = ({ cls, today, index, onPress }) => {
+  subject: string;
+}> = ({ cls, today, index, onPress, subject }) => {
   const cs = deriveColorSet(cls.id);
   const { data: attendanceRecords } = useAttendance(cls.id, today);
   const markedToday = !!attendanceRecords?.length;
@@ -99,7 +102,7 @@ const ClassCard: React.FC<{
           <Ionicons name="school-outline" size={20} color={Colors.white} />
         </View>
         <Text style={styles.classCardName}>{classLabel(cls.name, cls.section)}</Text>
-        <Text style={styles.classCardSubject}>{cls.subject}</Text>
+        <Text style={styles.classCardSubject}>{subject}</Text>
         <View style={styles.classCardFooter}>
           <View style={styles.classCardBadge}>
             <Ionicons name="people" size={11} color={cs.color} />
@@ -135,6 +138,7 @@ export const HomeScreen: React.FC = () => {
   const { name: schoolName, logoUrl: schoolLogoUrl } = useCurrentSchoolBranding();
 
   const { data: classes = [], isLoading: classesLoading, refetch: refetchClasses } = useClasses();
+  const { data: timetable = [] } = useTimetable();
   const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useDashboardStats();
   const { data: announcements = [] } = useAnnouncements();
   const schoolClosed = useSchoolClosedToday(announcements);
@@ -353,6 +357,7 @@ export const HomeScreen: React.FC = () => {
                   cls={cls}
                   today={today}
                   index={i}
+                  subject={classSubjectForTeacher(cls, timetable, user?.name)}
                   onPress={() =>
                     navTab.navigate('Classes', {
                       screen: 'ClassDetailScreen',

@@ -1,0 +1,9 @@
+{
+  "rowId": "PRN-01",
+  "role": "teacherA",
+  "method": "GET",
+  "path": "/principal/overview",
+  "status": 403,
+  "zod": "n/a",
+  "body": null
+}

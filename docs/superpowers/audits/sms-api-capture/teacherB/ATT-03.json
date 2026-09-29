@@ -1,0 +1,51 @@
+{
+  "rowId": "ATT-03",
+  "role": "teacherB",
+  "method": "GET",
+  "path": "/classes/1ccd3cff-e251-5c06-be20-327a29a88b53/timetable/day?date=2026-09-25",
+  "status": 200,
+  "zod": "ok",
+  "body": {
+    "data": [
+      {
+        "id": "36ee3d68-ac46-58ee-92be-c321f579f459",
+        "period": 1,
+        "subject": "Mathematics",
+        "subject_id": "8fd9dcae-695c-5b1a-9f0b-c6b4eee6953f",
+        "start_time": "09:00",
+        "end_time": "09:45",
+        "teacher_id": "eaf1d858-dec5-5240-af97-366e5e860d45",
+        "teacher_name": "Asha Kulkarni",
+        "is_current": false,
+        "marked": false,
+        "can_mark": false
+      },
+      {
+        "id": "45a3e193-5210-5ebc-8026-9a8d89bd9322",
+        "period": 2,
+        "subject": "Science",
+        "subject_id": "6df3921c-95f0-5da3-8b4b-0ffe9c8787fb",
+        "start_time": "09:50",
+        "end_time": "10:35",
+        "teacher_id": "f1c2c180-9963-52cf-b5fa-580434bf1e79",
+        "teacher_name": "Bharat Menon",
+        "is_current": false,
+        "marked": false,
+        "can_mark": true
+      },
+      {
+        "id": "2cd58076-e15c-5512-88ea-35575866e644",
+        "period": 3,
+        "subject": "English",
+        "subject_id": "8894582d-8b6b-5769-8995-0a5cf1bc795f",
+        "start_time": "10:40",
+        "end_time": "11:25",
+        "teacher_id": "29c0488a-edd0-5e94-8756-604fe448789d",
+        "teacher_name": "Maya Fernandes",
+        "is_current": false,
+        "marked": false,
+        "can_mark": false
+      }
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "rowId": "APR-01",
+  "role": "teacherA",
+  "method": "GET",
+  "path": "/approvals?status=pending",
+  "status": 403,
+  "zod": "n/a",
+  "body": null
+}

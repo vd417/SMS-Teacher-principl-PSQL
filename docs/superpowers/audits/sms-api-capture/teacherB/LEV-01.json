@@ -1,0 +1,31 @@
+{
+  "rowId": "LEV-01",
+  "role": "teacherB",
+  "method": "GET",
+  "path": "/leave",
+  "status": 200,
+  "zod": "ok",
+  "body": {
+    "data": [
+      {
+        "id": "88f45240-7c3b-5de2-90e1-692feb5d7be0",
+        "tenant_id": "8ea5da54-aba9-55ab-bac7-662205f376cc",
+        "requester_id": "15d97e47-5510-5cd9-b430-53f201d8c759",
+        "child_id": null,
+        "type": "casual",
+        "from_date": "2026-11-10T00:00:00.000Z",
+        "to_date": "2026-11-11T00:00:00.000Z",
+        "reason": "Dev seed pending leave",
+        "substitute": null,
+        "status": "pending",
+        "applied_on": "2026-09-26T00:00:00.000Z",
+        "decided_note": null,
+        "priority": "medium",
+        "attachment_urls": null,
+        "requester_name": null,
+        "decided_by_name": null,
+        "requester_role": null
+      }
+    ]
+  }
+}

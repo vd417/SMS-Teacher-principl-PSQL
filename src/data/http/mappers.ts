@@ -500,6 +500,8 @@ export const leaveResponseSchema = z.object({
   decided_note: z.string().nullish(),
   decided_by_name: z.string().nullish(),
   attachment_urls: z.union([z.string(), z.array(z.string())]).nullish(),
+  // Present on /approvals (APR-01); leave.list rows omit it.
+  priority: z.enum(['high', 'medium', 'low']).nullish(),
 });
 export type LeaveRequestDTO = z.infer<typeof leaveResponseSchema>;
 export const toLeaveRequest = (d: LeaveRequestDTO): LeaveRequest => {
@@ -578,24 +580,33 @@ export const fromNewPtm = (r: {
 // requester's UserRoles row); title/detail/priority are synthesized client-side.
 export type ApprovalRequestDTO = z.infer<typeof leaveResponseSchema>;
 export const approvalRequestSchema = leaveResponseSchema;
+// requester_role is a namespaced authz role (`school.teacher`), not a display
+// label. Map it to the last dotted segment, capitalized; a value with no dot
+// (e.g. a designation like "Security") passes through unchanged.
+function humanizeRequesterRole(raw: string): string {
+  const leaf = raw.includes('.') ? (raw.split('.').pop() ?? raw) : raw;
+  if (!leaf) return raw;
+  return leaf.charAt(0).toUpperCase() + leaf.slice(1).toLowerCase();
+}
 export const toApprovalRequest = (d: ApprovalRequestDTO): ApprovalRequest => {
   const days = dayCount(d.from_date, d.to_date);
   const requesterName = d.requester_name?.trim() || 'Staff member';
   const attachmentUrls = parseAttachmentUrls(d.attachment_urls);
+  const rawRole = d.requester_role?.trim();
   return {
     id: d.id,
     type: 'leave',
     requesterId: d.requester_id ?? '',
     requesterName,
     requesterInitials: initialsFrom(requesterName),
-    requesterRole: d.requester_role?.trim() || 'Teacher',
+    requesterRole: rawRole ? humanizeRequesterRole(rawRole) : 'Teacher',
     title: `${cap(d.type)} leave · ${days} day${days > 1 ? 's' : ''}`,
     detail: d.reason ?? '',
     from: dateOnly(d.from_date),
     to: dateOnly(d.to_date),
     reason: d.reason ?? undefined,
     substitute: d.substitute ?? undefined,
-    priority: 'medium',
+    priority: d.priority ?? 'medium',
     status: d.status as LeaveStatus,
     appliedOn: dateOnly(d.applied_on),
     decidedNote: d.decided_note ?? undefined,

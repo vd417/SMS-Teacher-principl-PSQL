@@ -66,3 +66,44 @@ test('toTransportBusRow maps admin bus list row', () => {
   expect(bus.studentsAssigned).toBe(8);
   expect(bus.teacherName).toBe('Bob');
 });
+
+test('A-7: toFleetBus maps route_id, which /transport/fleet already sends but the old schema stripped', () => {
+  const row = fleetBusSchema.parse({
+    bus_id: 'b1',
+    bus_no: 'WBA-07',
+    route_id: 'route-1',
+    stop_count: 5,
+    students_riding: 12,
+    status: 'idle',
+  });
+  expect(toFleetBus(row).routeId).toBe('route-1');
+});
+
+test('A-7: toTransportBusRow maps route_id, which /transport/buses already sends but the old schema stripped', () => {
+  const row = transportBusSchema.parse({
+    bus_id: 'b2',
+    bus_no: 'WBA-02',
+    route_id: 'route-2',
+    students_assigned: 8,
+  });
+  expect(toTransportBusRow(row).routeId).toBe('route-2');
+});
+
+describe('B-3: traveling teacher with no stored name', () => {
+  it('parses a null teacher_name and maps it to an empty string', () => {
+    // TravelingTeacherResponse.TeacherName is string? (BusModule.cs:63): a teacher with
+    // no Users.Name and no Teachers.Name sends null. The whole fleet parse must not throw.
+    const row = {
+      bus_id: '11111111-1111-1111-1111-111111111111',
+      bus_no: 'DS-01',
+      status: 'idle',
+      traveling_teachers: [
+        { teacher_user_id: '22222222-2222-2222-2222-222222222222', teacher_name: null },
+      ],
+    };
+    const bus = toFleetBus(fleetBusSchema.parse(row));
+    expect(bus.travelingTeachers).toEqual([
+      { teacherUserId: '22222222-2222-2222-2222-222222222222', teacherName: '' },
+    ]);
+  });
+});

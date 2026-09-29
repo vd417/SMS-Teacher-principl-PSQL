@@ -1,0 +1,11 @@
+{
+  "rowId": "GRD-01",
+  "role": "principal",
+  "method": "GET",
+  "path": "/exam-papers/862db33a-cfd1-571e-b101-eb2ca5ac78f0/grades",
+  "status": 200,
+  "zod": "ok",
+  "body": {
+    "data": []
+  }
+}

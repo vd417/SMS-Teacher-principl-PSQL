@@ -1,0 +1,35 @@
+{
+  "rowId": "AUTH-05",
+  "role": "teacherB",
+  "method": "GET",
+  "path": "/auth/me",
+  "status": 200,
+  "zod": "ok",
+  "body": {
+    "data": {
+      "id": "15d97e47-5510-5cd9-b430-53f201d8c759",
+      "tenant_id": "8ea5da54-aba9-55ab-bac7-662205f376cc",
+      "roles": [
+        "school.teacher"
+      ],
+      "is_platform": false,
+      "name": "Bharat Menon",
+      "email": "teacher.b@seed.schooldesk.test",
+      "phone": null,
+      "employee": "DS-T002",
+      "classroom": "IX-B",
+      "joined": "2026",
+      "tenant_name": "SchoolDesk Dev Seed",
+      "tenant_logo_url": null,
+      "tenant_image_url": null,
+      "tier": "platinum",
+      "plan_name": "Platinum",
+      "must_set_password": "[REDACTED]",
+      "title": "Science Teacher",
+      "photo_url": null,
+      "student_id": null,
+      "role_key": null,
+      "duty_post": null
+    }
+  }
+}

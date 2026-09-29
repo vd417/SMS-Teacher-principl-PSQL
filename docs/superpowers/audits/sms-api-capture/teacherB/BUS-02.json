@@ -1,0 +1,15 @@
+{
+  "rowId": "BUS-02",
+  "role": "teacherB",
+  "method": "GET",
+  "path": "/bus/cb64ef53-346c-5fd3-bd39-46507f208dae/position",
+  "status": 403,
+  "zod": "n/a",
+  "body": {
+    "error": {
+      "code": "forbidden",
+      "message": "not assigned to this bus",
+      "details": null
+    }
+  }
+}
