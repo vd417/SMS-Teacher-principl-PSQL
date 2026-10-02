@@ -13,6 +13,8 @@ import {
   PlusJakartaSans_800ExtraBold,
 } from '@expo-google-fonts/plus-jakarta-sans';
 import { RootNavigator } from './src/navigation/RootNavigator';
+import { navigationRef } from './src/navigation/navigationRef';
+import { PushNotifications } from './src/components/PushNotifications';
 import { AppProviders } from './src/providers/AppProviders';
 import { initSentry, wrapWithSentry } from './src/lib/sentry';
 import { AppErrorBoundary } from './src/components/AppErrorBoundary';
@@ -53,11 +55,12 @@ function App() {
         <SafeAreaProvider>
           <AppErrorBoundary>
             <AppProviders>
-              <NavigationContainer>
+              <NavigationContainer ref={navigationRef}>
                 <StatusBar style="auto" />
                 <OfflineBanner />
                 <ConfigErrorBanner />
                 <RootNavigator />
+                <PushNotifications />
               </NavigationContainer>
             </AppProviders>
           </AppErrorBoundary>

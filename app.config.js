@@ -49,6 +49,7 @@ module.exports = {
     plugins: [
       'expo-font',
       'expo-secure-store',
+      'expo-notifications',
       [
         'expo-location',
         {

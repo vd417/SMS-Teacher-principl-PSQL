@@ -23,6 +23,7 @@ import { httpApprovals } from '@/data/http/approvals.repo';
 import { httpPrincipal } from '@/data/http/principal.repo';
 import { httpTeachers } from '@/data/http/teachers.repo';
 import { httpStaff } from '@/data/http/staff.repo';
+import { httpDevices } from '@/data/http/devices.repo';
 
 export function createHttpRepositories(http: HttpClient): Repositories {
   return {
@@ -49,5 +50,6 @@ export function createHttpRepositories(http: HttpClient): Repositories {
     staff: httpStaff(http),
     bus: httpBus(http),
     myAttendance: httpMyAttendance(http),
+    devices: httpDevices(http),
   };
 }
