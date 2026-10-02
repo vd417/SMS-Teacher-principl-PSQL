@@ -21,15 +21,19 @@ if (pushPlatform()) {
 /** Authed-only: registers the device token on login and routes bus-push taps. Renders nothing. */
 export function PushNotifications() {
   const { status, session } = useAuth();
+  const userId = session?.user.id;
   const role = session?.user.role;
   const repos = useRepositories();
-  const registered = useRef(false);
+  // Keyed on the user id, not a boolean: this component never unmounts (it sits beside the
+  // navigator), so after a logout→login of a *different* user on the same device the token
+  // must re-register for the new user rather than stay bound to the previous one.
+  const registeredFor = useRef<string | null>(null);
 
   useEffect(() => {
     if (status !== 'authenticated' || !pushPlatform()) return;
 
-    if (!registered.current) {
-      registered.current = true;
+    if (userId && registeredFor.current !== userId) {
+      registeredFor.current = userId;
       registerForPushNotificationsAsync().then((reg) => {
         if (reg) {
           repos.devices
@@ -46,7 +50,7 @@ export function PushNotifications() {
       .then((resp) => routeFromResponse(resp, role))
       .catch(() => {});
     return () => sub.remove();
-  }, [status, role, repos]);
+  }, [status, userId, role, repos]);
 
   return null;
 }
