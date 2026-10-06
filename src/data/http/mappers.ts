@@ -507,7 +507,7 @@ export const leaveResponseSchema = z.object({
   student_name: z.string().nullish(),
   student_class: z.string().nullish(),
   student_section: z.string().nullish(),
-  student_roll: z.number().nullish(),
+  student_roll: z.coerce.number().nullish(),
   admission_no: z.string().nullish(),
   child_id: z.string().nullish(),
 });

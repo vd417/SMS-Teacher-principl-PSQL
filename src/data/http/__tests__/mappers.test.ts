@@ -534,4 +534,13 @@ test('toApprovalRequest maps student fields, undefined when absent', () => {
     adm: 'ADM-7',
   });
   expect(toApprovalRequest(approvalRequestSchema.parse(base)).student).toBeUndefined();
+  const s = toApprovalRequest(
+    approvalRequestSchema.parse({
+      ...base,
+      child_id: 'c1',
+      student_name: 'Riya Shah',
+      student_roll: '12',
+    })
+  );
+  expect(s.student?.roll).toBe(12);
 });
