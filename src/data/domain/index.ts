@@ -248,6 +248,16 @@ export interface ApprovalRequest {
   decidedNote?: string;
   decidedByName?: string;
   attachmentUrls?: string[];
+  /** Present when the leave belongs to a student (class-teacher view). */
+  student?: ApprovalStudent;
+}
+export interface ApprovalStudent {
+  id?: string;
+  name?: string;
+  cls?: string;
+  section?: string;
+  roll?: number;
+  adm?: string;
 }
 
 export interface StaffAttendanceEntry {

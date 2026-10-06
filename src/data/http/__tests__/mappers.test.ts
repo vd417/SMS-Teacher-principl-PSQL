@@ -505,3 +505,33 @@ test('toPtmMeeting maps a null subject and teacher_id through, and child/student
     status: 'confirmed',
   });
 });
+
+test('toApprovalRequest maps student fields, undefined when absent', () => {
+  const base = {
+    id: 'a4',
+    type: 'sick',
+    from_date: '2026-07-01',
+    to_date: '2026-07-01',
+    status: 'pending',
+  };
+  const a = toApprovalRequest(
+    approvalRequestSchema.parse({
+      ...base,
+      child_id: 'c1',
+      student_name: 'Riya Shah',
+      student_class: '5',
+      student_section: 'A',
+      student_roll: 12,
+      admission_no: 'ADM-7',
+    })
+  );
+  expect(a.student).toEqual({
+    id: 'c1',
+    name: 'Riya Shah',
+    cls: '5',
+    section: 'A',
+    roll: 12,
+    adm: 'ADM-7',
+  });
+  expect(toApprovalRequest(approvalRequestSchema.parse(base)).student).toBeUndefined();
+});
