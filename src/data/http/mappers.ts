@@ -34,6 +34,7 @@ import type {
   PtmMeeting,
   PtmStatus,
   ApprovalRequest,
+  ApprovalStudent,
   PrincipalOverview,
   SchoolStaffMember,
   SchoolAttendance,
@@ -502,6 +503,13 @@ export const leaveResponseSchema = z.object({
   attachment_urls: z.union([z.string(), z.array(z.string())]).nullish(),
   // Present on /approvals (APR-01); leave.list rows omit it.
   priority: z.enum(['high', 'medium', 'low']).nullish(),
+  // Present on /approvals for student leave (class-teacher view).
+  student_name: z.string().nullish(),
+  student_class: z.string().nullish(),
+  student_section: z.string().nullish(),
+  student_roll: z.coerce.number().nullish(),
+  admission_no: z.string().nullish(),
+  child_id: z.string().nullish(),
 });
 export type LeaveRequestDTO = z.infer<typeof leaveResponseSchema>;
 export const toLeaveRequest = (d: LeaveRequestDTO): LeaveRequest => {
@@ -593,6 +601,14 @@ export const toApprovalRequest = (d: ApprovalRequestDTO): ApprovalRequest => {
   const requesterName = d.requester_name?.trim() || 'Staff member';
   const attachmentUrls = parseAttachmentUrls(d.attachment_urls);
   const rawRole = d.requester_role?.trim();
+  const student: ApprovalStudent = {
+    ...(d.child_id ? { id: d.child_id } : {}),
+    ...(d.student_name?.trim() ? { name: d.student_name.trim() } : {}),
+    ...(d.student_class?.trim() ? { cls: d.student_class.trim() } : {}),
+    ...(d.student_section?.trim() ? { section: d.student_section.trim() } : {}),
+    ...(d.student_roll != null ? { roll: d.student_roll } : {}),
+    ...(d.admission_no?.trim() ? { adm: d.admission_no.trim() } : {}),
+  };
   return {
     id: d.id,
     type: 'leave',
@@ -612,6 +628,7 @@ export const toApprovalRequest = (d: ApprovalRequestDTO): ApprovalRequest => {
     decidedNote: d.decided_note ?? undefined,
     ...(d.decided_by_name?.trim() ? { decidedByName: d.decided_by_name.trim() } : {}),
     ...(attachmentUrls.length > 0 ? { attachmentUrls } : {}),
+    ...(Object.keys(student).length > 0 ? { student } : {}),
   };
 };
 

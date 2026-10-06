@@ -9,6 +9,7 @@ import { ClassDetailScreen } from '../screens/ClassDetailScreen';
 import { StudentScreen } from '../screens/StudentScreen';
 import { AttendanceScreen } from '../screens/AttendanceScreen';
 import { ClassTimetableScreen } from '../screens/principal/ClassTimetableScreen';
+import { ApprovalsScreen } from '../screens/principal/ApprovalsScreen';
 import { ChatScreen } from '../screens/ChatScreen';
 import { ChatThreadScreen } from '../screens/ChatThreadScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
@@ -125,6 +126,7 @@ export const MainTabNavigator = () => (
     <Tab.Screen name="Home" component={HomeStackNavigator} />
     <Tab.Screen name="Timetable" component={ScheduleScreen} />
     <Tab.Screen name="Classes" component={ClassesStackNavigator} />
+    <Tab.Screen name="StudentLeave" component={ApprovalsScreen} />
     <Tab.Screen name="Inbox" component={InboxStackNavigator} />
     <Tab.Screen name="Profile" component={ProfileStackNavigator} />
   </Tab.Navigator>

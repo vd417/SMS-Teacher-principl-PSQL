@@ -9,6 +9,7 @@ import {
   TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 import { Colors, Radii, Shadows } from '../../theme';
@@ -18,7 +19,7 @@ import { AttachmentThumbnails } from '../../components/leave/AttachmentThumbnail
 import { useApprovals, useDecideApproval } from '@/features/approvals/hooks';
 import { isAppError } from '@/lib/errors';
 import type { ApprovalListStatus } from '@/data/repositories/types';
-import type { ApprovalRequest, LeaveStatus } from '@/data/domain';
+import type { ApprovalRequest, ApprovalStudent, LeaveStatus } from '@/data/domain';
 
 const REJECT_REASONS = ['Substitute not arranged', 'Insufficient detail', 'Not approved'];
 
@@ -40,8 +41,20 @@ const STATUS_COLORS: Record<LeaveStatus, { color: string; soft: string }> = {
   rejected: { color: Colors.absent, soft: Colors.absentSoft },
 };
 
+const formatStudent = (s: ApprovalStudent): string => {
+  const parts: string[] = [];
+  if (s.name) parts.push(s.name);
+  const cls = [s.cls, s.section].filter(Boolean).join('-');
+  if (cls) parts.push(`Class ${cls}`);
+  if (s.roll != null) parts.push(`Roll ${s.roll}`);
+  if (s.adm) parts.push(`Adm ${s.adm}`);
+  return `Student: ${parts.join(' · ')}`;
+};
+
 export const ApprovalsScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
+  const route = useRoute();
+  const title = route.name === 'StudentLeave' ? 'Student Leave' : 'Approvals';
   const [filter, setFilter] = useState<ApprovalListStatus>('pending');
   const { data: approvals = [], isLoading } = useApprovals(filter);
   const decide = useDecideApproval();
@@ -91,7 +104,7 @@ export const ApprovalsScreen: React.FC = () => {
         contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 16, paddingBottom: 24 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.h1}>Approvals</Text>
+        <Text style={styles.h1}>{title}</Text>
         <Text style={styles.sub}>
           {approvals.length} {filter}
         </Text>
@@ -162,6 +175,10 @@ export const ApprovalsScreen: React.FC = () => {
                   />
                 )}
               </View>
+
+              {req.student ? (
+                <Text style={styles.studentLine}>{formatStudent(req.student)}</Text>
+              ) : null}
 
               {req.from && req.to ? (
                 <Text style={styles.dateRange}>
@@ -309,6 +326,7 @@ const styles = StyleSheet.create({
   requesterRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 },
   cardMeta: { fontFamily: FontFamily.regular, fontSize: 13, color: Colors.inkMuted },
   dot: { width: 10, height: 10, borderRadius: 5 },
+  studentLine: { fontFamily: FontFamily.semiBold, fontSize: 13, color: Colors.ink, marginTop: 10 },
   dateRange: {
     fontFamily: FontFamily.semiBold,
     fontSize: 13,
