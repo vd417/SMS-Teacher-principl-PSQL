@@ -59,13 +59,6 @@ const QUICK_ACTIONS = [
     soft: Colors.presentSoft,
   },
   {
-    icon: 'create',
-    label: 'Marks',
-    screen: 'MarksPickClass',
-    color: Colors.blue,
-    soft: Colors.blueSoft,
-  },
-  {
     icon: 'document-text',
     label: 'Tests',
     screen: 'ExamsScreen',
@@ -78,6 +71,13 @@ const QUICK_ACTIONS = [
     screen: 'AssignmentsScreen',
     color: Colors.late,
     soft: Colors.lateSoft,
+  },
+  {
+    icon: 'bus',
+    label: 'Bus',
+    screen: 'BusScreen',
+    color: Colors.indigo,
+    soft: Colors.indigoSoft,
   },
 ] as const;
 
