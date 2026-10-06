@@ -17,6 +17,10 @@ export interface HttpClientConfig {
   onRefresh?: () => Promise<boolean>;
   // Called when a refresh fails; the app should sign the user out.
   onAuthLost?: () => void;
+  // Per-request timeout. A request that neither responds nor errors within this
+  // window is aborted and rejected as AppError{code:'timeout'} so nothing (e.g.
+  // startup) can hang forever on an unresponsive-but-reachable backend.
+  timeoutMs?: number;
 }
 export interface RequestOptions {
   params?: Record<string, unknown>;
@@ -55,6 +59,7 @@ const ANONYMOUS_AUTH_PATHS = new Set([
 
 export function createHttpClient(config: HttpClientConfig): HttpClient {
   const doFetch = config.fetchImpl ?? fetch;
+  const timeoutMs = config.timeoutMs ?? 15_000;
   const isRefreshPath = (path: string) => path === '/auth/refresh';
 
   async function send(
@@ -69,14 +74,26 @@ export function createHttpClient(config: HttpClientConfig): HttpClient {
       if (accessToken) headers.Authorization = `Bearer ${accessToken}`;
       if (tenantId) headers['X-Tenant-Id'] = tenantId;
     }
+    const controller = new AbortController();
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, timeoutMs);
     try {
       return await doFetch(`${config.baseUrl}${path}${toQuery(opts?.params)}`, {
         method,
         headers,
         body: body == null ? undefined : JSON.stringify(body),
+        signal: controller.signal,
       });
     } catch (e) {
+      if (timedOut) {
+        throw new AppError({ code: 'timeout', status: 0, message: 'Request timed out' });
+      }
       throw new AppError({ code: 'network', status: 0, message: (e as Error).message });
+    } finally {
+      clearTimeout(timer);
     }
   }
 

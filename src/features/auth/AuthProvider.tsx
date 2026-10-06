@@ -1,4 +1,12 @@
-import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+} from 'react';
 import type { Session } from '@/data/domain';
 import type { OtpChallenge, SchoolChoice } from '@/data/repositories/types';
 import { tokenStore } from '@/lib/tokenStore';
@@ -7,6 +15,13 @@ import { sessionForStorage } from '@/lib/sessionStorage';
 import { authSnapshot } from '@/lib/authSnapshot';
 import { authBridge } from '@/features/auth/authBridge';
 import { queryClient } from '@/lib/queryClient';
+import { classifyError, isConnectivityError } from '@/lib/errors';
+import {
+  startCachePersistence,
+  clearCachePersistence,
+  type CacheIdentity,
+  type PersistenceHandle,
+} from '@/lib/queryPersist';
 import { useRepositories } from '@/data/repositories/RepositoryContext';
 import { logoForTenant, withTenantLogo } from '@/lib/schoolBranding';
 
@@ -55,6 +70,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [status, setStatus] = useState<Status>('loading');
   const [session, setSession] = useState<Session | null>(null);
   const [pendingSchools, setPendingSchools] = useState<SchoolChoice[] | null>(null);
+  // The live cache-persistence subscription + the identity it belongs to, so we
+  // can stop persisting and purge the right cache on logout / school switch.
+  const persistHandle = useRef<PersistenceHandle | null>(null);
+  const identityRef = useRef<CacheIdentity | null>(null);
+
+  // Start (or restart) persisting the query cache for this identity and hydrate
+  // any previously persisted cache. Returns the restore promise.
+  const beginPersistence = useCallback((identity: CacheIdentity): Promise<void> => {
+    if (persistHandle.current) persistHandle.current.stop();
+    identityRef.current = identity;
+    const [restored, handle] = startCachePersistence(queryClient, identity);
+    persistHandle.current = handle;
+    return restored;
+  }, []);
+
+  const stopPersistence = useCallback(() => {
+    if (persistHandle.current) {
+      persistHandle.current.stop();
+      persistHandle.current = null;
+    }
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -65,12 +101,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setStatus('unauthenticated');
         return;
       }
+
+      // Render cached UI immediately from the stored session — never block the
+      // first screen on the network. me() runs afterwards, in the background.
+      const optimistic: Session = { ...stored, ...tokens };
+      authSnapshot.set({ accessToken: optimistic.accessToken, tenantId: optimistic.tenant.id });
+      setSession(optimistic);
+      setStatus('authenticated');
+      // Hydrate the persisted query cache for this identity so screens show data.
+      await beginPersistence({
+        tenantId: optimistic.tenant.id,
+        userId: optimistic.user.id,
+      });
+
       try {
         // me() confirms the stored token is still valid and refreshes user data.
         const { user, tenant } = await repos.auth.me();
         const rehydrated: Session = {
-          ...stored,
-          ...tokens,
+          ...optimistic,
           user,
           tenant: {
             id: tenant.id,
@@ -82,7 +130,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         authSnapshot.set({ accessToken: rehydrated.accessToken, tenantId: rehydrated.tenant.id });
         setSession(rehydrated);
-        setStatus('authenticated');
         void persistSession(rehydrated);
         void repos.auth
           .listMySchools()
@@ -96,21 +143,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .catch(() => {
             /* logo is optional */
           });
-      } catch {
-        await tokenStore.clear();
-        await writeJson<Session | null>(SESSION_KEY, null);
-        setStatus('unauthenticated');
+      } catch (e) {
+        // A network / timeout / 5xx here means "can't reach the backend right
+        // now", NOT "signed out": keep the cached session so the app stays usable
+        // offline. Only a genuine auth rejection ends the session.
+        if (classifyError(e) === 'auth') {
+          await tokenStore.clear();
+          await writeJson<Session | null>(SESSION_KEY, null);
+          if (identityRef.current) await clearCachePersistence(identityRef.current);
+          stopPersistence();
+          identityRef.current = null;
+          authSnapshot.clear();
+          queryClient.clear();
+          setSession(null);
+          setStatus('unauthenticated');
+        }
       }
     })();
-  }, [repos]);
+  }, [repos, beginPersistence, stopPersistence]);
 
-  const establishSession = useCallback(async (s: Session) => {
-    await tokenStore.save({ accessToken: s.accessToken, refreshToken: s.refreshToken });
-    await persistSession(s);
-    authSnapshot.set({ accessToken: s.accessToken, tenantId: s.tenant.id });
-    setSession(s);
-    setStatus('authenticated');
-  }, []);
+  const establishSession = useCallback(
+    async (s: Session) => {
+      await tokenStore.save({ accessToken: s.accessToken, refreshToken: s.refreshToken });
+      await persistSession(s);
+      authSnapshot.set({ accessToken: s.accessToken, tenantId: s.tenant.id });
+      beginPersistence({ tenantId: s.tenant.id, userId: s.user.id });
+      setSession(s);
+      setStatus('authenticated');
+    },
+    [beginPersistence]
+  );
 
   // Shared by signIn and signInWithOtp: once a login/OTP session is minted, check
   // whether the identity is linked to more than one school. A secondary-endpoint
@@ -233,25 +295,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       await tokenStore.clear();
       await writeJson<Session | null>(SESSION_KEY, null);
+      // Purge this identity's persisted cache so private data never lingers for
+      // the next user on a shared device, then stop the persistence subscription.
+      if (identityRef.current) await clearCachePersistence(identityRef.current);
+      stopPersistence();
+      identityRef.current = null;
       authSnapshot.clear();
       queryClient.clear();
       setSession(null);
       setStatus('unauthenticated');
     }
-  }, [repos]);
+  }, [repos, stopPersistence]);
 
-  // Rotates tokens on a 401 (driven by httpClient via authBridge). Returns whether
-  // a fresh access token is now in the snapshot.
+  // Rotates tokens on a 401 (driven by httpClient via authBridge).
+  // Returns true when a fresh access token is in the snapshot, false on a genuine
+  // rejection (→ httpClient signs the user out). A network/timeout/5xx while
+  // refreshing is transient: THROW so the original request fails and cached data
+  // stays, but the session is NOT ended.
   const refresh = useCallback(async (): Promise<boolean> => {
+    const tokens = await tokenStore.read();
+    if (!tokens) return false;
     try {
-      const tokens = await tokenStore.read();
-      if (!tokens) return false;
       const next = await repos.auth.refresh(tokens.refreshToken);
       await tokenStore.save(next);
       authSnapshot.set({ accessToken: next.accessToken, tenantId: authSnapshot.get().tenantId });
       setSession((prev) => (prev ? { ...prev, ...next } : prev));
       return true;
-    } catch {
+    } catch (e) {
+      if (isConnectivityError(e)) throw e;
       return false;
     }
   }, [repos]);

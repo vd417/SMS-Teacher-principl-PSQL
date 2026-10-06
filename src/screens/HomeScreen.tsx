@@ -4,6 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useQueryClient } from '@tanstack/react-query';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
@@ -41,6 +42,9 @@ import { isAppError } from '@/lib/errors';
 import { deriveColorSet } from '@/theme/derive';
 import { navigateToMoreScreen } from '@/lib/navigateToMore';
 import { Skeleton } from '@/ui/state/Skeleton';
+import { SyncStatus } from '../components/SyncStatus';
+import { OfflineEmpty } from '../components/OfflineEmpty';
+import { useConnectivity } from '@/lib/connectivity';
 import { classLabel } from '@/lib/classLabel';
 import { classSubjectForTeacher } from '@/lib/classSubjects';
 import { useTimetable } from '@/features/timetable/hooks';
@@ -135,6 +139,9 @@ export const HomeScreen: React.FC = () => {
   const { session, refreshProfile } = useAuth();
   const tenantId = useTenantId();
   const user = session?.user;
+  const rqClient = useQueryClient();
+  const { status: connStatus } = useConnectivity();
+  const dashboardUpdatedAt = rqClient.getQueryState(queryKeys.dashboard(tenantId))?.dataUpdatedAt;
   const { name: schoolName, logoUrl: schoolLogoUrl } = useCurrentSchoolBranding();
 
   const { data: classes = [], isLoading: classesLoading, refetch: refetchClasses } = useClasses();
@@ -247,6 +254,8 @@ export const HomeScreen: React.FC = () => {
             </TouchableOpacity>
           </Animated.View>
         )}
+
+        <SyncStatus updatedAt={dashboardUpdatedAt} />
 
         {/* My Check-In — manual on Silver/Gold, GPS geo-fence on Platinum */}
         {staffCheckInAllowed && (
@@ -442,6 +451,8 @@ export const HomeScreen: React.FC = () => {
                 <Skeleton key={i} height={80} width={(width - 48 - 30) / 4} radius={12} />
               ))}
             </View>
+          ) : !stats && connStatus === 'offline' ? (
+            <OfflineEmpty />
           ) : (
             <View style={styles.statsRow}>
               {[

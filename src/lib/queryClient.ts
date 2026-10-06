@@ -5,6 +5,13 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 30_000,
+      // Keep inactive query data in memory for a week so it survives long enough
+      // to be persisted to disk (see queryPersist) and restored offline. Must be
+      // >= the persister maxAge.
+      gcTime: 1000 * 60 * 60 * 24 * 7,
+      // When connectivity returns (via onlineManager), refetch stale queries so
+      // cached screens catch up with the server automatically.
+      refetchOnReconnect: true,
       retry: (count, error) => {
         if (isAppError(error) && error.status === 401) return false;
         return count < 2;
