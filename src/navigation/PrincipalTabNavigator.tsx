@@ -106,6 +106,8 @@ const ProfileStackNavigator = () => (
     <ProfileStack.Screen name="ChangePasswordScreen" component={ChangePasswordScreen} />
     <ProfileStack.Screen name="MyAttendanceScreen" component={MyAttendanceScreen} />
     <ProfileStack.Screen name="SettingsScreen" component={SettingsScreen} />
+    <ProfileStack.Screen name="PayslipScreen" component={PayslipScreen} />
+    <ProfileStack.Screen name="LeaveScreen" component={LeaveScreen} />
     <ProfileStack.Screen name="SwitchSchool" component={SchoolPickerScreen} />
   </ProfileStack.Navigator>
 );
