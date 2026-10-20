@@ -9,7 +9,6 @@ export type MainTabParamList = {
   Home: undefined;
   Timetable: undefined;
   Classes: undefined;
-  StudentLeave: undefined;
   Inbox: undefined;
   Profile: undefined;
 };
@@ -39,6 +38,7 @@ export type HomeStackParamList = {
   AssignmentNewScreen: { assignmentId?: string } | undefined;
   AnnouncementsScreen: undefined;
   MoreScreen: undefined;
+  StudentLeave: undefined;
   BusScreen: undefined;
   LibraryScreen: undefined;
   PayslipScreen: undefined;

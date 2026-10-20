@@ -33,23 +33,58 @@ export function formatClassSection(label: string | undefined): string {
   return raw;
 }
 
-function staffLabel(role: string | undefined, designation?: string): string {
-  const title = designation?.trim();
-  if (title) return title;
-  const raw = (role ?? '').trim();
-  if (!raw) return 'Staff';
-  const first =
-    raw
-      .split(/\s*[·•|/]\s*/)
-      .map((part) => part.trim())
-      .filter(Boolean)[0] ?? raw;
-  if (!first.includes('.') && !first.includes('_')) return first;
-  const leaf = first.includes('.') ? (first.split('.').pop() ?? first) : first;
+function humanizeRole(value: string): string {
+  const leaf = value.includes('.') ? (value.split('.').pop() ?? value) : value;
+  if (!leaf.includes('.') && !leaf.includes('_') && leaf !== value) {
+    return leaf
+      .split(/[_\s]+/)
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+      .join(' ');
+  }
+  if (!value.includes('.') && !value.includes('_')) return value.trim();
   return leaf
     .split(/[_\s]+/)
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
     .join(' ');
+}
+
+function isStaffAccount(role: string | undefined): boolean {
+  const leaf = norm(role).includes('.') ? (norm(role).split('.').pop() ?? '') : norm(role);
+  return (
+    leaf.includes('principal') ||
+    leaf.includes('teacher') ||
+    leaf === 'admin' ||
+    leaf === 'owner' ||
+    leaf === 'staff' ||
+    leaf.includes('vice')
+  );
+}
+
+function isStudentRole(role: string | undefined): boolean {
+  const value = norm(role);
+  if (!value) return false;
+  const leaf = value.includes('.') ? (value.split('.').pop() ?? value) : value;
+  return leaf === 'student';
+}
+
+/** Designation and role both stay visible. Identical words are not repeated. */
+function staffLabel(role: string | undefined, designation?: string): string {
+  const title = designation?.trim() ?? '';
+  const roleParts = (role ?? '')
+    .split(/\s*[·•|/]\s*/)
+    .map((part) => humanizeRole(part))
+    .filter(Boolean);
+  const seen = new Set<string>();
+  const parts: string[] = [];
+  for (const part of [title, ...roleParts]) {
+    const key = norm(part);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    parts.push(part);
+  }
+  return parts.join(' · ') || 'Staff';
 }
 
 /** Find an existing inbox thread. Parent threads are scoped to a student when childId is known. */
@@ -62,11 +97,17 @@ export function findExistingThread(
   const nameKey = norm(query.name);
 
   if (childId) {
-    return contacts.find((c) => {
-      if (c.childId?.trim() !== childId) return false;
-      if (!roleKey) return true;
-      return norm(c.role) === roleKey;
-    });
+    const sameChild = contacts.filter((c) => c.childId?.trim() === childId);
+    if (isStudentRole(query.role) || isParentRole(query.role)) {
+      const parentThread = sameChild.find((c) => isParentRole(c.role) || Boolean(c.childName));
+      if (parentThread) return parentThread;
+    }
+    const exact = sameChild.find((c) => !roleKey || norm(c.role) === roleKey);
+    if (exact) return exact;
+    if (isParentRole(query.role)) {
+      return contacts.find((c) => isParentRole(c.role) && norm(c.name) === nameKey && !c.childId);
+    }
+    return undefined;
   }
 
   return contacts.find((c) => {
@@ -92,8 +133,8 @@ export function formatChatIdentity(contact: {
   const childName = contact.childName?.trim();
   const placement = formatClassSection(contact.childClassLabel);
 
-  if (isParentRole(contact.role) || childName) {
-    const subtitle = [placement, childName].filter(Boolean).join(' · ');
+  if (isParentRole(contact.role) || (childName && !isStaffAccount(contact.role))) {
+    const subtitle = [childName, placement].filter(Boolean).join(' · ');
     return { title, subtitle: subtitle || 'Parent' };
   }
 
@@ -152,8 +193,15 @@ export function dedupeChatContacts(contacts: ChatContact[]): ChatContact[] {
     [...byKey.keys()].filter((key) => key.startsWith('child:')).map((key) => key.split(':')[1])
   );
 
+  const parentChildIds = new Set(
+    [...byKey.values()].filter((c) => c.childId && isParentRole(c.role)).map((c) => c.childId)
+  );
+
   return order
     .filter((key) => {
+      const row = byKey.get(key);
+      if (!row) return false;
+      if (row.childId && isStudentRole(row.role) && parentChildIds.has(row.childId)) return false;
       if (!key.startsWith('parent:')) return true;
       const name = key.slice('parent:'.length);
       return !parentNamesWithChild.has(name);

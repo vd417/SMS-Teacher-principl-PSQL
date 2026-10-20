@@ -88,7 +88,7 @@ export const StaffDirectoryScreen: React.FC = () => {
                     checkInVerified: member.checkInVerified,
                   });
             const isTeacher = teacherIds.has(member.id);
-            const rowContent = (
+            const identity = (
               <>
                 <Avatar initials={member.initials} size={42} photoUri={member.photoUrl} />
                 <View style={{ flex: 1 }}>
@@ -112,11 +112,6 @@ export const StaffDirectoryScreen: React.FC = () => {
                 {isPrincipal && isTeacher ? (
                   <Ionicons name="chevron-forward" size={18} color={Colors.inkMuted} />
                 ) : null}
-                <StaffListContactActions
-                  name={member.name}
-                  roleLabel={member.roleLabel}
-                  phone={member.phone}
-                />
               </>
             );
             return (
@@ -125,17 +120,24 @@ export const StaffDirectoryScreen: React.FC = () => {
                 entering={FadeInDown.delay(50 * i).springify()}
                 style={styles.row}
               >
-                {isPrincipal && isTeacher ? (
-                  <TouchableOpacity
-                    style={styles.rowMain}
-                    onPress={() => openTeacherAcademics(member.id, member.name)}
-                    activeOpacity={0.85}
-                  >
-                    {rowContent}
-                  </TouchableOpacity>
-                ) : (
-                  <View style={styles.rowMain}>{rowContent}</View>
-                )}
+                <View style={styles.rowMain}>
+                  {isPrincipal && isTeacher ? (
+                    <TouchableOpacity
+                      style={styles.rowTap}
+                      onPress={() => openTeacherAcademics(member.id, member.name)}
+                      activeOpacity={0.85}
+                    >
+                      {identity}
+                    </TouchableOpacity>
+                  ) : (
+                    <View style={styles.rowTap}>{identity}</View>
+                  )}
+                  <StaffListContactActions
+                    name={member.name}
+                    roleLabel={member.roleLabel}
+                    phone={member.phone}
+                  />
+                </View>
               </Animated.View>
             );
           })
@@ -159,8 +161,17 @@ const styles = StyleSheet.create({
   rowMain: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 8,
+    paddingRight: 14,
+    paddingVertical: 8,
+  },
+  rowTap: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 12,
-    padding: 14,
+    paddingLeft: 14,
+    paddingVertical: 6,
   },
   name: { fontFamily: FontFamily.bold, fontSize: 15, color: Colors.ink },
   meta: { fontFamily: FontFamily.regular, fontSize: 13, color: Colors.inkMuted },

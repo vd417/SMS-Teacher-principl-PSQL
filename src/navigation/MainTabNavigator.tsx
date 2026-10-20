@@ -73,6 +73,7 @@ const HomeStackNavigator = () => (
     <HomeStack.Screen name="AssignmentNewScreen" component={AssignmentNewScreen} />
     <HomeStack.Screen name="AnnouncementsScreen" component={AnnouncementsScreen} />
     <HomeStack.Screen name="MoreScreen" component={MoreScreen} />
+    <HomeStack.Screen name="StudentLeave" component={ApprovalsScreen} />
     <HomeStack.Screen name="BusScreen" component={BusScreen} />
     <HomeStack.Screen name="LibraryScreen" component={LibraryScreen} />
     <HomeStack.Screen name="PayslipScreen" component={PayslipScreen} />
@@ -132,7 +133,6 @@ export const MainTabNavigator = () => (
     <Tab.Screen name="Home" component={HomeStackNavigator} />
     <Tab.Screen name="Timetable" component={ScheduleScreen} />
     <Tab.Screen name="Classes" component={ClassesStackNavigator} />
-    <Tab.Screen name="StudentLeave" component={ApprovalsScreen} />
     <Tab.Screen name="Inbox" component={InboxStackNavigator} />
     <Tab.Screen name="Profile" component={ProfileStackNavigator} />
   </Tab.Navigator>

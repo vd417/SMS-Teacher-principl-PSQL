@@ -4,6 +4,7 @@ import type { NewAnnouncementInput } from '@/data/repositories/types';
 import { useRepositories } from '@/data/repositories/RepositoryContext';
 import { useTenantId, useAuth } from '@/features/auth/AuthProvider';
 import { filterAnnouncementsForRole } from '@/lib/announcementAudience';
+import { isParentFeePaymentNotice } from '@/lib/feePaymentNotice';
 import { queryKeys } from '@/lib/queryClient';
 
 export function useAnnouncements() {
@@ -28,10 +29,18 @@ export function useAnnouncements() {
 export function useAppNotifications() {
   const repos = useRepositories();
   const tenantId = useTenantId();
-  return useQuery({
+  const { session } = useAuth();
+  const role = session?.user.role ?? 'teacher';
+  const query = useQuery({
     queryKey: queryKeys.notifications(tenantId),
     queryFn: () => repos.notifications.list(),
   });
+  const data = useMemo(
+    () =>
+      (query.data ?? []).filter((note) => role === 'principal' || !isParentFeePaymentNotice(note)),
+    [query.data, role]
+  );
+  return { ...query, data };
 }
 
 export function useMarkNotificationsRead() {

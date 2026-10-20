@@ -127,9 +127,7 @@ const ClassCard: React.FC<{
 
 export const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeNav>();
-  // ClassesScreen/ClassDetailScreen live in the sibling Classes tab stack, so we
-  // navigate across navigators by tab name + nested screen. The Home stack's
-  // typed navigate can't express that target, hence this narrow structural cast.
+  // Class hub and detail live in the Classes tab stack.
   const navTab = navigation as unknown as {
     navigate: (name: string, params?: { screen: string; params?: object }) => void;
   };

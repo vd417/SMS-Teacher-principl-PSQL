@@ -9,12 +9,12 @@ import {
   TextInput,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 import { Colors, Radii, Shadows } from '../../theme';
 import { FontFamily } from '../../theme/typography';
-import { Avatar, Pill } from '../../components';
+import { Avatar, Pill, ScreenHeader } from '../../components';
 import { AttachmentThumbnails } from '../../components/leave/AttachmentThumbnails';
 import { useApprovals, useDecideApproval } from '@/features/approvals/hooks';
 import { useAuth } from '@/features/auth/AuthProvider';
@@ -55,6 +55,7 @@ const formatStudent = (s: ApprovalStudent): string => {
 
 export const ApprovalsScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation();
   const route = useRoute();
   const { session } = useAuth();
   const isPrincipal = session?.user.role === 'principal';
@@ -112,7 +113,11 @@ export const ApprovalsScreen: React.FC = () => {
         contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 16, paddingBottom: 24 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.h1}>{title}</Text>
+        {navigation.canGoBack() ? (
+          <ScreenHeader title={title} showMoreFeatures={false} />
+        ) : (
+          <Text style={styles.h1}>{title}</Text>
+        )}
         <Text style={styles.sub}>
           {visibleApprovals.length} {filter}
           {isPrincipal

@@ -49,6 +49,24 @@ test('findExistingThread does not reuse a same-name parent thread for a differen
   ).toBeUndefined();
 });
 
+test('findExistingThread reuses the parent thread when chat starts from the class list', () => {
+  const threads = [
+    contact({
+      id: 'parent-thread',
+      name: 'Rahul Sharma',
+      role: 'Parent',
+      childId: 'stu-a',
+      childName: 'Aarav',
+    }),
+  ];
+  expect(
+    findExistingThread(threads, { name: 'Aarav', role: 'Student', childId: 'stu-a' })?.id
+  ).toBe('parent-thread');
+  expect(
+    findExistingThread(threads, { name: 'Rahul Sharma', role: 'Mother', childId: 'stu-a' })?.id
+  ).toBe('parent-thread');
+});
+
 test('findExistingThread matches staff threads by name and role when there is no child', () => {
   const threads = [
     contact({ id: 's1', name: 'Priya Nair', role: 'Teacher' }),
@@ -68,7 +86,7 @@ test('formatChatIdentity shows the student class, section, and name for a parent
     })
   ).toEqual({
     title: 'Rahul Sharma',
-    subtitle: 'Class 5 · Section A · John Doe',
+    subtitle: 'John Doe · Class 5 · Section A',
   });
 });
 
@@ -82,11 +100,11 @@ test('formatChatIdentity splits a compact class-section label', () => {
     })
   ).toEqual({
     title: 'Rahul Sharma',
-    subtitle: 'Class 5 · Section A · John Doe',
+    subtitle: 'John Doe · Class 5 · Section A',
   });
 });
 
-test('formatChatIdentity shows a staff designation once, not beside the role', () => {
+test('formatChatIdentity shows a staff designation and the role', () => {
   expect(
     formatChatIdentity({
       name: 'Neha Singh',
@@ -95,11 +113,26 @@ test('formatChatIdentity shows a staff designation once, not beside the role', (
     })
   ).toEqual({
     title: 'Neha Singh',
-    subtitle: 'Senior Teacher',
+    subtitle: 'Senior Teacher · Teacher',
   });
   expect(formatChatIdentity({ name: 'Neha Singh', role: 'Senior Teacher · Teacher' })).toEqual({
     title: 'Neha Singh',
-    subtitle: 'Senior Teacher',
+    subtitle: 'Senior Teacher · Teacher',
+  });
+});
+
+test('formatChatIdentity keeps a principal chat labeled with role and designation', () => {
+  expect(
+    formatChatIdentity({
+      name: 'Priya Nair',
+      role: 'school.principal',
+      designation: 'Head of School',
+      childName: 'Aarav',
+      childClassLabel: '5 - A',
+    })
+  ).toEqual({
+    title: 'Priya Nair',
+    subtitle: 'Head of School · Principal',
   });
 });
 
@@ -151,6 +184,13 @@ test('dedupeChatContacts keeps one staff card and one parent card per student', 
       name: 'Rahul Sharma',
       role: 'Parent',
       lastMessage: 'orphan',
+    }),
+    contact({
+      id: 'stu',
+      name: 'Aarav',
+      role: 'Student',
+      childId: 'stu-a',
+      lastMessage: 'duplicate from class list',
     }),
   ]);
 

@@ -45,6 +45,14 @@ type MoreItem = {
 
 const MORE_ITEMS: MoreItem[] = [
   {
+    icon: 'clipboard-outline',
+    label: 'Student Leave',
+    screen: 'StudentLeave',
+    feature: 'operations',
+    color: Colors.coral,
+    soft: Colors.coralSoft,
+  },
+  {
     icon: 'library-outline',
     label: 'Library',
     screen: 'LibraryScreen',
@@ -199,7 +207,7 @@ export const MoreScreen: React.FC = () => {
       <Animated.View entering={FadeInDown.delay(50).springify()}>
         <ScreenHeader
           title="More"
-          subtitle={isPrincipal ? 'School features' : 'My classes & tools'}
+          subtitle={isPrincipal ? 'School features' : undefined}
           showBack
           showMoreFeatures={false}
         />

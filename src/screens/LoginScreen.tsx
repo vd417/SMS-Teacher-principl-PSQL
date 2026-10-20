@@ -65,14 +65,14 @@ export const LoginScreen: React.FC = () => {
       end={{ x: 0.4, y: 1 }}
     >
       <StatusBar style="light" />
-      <View style={styles.flex}>
+      <View style={[styles.flex, keyboardInset > 0 && { marginBottom: keyboardInset }]}>
         <ScrollView
           ref={scrollRef}
           contentContainerStyle={[
             styles.scroll,
             {
               paddingTop: insets.top + 40,
-              paddingBottom: insets.bottom + 24 + keyboardInset,
+              paddingBottom: insets.bottom + 24,
             },
           ]}
           showsVerticalScrollIndicator={false}
@@ -109,6 +109,7 @@ export const LoginScreen: React.FC = () => {
                     placeholderTextColor={Colors.inkSoft}
                     autoCapitalize="none"
                     autoCorrect={false}
+                    onFocus={() => scrollRef.current?.scrollToEnd({ animated: true })}
                   />
                 </View>
               </View>
@@ -136,6 +137,7 @@ export const LoginScreen: React.FC = () => {
                     autoCapitalize="none"
                     autoCorrect={false}
                     blurOnSubmit={false}
+                    onFocus={() => scrollRef.current?.scrollToEnd({ animated: true })}
                   />
                   <TouchableOpacity onPress={togglePasswordVisibility} hitSlop={8}>
                     <Ionicons

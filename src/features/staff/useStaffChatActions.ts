@@ -12,6 +12,8 @@ export function useStaffChatActions() {
 
   const openStaffChat = useCallback(
     (name: string, roleLabel: string) => {
+      const selfName = session?.user.name?.trim().toLowerCase();
+      if (selfName && name.trim().toLowerCase() === selfName) return;
       openChat.mutate(
         { name, role: roleLabel },
         {
@@ -19,7 +21,7 @@ export function useStaffChatActions() {
         }
       );
     },
-    [inboxTab, navigation, openChat]
+    [inboxTab, navigation, openChat, session?.user.name]
   );
 
   const isOpening = (name: string) => openChat.isPending && openChat.variables?.name === name;

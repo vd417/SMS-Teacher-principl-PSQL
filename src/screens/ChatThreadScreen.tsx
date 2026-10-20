@@ -70,7 +70,11 @@ export const ChatThreadScreen: React.FC = () => {
     if (keyboardInset === 0) return;
     stickToBottom.current = true;
     const frame = requestAnimationFrame(() => scrollToLatest(true));
-    return () => cancelAnimationFrame(frame);
+    const timer = setTimeout(() => scrollToLatest(true), 80);
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(timer);
+    };
   }, [keyboardInset, scrollToLatest]);
 
   useEffect(() => {
@@ -138,7 +142,7 @@ export const ChatThreadScreen: React.FC = () => {
   );
 
   return (
-    <View style={styles.flex}>
+    <View style={[styles.flex, keyboardInset > 0 && { marginBottom: keyboardInset }]}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -153,7 +157,7 @@ export const ChatThreadScreen: React.FC = () => {
           <Text style={styles.headerName} numberOfLines={1}>
             {contact ? formatChatIdentity(contact).title : '...'}
           </Text>
-          <Text style={styles.headerRole} numberOfLines={1}>
+          <Text style={styles.headerRole} numberOfLines={2}>
             {contact ? formatChatIdentity(contact).subtitle : ''}
           </Text>
         </View>
@@ -198,10 +202,7 @@ export const ChatThreadScreen: React.FC = () => {
       {moderationError && <Text style={styles.moderationErrorText}>{moderationWarning}</Text>}
       {sendError && <Text style={styles.sendErrorText}>Message failed to send. Try again.</Text>}
       <View
-        style={[
-          styles.inputBar,
-          { paddingBottom: keyboardInset + (keyboardInset > 0 ? 8 : insets.bottom + 12) },
-        ]}
+        style={[styles.inputBar, { paddingBottom: keyboardInset > 0 ? 8 : insets.bottom + 12 }]}
       >
         <TouchableOpacity
           style={styles.attachBtn}

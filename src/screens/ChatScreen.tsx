@@ -44,7 +44,13 @@ export const ChatScreen: React.FC = () => {
   const totalUnread = chatContacts.reduce((sum, c) => sum + c.unread, 0);
 
   return (
-    <View style={[styles.screen, { paddingTop: insets.top }]}>
+    <View
+      style={[
+        styles.screen,
+        { paddingTop: insets.top },
+        keyboardInset > 0 && { marginBottom: keyboardInset },
+      ]}
+    >
       <View style={styles.header}>
         <Animated.View entering={FadeInDown.delay(50).springify()}>
           <ScreenHeader
@@ -84,7 +90,7 @@ export const ChatScreen: React.FC = () => {
         <FlatList
           data={filtered}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={[styles.list, { paddingBottom: 24 + keyboardInset }]}
+          contentContainerStyle={styles.list}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
@@ -109,7 +115,7 @@ export const ChatScreen: React.FC = () => {
                       </Text>
                       <Text style={styles.contactTime}>{item.time}</Text>
                     </View>
-                    <Text style={styles.contactRole} numberOfLines={1}>
+                    <Text style={styles.contactRole} numberOfLines={2}>
                       {identity.subtitle}
                     </Text>
                     <View style={styles.lastMessageRow}>
