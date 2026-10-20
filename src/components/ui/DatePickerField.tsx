@@ -37,10 +37,37 @@ export const DatePickerField: React.FC<Props> = ({
   const [show, setShow] = useState(false);
   const date = value ? parseYmd(value) : new Date();
 
-  const onPickerChange = (_e: DateTimePickerEvent, selected?: Date) => {
-    if (Platform.OS === 'android') setShow(false);
-    if (selected) onChange(formatYmd(selected));
+  const onPickerChange = (event: DateTimePickerEvent, selected?: Date) => {
+    if (Platform.OS !== 'ios') setShow(false);
+    if (event.type === 'dismissed') return;
+    if (!selected) return;
+    const next = formatYmd(selected);
+    if (minimumDate && next < formatYmd(minimumDate)) return;
+    if (maximumDate && next > formatYmd(maximumDate)) return;
+    onChange(next);
   };
+
+  if (Platform.OS === 'web') {
+    return (
+      <View style={[styles.field, error && styles.fieldError]}>
+        {React.createElement('input', {
+          type: 'date',
+          value: value || '',
+          min: minimumDate ? formatYmd(minimumDate) : undefined,
+          max: maximumDate ? formatYmd(maximumDate) : undefined,
+          'aria-label': placeholder,
+          onChange: (event: { target: { value: string } }) => {
+            const next = event.target.value;
+            if (!next) return;
+            if (minimumDate && next < formatYmd(minimumDate)) return;
+            if (maximumDate && next > formatYmd(maximumDate)) return;
+            onChange(next);
+          },
+          style: webInputStyle(Boolean(value)),
+        })}
+      </View>
+    );
+  }
 
   return (
     <View>
@@ -55,7 +82,7 @@ export const DatePickerField: React.FC<Props> = ({
         <DateTimePicker
           value={date}
           mode="date"
-          display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+          display={Platform.OS === 'ios' ? 'spinner' : 'calendar'}
           minimumDate={minimumDate}
           maximumDate={maximumDate}
           onChange={onPickerChange}
@@ -69,6 +96,18 @@ export const DatePickerField: React.FC<Props> = ({
     </View>
   );
 };
+
+function webInputStyle(hasValue: boolean): Record<string, string | number> {
+  return {
+    border: 'none',
+    outline: 'none',
+    width: '100%',
+    fontSize: 15,
+    backgroundColor: 'transparent',
+    color: hasValue ? Colors.ink : Colors.inkSoft,
+    fontFamily: 'inherit',
+  };
+}
 
 const styles = StyleSheet.create({
   field: {

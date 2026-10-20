@@ -32,7 +32,7 @@ export interface HttpClient {
   post<T>(path: string, body?: unknown): Promise<T>;
   put<T>(path: string, body?: unknown): Promise<T>;
   patch<T>(path: string, body?: unknown): Promise<T>;
-  delete<T>(path: string): Promise<T>;
+  delete<T>(path: string, body?: unknown): Promise<T>;
 }
 
 function toQuery(params?: Record<string, unknown>): string {
@@ -154,6 +154,6 @@ export function createHttpClient(config: HttpClientConfig): HttpClient {
     post: async (p, b) => maybeData(await request('POST', p, b)),
     put: async (p, b) => maybeData(await request('PUT', p, b)),
     patch: async (p, b) => maybeData(await request('PATCH', p, b)),
-    delete: async (p) => maybeData(await request('DELETE', p)),
+    delete: async (p, b) => maybeData(await request('DELETE', p, b)),
   } as HttpClient;
 }

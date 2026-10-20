@@ -733,7 +733,7 @@ const styles = StyleSheet.create({
     color: Colors.inkMuted,
     textAlign: 'center',
   },
-  myAttCard: { marginTop: 12, padding: 16 },
+  myAttCard: { marginTop: 12, marginBottom: 16, padding: 16 },
   myAttHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 14 },
   myAttTitle: { fontFamily: FontFamily.bold, fontSize: 15, color: Colors.ink, flex: 1 },
   myAttHint: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 12 },

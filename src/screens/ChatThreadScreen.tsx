@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -6,16 +6,16 @@ import {
   FlatList,
   TouchableOpacity,
   TextInput,
-  KeyboardAvoidingView,
-  Platform,
   ActivityIndicator,
   Image,
+  type NativeSyntheticEvent,
+  type NativeScrollEvent,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import Animated, { FadeInDown, FadeInRight } from 'react-native-reanimated';
+import Animated, { FadeInRight } from 'react-native-reanimated';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
@@ -23,6 +23,7 @@ import { Avatar } from '../components';
 import { useChatContacts, useChatMessages } from '@/features/chat/hooks';
 import { formatChatIdentity } from '@/lib/chatThread';
 import { useChatComposer } from '@/features/chat/useChatComposer';
+import { useKeyboardInset } from '@/lib/useKeyboardInset';
 import { deriveColorSet } from '@/theme/derive';
 import { pickImageFromLibrary } from '@/lib/pickImage';
 import { chatMessageSchema, ChatMessageSchemaType } from '../validation/schemas';
@@ -57,6 +58,25 @@ export const ChatThreadScreen: React.FC = () => {
   } = useChatComposer(contactId);
 
   const listRef = useRef<FlatList>(null);
+  const stickToBottom = useRef(true);
+  const keyboardInset = useKeyboardInset();
+
+  const scrollToLatest = useCallback((animated: boolean) => {
+    if (!stickToBottom.current) return;
+    listRef.current?.scrollToEnd({ animated });
+  }, []);
+
+  useEffect(() => {
+    if (keyboardInset === 0) return;
+    stickToBottom.current = true;
+    const frame = requestAnimationFrame(() => scrollToLatest(true));
+    return () => cancelAnimationFrame(frame);
+  }, [keyboardInset, scrollToLatest]);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => scrollToLatest(true));
+    return () => cancelAnimationFrame(frame);
+  }, [messages.length, scrollToLatest]);
 
   const { control, handleSubmit, reset } = useForm<ChatMessageSchemaType>({
     resolver: zodResolver(chatMessageSchema),
@@ -64,18 +84,26 @@ export const ChatThreadScreen: React.FC = () => {
   });
 
   const onSend = (data: ChatMessageSchemaType) => {
+    stickToBottom.current = true;
     sendMessage(data.message, () => {
       reset();
-      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
+      requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
     });
   };
 
   const onAttachImage = async () => {
     const uri = await pickImageFromLibrary();
     if (!uri) return;
+    stickToBottom.current = true;
     sendImage(uri, () => {
-      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
+      requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
     });
+  };
+
+  const onMessageScroll = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    const distanceFromBottom = contentSize.height - layoutMeasurement.height - contentOffset.y;
+    if (distanceFromBottom < 80) stickToBottom.current = true;
   };
 
   const { color: avatarColor } = contact ? deriveColorSet(contact.id) : { color: Colors.primary };
@@ -110,11 +138,7 @@ export const ChatThreadScreen: React.FC = () => {
   );
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      style={styles.flex}
-      keyboardVerticalOffset={insets.bottom}
-    >
+    <View style={styles.flex}>
       {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
@@ -152,11 +176,20 @@ export const ChatThreadScreen: React.FC = () => {
       {!messagesLoading && !messagesError && (
         <FlatList
           ref={listRef}
+          style={styles.messageListView}
           data={messages}
           keyExtractor={(item) => item.id}
           contentContainerStyle={styles.messageList}
           renderItem={renderMessage}
-          onLayout={() => listRef.current?.scrollToEnd({ animated: false })}
+          onContentSizeChange={() => scrollToLatest(true)}
+          onLayout={() => scrollToLatest(false)}
+          onScroll={onMessageScroll}
+          onScrollBeginDrag={() => {
+            stickToBottom.current = false;
+          }}
+          scrollEventThrottle={16}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
         />
       )}
@@ -164,7 +197,12 @@ export const ChatThreadScreen: React.FC = () => {
       {/* Input */}
       {moderationError && <Text style={styles.moderationErrorText}>{moderationWarning}</Text>}
       {sendError && <Text style={styles.sendErrorText}>Message failed to send. Try again.</Text>}
-      <View style={[styles.inputBar, { paddingBottom: insets.bottom + 12 }]}>
+      <View
+        style={[
+          styles.inputBar,
+          { paddingBottom: keyboardInset + (keyboardInset > 0 ? 8 : insets.bottom + 12) },
+        ]}
+      >
         <TouchableOpacity
           style={styles.attachBtn}
           onPress={() => void onAttachImage()}
@@ -203,7 +241,7 @@ export const ChatThreadScreen: React.FC = () => {
           )}
         </TouchableOpacity>
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 };
 
@@ -261,6 +299,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.present,
     marginLeft: 4,
   },
+  messageListView: { flex: 1 },
   messageList: {
     paddingHorizontal: 16,
     paddingVertical: 16,

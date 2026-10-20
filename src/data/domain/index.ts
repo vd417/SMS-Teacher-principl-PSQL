@@ -144,6 +144,10 @@ export interface ChatContact {
   childId?: string;
   childName?: string;
   childClassLabel?: string;
+  /** Teaching title when the API sends it separately from role. Shown once, not beside role. */
+  designation?: string;
+  /** ISO timestamp of the last message, used to collapse duplicate threads. */
+  lastAt?: string;
   /** Read-receipt tick for the Inbox list preview — only meaningful when lastMessageMine. */
   lastMessageMine: boolean;
   lastMessageStatus?: 'sent' | 'delivered' | 'read';
@@ -458,6 +462,12 @@ export interface PtmMeeting {
   studentName: string;
   parentName?: string;
   classLabel?: string;
+  /** Grade or class name from the API, when the list includes it. */
+  className?: string;
+  /** Section from the API, when the list includes it. */
+  sectionName?: string;
   mode: string;
+  /** Video-call link sent to the parent and teacher, when the API returns one. */
+  meetingLink?: string;
   status: PtmStatus;
 }

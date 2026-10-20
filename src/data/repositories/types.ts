@@ -65,6 +65,7 @@ export interface NewLeaveInput {
   to: string;
   reason: string;
   substitute?: string;
+  attachmentUrls?: string[];
 }
 export interface NewPtmInput {
   studentId: string;
@@ -72,6 +73,18 @@ export interface NewPtmInput {
   date: string;
   time: string;
   mode: string;
+  /** Google Meet / Zoom link. Sent when the meeting is a video call. */
+  meetingLink?: string;
+  /** Section teacher, or the first teacher a principal picks when the section has none. */
+  teacherId?: string;
+  /** Extra teachers who should get the app notification. */
+  teacherIds?: string[];
+  /** Notify every teacher, instead of the ids above. */
+  allTeachers?: boolean;
+  /** Ask the API to notify the teacher app. */
+  notifyTeacher?: boolean;
+  /** Ask the API to record the notice in CRM. */
+  notifyCrm?: boolean;
 }
 export interface NewAnnouncementInput {
   title: string;
@@ -236,10 +249,17 @@ export interface LeaveRepository {
   list(): Promise<LeaveRequest[]>;
   create(input: NewLeaveInput): Promise<LeaveRequest>;
 }
+export interface PtmCancelInput {
+  reason: string;
+  /** Ask the API to notify the parent, the teacher app, and CRM. */
+  notify: boolean;
+  teacherIds?: string[];
+  allTeachers?: boolean;
+}
 export interface PtmRepository {
   list(): Promise<PtmMeeting[]>;
   create(input: NewPtmInput): Promise<PtmMeeting>;
-  remove(id: string): Promise<void>;
+  remove(id: string, cancel?: PtmCancelInput): Promise<void>;
 }
 export type ApprovalListStatus = 'pending' | 'approved' | 'rejected';
 export interface ApprovalsRepository {

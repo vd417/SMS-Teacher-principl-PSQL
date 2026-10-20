@@ -17,6 +17,7 @@ import { FontFamily } from '../../theme/typography';
 import { Avatar, Pill } from '../../components';
 import { AttachmentThumbnails } from '../../components/leave/AttachmentThumbnails';
 import { useApprovals, useDecideApproval } from '@/features/approvals/hooks';
+import { useAuth } from '@/features/auth/AuthProvider';
 import { isAppError } from '@/lib/errors';
 import { ErrorState } from '@/ui/state/ErrorState';
 import type { ApprovalListStatus } from '@/data/repositories/types';
@@ -55,9 +56,14 @@ const formatStudent = (s: ApprovalStudent): string => {
 export const ApprovalsScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const route = useRoute();
+  const { session } = useAuth();
+  const isPrincipal = session?.user.role === 'principal';
   const title = route.name === 'StudentLeave' ? 'Student Leave' : 'Approvals';
   const [filter, setFilter] = useState<ApprovalListStatus>('pending');
   const { data: approvals = [], isLoading, isError, refetch, error } = useApprovals(filter);
+  const visibleApprovals = approvals.filter(
+    (req) => !session?.user.id || req.requesterId !== session.user.id
+  );
   const decide = useDecideApproval();
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectNote, setRejectNote] = useState('');
@@ -68,6 +74,7 @@ export const ApprovalsScreen: React.FC = () => {
     decide.mutate(
       { id, decision: 'approved' },
       {
+        onSuccess: () => setFilter('approved'),
         onError: (e) =>
           setErrorMsg(isAppError(e) ? e.message : 'Could not update request. Try again.'),
       }
@@ -107,7 +114,10 @@ export const ApprovalsScreen: React.FC = () => {
       >
         <Text style={styles.h1}>{title}</Text>
         <Text style={styles.sub}>
-          {approvals.length} {filter}
+          {visibleApprovals.length} {filter}
+          {isPrincipal
+            ? '\nStaff leave comes here for you to accept. Your own leave goes to the owner and admin.'
+            : ''}
         </Text>
 
         <View style={styles.tabs}>
@@ -149,13 +159,13 @@ export const ApprovalsScreen: React.FC = () => {
               void refetch();
             }}
           />
-        ) : approvals.length === 0 ? (
+        ) : visibleApprovals.length === 0 ? (
           <View style={styles.empty}>
             <Ionicons name="checkmark-done-circle" size={48} color={Colors.present} />
             <Text style={styles.emptyText}>{emptyLabel}</Text>
           </View>
         ) : (
-          approvals.map((req, i) => (
+          visibleApprovals.map((req, i) => (
             <Animated.View
               key={req.id}
               entering={FadeInDown.delay(60 * i).springify()}

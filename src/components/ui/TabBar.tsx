@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet, Text } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Text, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
-import { Colors, Radii, Shadows } from '../../theme';
+import { Colors, Radii } from '../../theme';
 import { FontFamily } from '../../theme/typography';
 import { tabRootScreen, shouldPopTabStack } from '@/lib/tabRootScreen';
 
@@ -39,8 +40,11 @@ const TAB_LABELS: Record<string, string> = {
 };
 
 export const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, navigation }) => {
+  const insets = useSafeAreaInsets();
+  const bottomPad = Math.max(insets.bottom, Platform.OS === 'web' ? 10 : 8);
+
   return (
-    <View style={styles.wrapper}>
+    <View style={[styles.wrapper, { paddingBottom: bottomPad }]}>
       <View style={styles.container}>
         {state.routes.map((route, index) => {
           const isFocused = state.index === index;
@@ -136,26 +140,24 @@ const TabItem: React.FC<TabItemProps> = ({ isFocused, icon, label, compact, onPr
 
 const styles = StyleSheet.create({
   wrapper: {
-    paddingHorizontal: 16,
-    paddingBottom: 20,
-    paddingTop: 8,
     backgroundColor: Colors.paper,
     borderTopWidth: 1,
     borderTopColor: Colors.rule,
   },
   container: {
     flexDirection: 'row',
-    backgroundColor: Colors.white,
-    borderRadius: Radii.xxl,
-    paddingVertical: 8,
-    paddingHorizontal: 8,
-    ...Shadows.pop,
+    backgroundColor: Colors.paper,
+    paddingTop: 6,
+    paddingHorizontal: 4,
+    overflow: 'hidden',
   },
   tab: {
     flex: 1,
+    minWidth: 0,
     alignItems: 'center',
     paddingVertical: 4,
     gap: 4,
+    overflow: 'hidden',
   },
   iconWrap: {
     width: 40,
@@ -166,11 +168,12 @@ const styles = StyleSheet.create({
   },
   iconWrapActive: {
     backgroundColor: Colors.primary,
-    width: 56,
+    width: '100%',
+    maxWidth: 52,
     borderRadius: Radii.xl,
   },
-  iconWrapCompact: { width: 36, height: 28 },
-  iconWrapActiveCompact: { width: 48 },
+  iconWrapCompact: { width: 32, height: 28 },
+  iconWrapActiveCompact: { maxWidth: 44 },
   tabLabel: {
     fontFamily: FontFamily.medium,
     fontSize: 10,

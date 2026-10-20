@@ -16,6 +16,7 @@ import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { Avatar, SearchField, ScreenHeader } from '../components';
 import { useChatContacts } from '@/features/chat/hooks';
+import { useKeyboardInset } from '@/lib/useKeyboardInset';
 import { formatChatIdentity } from '@/lib/chatThread';
 import { deriveColorSet } from '@/theme/derive';
 import type { HomeStackParamList, InboxStackParamList } from '../navigation/types';
@@ -25,6 +26,7 @@ type ChatNav = NativeStackNavigationProp<HomeStackParamList & InboxStackParamLis
 export const ChatScreen: React.FC = () => {
   const navigation = useNavigation<ChatNav>();
   const insets = useSafeAreaInsets();
+  const keyboardInset = useKeyboardInset();
   const [search, setSearch] = useState('');
 
   const { data: chatContacts = [], isLoading, isError } = useChatContacts();
@@ -82,7 +84,9 @@ export const ChatScreen: React.FC = () => {
         <FlatList
           data={filtered}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, { paddingBottom: 24 + keyboardInset }]}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
           showsVerticalScrollIndicator={false}
           renderItem={({ item, index }) => {
             const { color } = deriveColorSet(item.id);

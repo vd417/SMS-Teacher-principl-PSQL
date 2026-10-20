@@ -92,7 +92,11 @@ export const PrincipalHomeScreen: React.FC = () => {
   const { name: schoolName, logoUrl: schoolLogoUrl } = useCurrentSchoolBranding();
 
   const { data: overview, isLoading, refetch } = usePrincipalOverview();
-  const { data: approvals = [], refetch: refetchApprovals } = useApprovals();
+  const {
+    data: approvals = [],
+    isLoading: approvalsLoading,
+    refetch: refetchApprovals,
+  } = useApprovals();
   const { data: announcements = [] } = useAnnouncements();
   const schoolClosed = useSchoolClosedToday(announcements);
   const { data: appNotifications = [] } = useAppNotifications();
@@ -105,7 +109,7 @@ export const PrincipalHomeScreen: React.FC = () => {
     }, [refetch, refetchApprovals])
   );
 
-  const pending = approvals.filter((a) => a.status === 'pending');
+  const pending = approvals.filter((a) => a.status === 'pending' && a.requesterId !== user?.id);
 
   const openApprovalsTab = () => {
     navigation.getParent()?.navigate('Approvals');
@@ -197,10 +201,7 @@ export const PrincipalHomeScreen: React.FC = () => {
         <Animated.View entering={FadeInDown.delay(180).springify()} style={styles.kpiRow}>
           <Kpi label="Students" value={studentsLabel} />
           <Kpi label="Staff in" value={staffInLabel} />
-          <Kpi
-            label="Pending"
-            value={isLoading ? '—' : `${overview?.kpis.pendingApprovals ?? pending.length}`}
-          />
+          <Kpi label="Pending" value={isLoading || approvalsLoading ? '—' : `${pending.length}`} />
         </Animated.View>
 
         {/* Approvals preview */}

@@ -4,6 +4,7 @@ import { parseAttendanceStatus } from '@/lib/attendanceStatus';
 import { mapAnnouncementType } from '@/lib/announcementType';
 import { mapExamPaperStatus } from '@/lib/examStatus';
 import { formatTimeOfDay } from '@/lib/date';
+import { classLabel, gradeLabel } from '@/lib/classLabel';
 import { initialsFrom } from '@/data/http/auth.schema';
 import { parseAttachmentUrls } from '@/lib/leaveAttachments';
 import type {
@@ -437,10 +438,27 @@ export const chatContactSchema = z.object({
   child_id: z.string().nullish(),
   child_name: z.string().nullish(),
   child_class_label: z.string().nullish(),
+  child_class: z.string().nullish(),
+  child_section: z.string().nullish(),
+  student_class: z.string().nullish(),
+  student_section: z.string().nullish(),
+  class_name: z.string().nullish(),
+  section: z.string().nullish(),
+  designation: z.string().nullish(),
   last_message_mine: z.boolean().nullish(),
   last_message_status: z.enum(['sent', 'delivered', 'read']).nullish(),
 });
 export type ChatContactDTO = z.infer<typeof chatContactSchema>;
+
+function childClassLabelFrom(d: ChatContactDTO): string | undefined {
+  const explicit = d.child_class_label?.trim();
+  if (explicit) return explicit;
+  const cls = d.child_class?.trim() || d.student_class?.trim() || d.class_name?.trim();
+  const section = d.child_section?.trim() || d.student_section?.trim() || d.section?.trim();
+  if (cls && section) return `${cls} - ${section}`;
+  return cls || section || undefined;
+}
+
 export const toChatContact = (d: ChatContactDTO): ChatContact => ({
   id: d.id,
   name: d.name,
@@ -452,7 +470,9 @@ export const toChatContact = (d: ChatContactDTO): ChatContact => ({
   online: d.online ?? false,
   childId: d.child_id ?? undefined,
   childName: d.child_name ?? undefined,
-  childClassLabel: d.child_class_label ?? undefined,
+  childClassLabel: childClassLabelFrom(d),
+  ...(d.designation?.trim() ? { designation: d.designation.trim() } : {}),
+  ...(d.last_at ? { lastAt: d.last_at } : {}),
   lastMessageMine: d.last_message_mine ?? false,
   lastMessageStatus: d.last_message_status ?? undefined,
 });
@@ -561,8 +581,27 @@ export const ptmMeetingSchema = z.object({
   parent_name: z.string().nullish(),
   student_class: z.string().nullish(),
   student_section: z.string().nullish(),
+  class_name: z.string().nullish(),
+  section: z.string().nullish(),
+  meeting_link: z.string().nullish(),
 });
 export type PtmMeetingDTO = z.infer<typeof ptmMeetingSchema>;
+
+function ptmClassLabel(
+  className?: string | null,
+  section?: string | null
+): { classLabel?: string; className?: string; sectionName?: string } {
+  const name = className?.trim() ?? '';
+  const sec = section?.trim() ?? '';
+  if (!name && !sec) return {};
+  const label = name ? classLabel(gradeLabel(name), sec) : sec;
+  return {
+    ...(label ? { classLabel: label } : {}),
+    ...(name ? { className: name } : {}),
+    ...(sec ? { sectionName: sec } : {}),
+  };
+}
+
 export const toPtmMeeting = (d: PtmMeetingDTO): PtmMeeting => ({
   id: d.id,
   date: dateOnly(d.date) || d.date,
@@ -575,11 +614,8 @@ export const toPtmMeeting = (d: PtmMeetingDTO): PtmMeeting => ({
   mode: d.mode,
   status: d.status as PtmStatus,
   ...(d.parent_name?.trim() ? { parentName: d.parent_name.trim() } : {}),
-  ...([d.student_class?.trim(), d.student_section?.trim()].filter(Boolean).length
-    ? {
-        classLabel: [d.student_class?.trim(), d.student_section?.trim()].filter(Boolean).join('-'),
-      }
-    : {}),
+  ...ptmClassLabel(d.student_class || d.class_name, d.student_section || d.section),
+  ...(d.meeting_link?.trim() ? { meetingLink: d.meeting_link.trim() } : {}),
 });
 export const fromNewPtm = (r: {
   studentId: string;
@@ -587,13 +623,28 @@ export const fromNewPtm = (r: {
   date: string;
   time: string;
   mode: string;
-}): Record<string, unknown> => ({
-  student_id: r.studentId,
-  ...(r.subject !== undefined && r.subject !== '' && { subject: r.subject }),
-  date: r.date,
-  time: r.time,
-  mode: r.mode,
-});
+  meetingLink?: string;
+  teacherId?: string;
+  teacherIds?: string[];
+  allTeachers?: boolean;
+  notifyTeacher?: boolean;
+  notifyCrm?: boolean;
+}): Record<string, unknown> => {
+  const teacherId = r.teacherId || r.teacherIds?.find((id) => id.trim());
+  return {
+    student_id: r.studentId,
+    ...(r.subject !== undefined && r.subject !== '' && { subject: r.subject }),
+    date: r.date,
+    time: r.time,
+    mode: r.mode,
+    ...(r.meetingLink?.trim() ? { meeting_link: r.meetingLink.trim() } : {}),
+    ...(teacherId ? { teacher_id: teacherId } : {}),
+    ...(r.teacherIds?.length ? { teacher_ids: r.teacherIds } : {}),
+    ...(r.allTeachers ? { all_teachers: true } : {}),
+    ...(r.notifyTeacher ? { notify_teacher: true } : {}),
+    ...(r.notifyCrm ? { notify_crm: true } : {}),
+  };
+};
 
 // ─── Approvals ───────────────────────────────────────────────────────────────
 // Backend /approvals returns LeaveResponse[] (requester_role comes from the

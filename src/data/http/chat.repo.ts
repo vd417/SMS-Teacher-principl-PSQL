@@ -1,6 +1,7 @@
 import type { ChatRepository } from '@/data/repositories/types';
 import type { HttpClient } from '@/lib/httpClient';
 import { assertChatMessageAllowed, assertChatImageAllowed } from '@/lib/chatModeration';
+import { dedupeChatContacts } from '@/lib/chatThread';
 import { toChatContact, toChatMessage, chatContactSchema, chatMessageSchema } from './mappers';
 
 function asList(raw: unknown): unknown[] {
@@ -12,7 +13,9 @@ export function httpChat(http: HttpClient): ChatRepository {
     contacts: () =>
       http
         .get<unknown>('/threads')
-        .then((raw) => asList(raw).map((x) => toChatContact(chatContactSchema.parse(x)))),
+        .then((raw) =>
+          dedupeChatContacts(asList(raw).map((x) => toChatContact(chatContactSchema.parse(x))))
+        ),
 
     messages: (contactId) =>
       http

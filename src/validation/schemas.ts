@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { todayISO } from '@/lib/date';
 
 export const examSchema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters'),
@@ -30,10 +31,13 @@ export const leaveSchema = z.object({
 });
 
 export const ptmSchema = z.object({
-  classId: z.string().min(1, 'Please select a class'),
-  studentId: z.string().min(1, 'Please select a student'),
+  classId: z.string().optional(),
+  studentId: z.string().optional(),
   subject: z.string().optional(),
-  date: z.string().min(1, 'Date is required'),
+  date: z
+    .string()
+    .min(1, 'Date is required')
+    .refine((value) => value >= todayISO(), 'Choose today or a later date'),
   time: z.string().min(1, 'Time is required'),
   mode: z.string().min(1, 'Please select a mode'),
 });

@@ -90,6 +90,7 @@ export const LeaveScreen: React.FC = () => {
         setToastVisible(true);
         reset();
         setAttachmentUrls([]);
+        setTab('history');
       },
     });
   };
@@ -132,8 +133,8 @@ export const LeaveScreen: React.FC = () => {
           <>
             {isPrincipal ? (
               <Text style={styles.principalHint}>
-                Principal leave requests are sent to the school owner or admin for approval. Staff
-                leave continues to follow the usual school approval path.
+                Your leave is sent to the school owner and admin to accept. Staff leave comes to you
+                on Approvals.
               </Text>
             ) : null}
             {/* Leave Type */}
@@ -323,7 +324,11 @@ export const LeaveScreen: React.FC = () => {
 
       <Toast
         visible={toastVisible}
-        message="Leave application submitted!"
+        message={
+          isPrincipal
+            ? 'Leave sent. The owner and admin can accept it. It is in your history.'
+            : 'Leave application submitted!'
+        }
         type="success"
         onHide={() => setToastVisible(false)}
       />
