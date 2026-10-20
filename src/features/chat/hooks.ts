@@ -4,22 +4,9 @@ import { useTenantId } from '@/features/auth/AuthProvider';
 import { useLive } from '@/providers/LiveProvider';
 import { queryKeys } from '@/lib/queryClient';
 import { assertChatMessageAllowed, assertChatImageAllowed } from '@/lib/chatModeration';
+import { findExistingThread } from '@/lib/chatThread';
 import type { ChatContact, ChatMessage } from '@/data/domain';
 import type { ChatSendInput } from '@/data/repositories/types';
-
-function findThreadByName(
-  contacts: ChatContact[],
-  name: string,
-  role?: string
-): ChatContact | undefined {
-  const nameKey = name.trim().toLowerCase();
-  const roleKey = role?.trim().toLowerCase() ?? '';
-  return contacts.find((c) => {
-    const matchName = c.name.trim().toLowerCase() === nameKey;
-    if (!roleKey) return matchName;
-    return matchName && c.role.trim().toLowerCase() === roleKey;
-  });
-}
 
 export function useChatContacts() {
   const repos = useRepositories();
@@ -39,11 +26,19 @@ export function useOpenChat() {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ name, role }: { name: string; role?: string }) => {
+    mutationFn: async ({
+      name,
+      role,
+      childId,
+    }: {
+      name: string;
+      role?: string;
+      childId?: string;
+    }) => {
       const contacts = await repos.chat.contacts();
-      const existing = findThreadByName(contacts, name, role);
+      const existing = findExistingThread(contacts, { name, role, childId });
       if (existing) return existing;
-      return repos.chat.createThread({ name, role });
+      return repos.chat.createThread({ name, role, childId });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.chatContacts(tenantId) });

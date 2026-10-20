@@ -46,3 +46,6 @@ yarn-error.*
 
 # git worktrees
 /.worktrees
+
+# Android build artifacts
+*.apk

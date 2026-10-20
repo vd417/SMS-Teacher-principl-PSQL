@@ -32,3 +32,30 @@ describe('httpChat.send moderation', () => {
     });
   });
 });
+
+describe('httpChat.createThread', () => {
+  it('posts child_id when opening a parent thread for a student', async () => {
+    const post = jest.fn(async () => ({
+      id: 'th1',
+      name: 'Rahul Sharma',
+      role: 'Parent',
+      child_id: 'stu-1',
+      child_name: 'John Doe',
+      child_class_label: 'Class 5, Section A',
+    }));
+    const repo = httpChat({ get: jest.fn(), post } as never);
+
+    await repo.createThread({
+      name: 'Rahul Sharma',
+      role: 'Parent',
+      childId: 'stu-1',
+    });
+
+    expect(post).toHaveBeenCalledWith('/threads', {
+      name: 'Rahul Sharma',
+      role: 'Parent',
+      group: false,
+      child_id: 'stu-1',
+    });
+  });
+});

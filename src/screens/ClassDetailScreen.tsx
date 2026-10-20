@@ -139,6 +139,7 @@ export const ClassDetailScreen: React.FC = () => {
           </View>
         </TouchableOpacity>
         <StudentListContactActions
+          studentId={student.id}
           studentName={student.name}
           parentName={student.parent}
           parentPhone={student.parentPhone}

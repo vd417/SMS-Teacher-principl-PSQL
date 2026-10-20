@@ -21,7 +21,7 @@ import {
   NotificationBell,
 } from '../components';
 import { useAuth, useTenantId } from '@/features/auth/AuthProvider';
-import { queryClient, queryKeys } from '@/lib/queryClient';
+import { queryKeys } from '@/lib/queryClient';
 import { useCurrentSchoolBranding } from '@/features/auth/useCurrentSchoolBranding';
 import { useClasses } from '@/features/classes/hooks';
 import { useDashboardStats } from '@/features/dashboard/hooks';
@@ -136,7 +136,7 @@ export const HomeScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const [_search, setSearch] = useState('');
 
-  const { session, refreshProfile } = useAuth();
+  const { session } = useAuth();
   const tenantId = useTenantId();
   const user = session?.user;
   const rqClient = useQueryClient();
@@ -197,11 +197,7 @@ export const HomeScreen: React.FC = () => {
     useCallback(() => {
       void refetchClasses();
       void refetchStats();
-      void refreshProfile();
-      if (tenantId) {
-        void queryClient.invalidateQueries({ queryKey: queryKeys.mySchools(tenantId) });
-      }
-    }, [refetchClasses, refetchStats, refreshProfile, tenantId])
+    }, [refetchClasses, refetchStats])
   );
 
   return (

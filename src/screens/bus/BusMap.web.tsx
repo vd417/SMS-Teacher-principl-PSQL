@@ -8,6 +8,7 @@ import { decodePolyline } from '@/lib/decodePolyline';
 import type { RouteGeometryDTO } from '@/data/http/routeGeometry.repo';
 import { BusRouteFallback } from './BusRouteFallback';
 import type { Bus, BusPosition } from '@/data/domain';
+import { busMapCenter } from '@/lib/busMapCenter';
 
 interface Props {
   bus: Bus;
@@ -41,7 +42,10 @@ export const BusMap: React.FC<Props> = ({ bus, position, routeGeometry }) => {
     position && position.lat != null && position.lng != null
       ? { lat: position.lat, lng: position.lng }
       : undefined;
-  const center = livePosition ?? { lat: bus.stops[0].lat, lng: bus.stops[0].lng };
+  const center = busMapCenter(position, bus.stops);
+  if (!center) {
+    return <BusRouteFallback bus={bus} position={position} />;
+  }
   const roadPath =
     routeGeometry?.status === 'available' && routeGeometry.geometry
       ? decodePolyline(routeGeometry.geometry).map((p) => ({ lat: p.latitude, lng: p.longitude }))

@@ -16,6 +16,7 @@ import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { Avatar, SearchField, ScreenHeader } from '../components';
 import { useChatContacts } from '@/features/chat/hooks';
+import { formatChatIdentity } from '@/lib/chatThread';
 import { deriveColorSet } from '@/theme/derive';
 import type { HomeStackParamList, InboxStackParamList } from '../navigation/types';
 
@@ -28,11 +29,15 @@ export const ChatScreen: React.FC = () => {
 
   const { data: chatContacts = [], isLoading, isError } = useChatContacts();
 
-  const filtered = chatContacts.filter(
-    (c) =>
-      c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.role.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = chatContacts.filter((c) => {
+    const q = search.toLowerCase();
+    return (
+      c.name.toLowerCase().includes(q) ||
+      c.role.toLowerCase().includes(q) ||
+      (c.childName ?? '').toLowerCase().includes(q) ||
+      (c.childClassLabel ?? '').toLowerCase().includes(q)
+    );
+  });
 
   const totalUnread = chatContacts.reduce((sum, c) => sum + c.unread, 0);
 
@@ -81,6 +86,7 @@ export const ChatScreen: React.FC = () => {
           showsVerticalScrollIndicator={false}
           renderItem={({ item, index }) => {
             const { color } = deriveColorSet(item.id);
+            const identity = formatChatIdentity(item);
             return (
               <Animated.View entering={FadeInDown.delay(140 + index * 50).springify()}>
                 <TouchableOpacity
@@ -95,15 +101,12 @@ export const ChatScreen: React.FC = () => {
                   <View style={styles.contactInfo}>
                     <View style={styles.contactTop}>
                       <Text style={[styles.contactName, item.unread > 0 && styles.contactNameBold]}>
-                        {item.name}
+                        {identity.title}
                       </Text>
                       <Text style={styles.contactTime}>{item.time}</Text>
                     </View>
-                    <Text style={styles.contactRole}>
-                      {item.role ? item.role : 'Contact'}
-                      {item.childName
-                        ? ` · ${item.childName}${item.childClassLabel ? ` (${item.childClassLabel})` : ''}`
-                        : ''}
+                    <Text style={styles.contactRole} numberOfLines={1}>
+                      {identity.subtitle}
                     </Text>
                     <View style={styles.lastMessageRow}>
                       {item.lastMessageMine && item.lastMessageStatus ? (

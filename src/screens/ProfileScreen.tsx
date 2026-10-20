@@ -6,6 +6,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,6 +25,7 @@ import { useMySchools } from '@/features/auth/useMySchools';
 import { pickImageFromLibrary, takePhotoFromCamera } from '@/lib/pickImage';
 import { dialPhoneNumber } from '@/lib/phoneLink';
 import { authErrorMessage } from '@/features/auth/authErrors';
+import { FEATURE_LOCKED_MESSAGE } from '@/lib/featureLocked';
 import type { ProfileStackParamList } from '../navigation/types';
 
 type ProfileNav = NativeStackNavigationProp<ProfileStackParamList, 'ProfileScreen'>;
@@ -66,14 +68,21 @@ const MENU_ITEMS = [
   {
     icon: 'shield-checkmark-outline',
     label: 'Privacy & Security',
-    screen: 'SettingsScreen',
+    screen: 'PrivacyScreen',
     color: Colors.teal,
   },
   {
     icon: 'help-circle-outline',
     label: 'Help & Support',
-    screen: 'SettingsScreen',
+    screen: 'HelpScreen',
     color: Colors.late,
+  },
+  {
+    icon: 'people-circle-outline',
+    label: 'PTM',
+    screen: 'PtmScreen',
+    feature: 'academics',
+    color: Colors.pink,
   },
 ] as const;
 
@@ -102,7 +111,13 @@ function ProfileMenuRow({
   return (
     <TouchableOpacity
       style={[styles.menuRow, !isLast && styles.menuRowBorder, !allowed && styles.menuRowLocked]}
-      onPress={onPress}
+      onPress={() => {
+        if (!allowed) {
+          Alert.alert('Unavailable', FEATURE_LOCKED_MESSAGE);
+          return;
+        }
+        onPress();
+      }}
       activeOpacity={0.7}
     >
       <View style={[styles.menuIconWrap, { backgroundColor: item.color + '20' }]}>

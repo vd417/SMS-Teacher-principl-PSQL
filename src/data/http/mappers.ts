@@ -434,6 +434,7 @@ export const chatContactSchema = z.object({
   last_at: z.string().nullish(),
   unread: z.number().nullish(),
   online: z.boolean().nullish(),
+  child_id: z.string().nullish(),
   child_name: z.string().nullish(),
   child_class_label: z.string().nullish(),
   last_message_mine: z.boolean().nullish(),
@@ -449,6 +450,7 @@ export const toChatContact = (d: ChatContactDTO): ChatContact => ({
   time: d.last_at ? formatTimeOfDay(d.last_at) : '',
   unread: d.unread ?? 0,
   online: d.online ?? false,
+  childId: d.child_id ?? undefined,
   childName: d.child_name ?? undefined,
   childClassLabel: d.child_class_label ?? undefined,
   lastMessageMine: d.last_message_mine ?? false,
@@ -458,7 +460,7 @@ export const toChatContact = (d: ChatContactDTO): ChatContact => ({
 export const chatMessageSchema = z.object({
   id: z.string(),
   sender_id: z.string().nullish(),
-  text: z.string(),
+  text: z.string().nullish(),
   sent_at: z.string(),
   is_mine: z.boolean(),
   image_url: z.string().nullish(),
@@ -471,7 +473,7 @@ export type ChatMessageDTO = z.infer<typeof chatMessageSchema>;
 export const toChatMessage = (d: ChatMessageDTO): ChatMessage => ({
   id: d.id,
   senderId: d.sender_id ?? '',
-  text: d.text,
+  text: d.text ?? '',
   time: formatTimeOfDay(d.sent_at),
   isMe: d.is_mine,
   imageUrl: d.image_url ?? undefined,
@@ -524,6 +526,7 @@ export const toLeaveRequest = (d: LeaveRequestDTO): LeaveRequest => {
     status: d.status as LeaveStatus,
     appliedOn: dateOnly(d.applied_on),
     decidedNote: d.decided_note ?? undefined,
+    decidedByName: d.decided_by_name?.trim() || undefined,
     ...(attachmentUrls.length > 0 ? { attachmentUrls } : {}),
   };
 };
@@ -555,6 +558,9 @@ export const ptmMeetingSchema = z.object({
   status: z.string(),
   student_name: z.string(),
   teacher_id: z.string().nullable(),
+  parent_name: z.string().nullish(),
+  student_class: z.string().nullish(),
+  student_section: z.string().nullish(),
 });
 export type PtmMeetingDTO = z.infer<typeof ptmMeetingSchema>;
 export const toPtmMeeting = (d: PtmMeetingDTO): PtmMeeting => ({
@@ -568,6 +574,12 @@ export const toPtmMeeting = (d: PtmMeetingDTO): PtmMeeting => ({
   studentName: d.student_name,
   mode: d.mode,
   status: d.status as PtmStatus,
+  ...(d.parent_name?.trim() ? { parentName: d.parent_name.trim() } : {}),
+  ...([d.student_class?.trim(), d.student_section?.trim()].filter(Boolean).length
+    ? {
+        classLabel: [d.student_class?.trim(), d.student_section?.trim()].filter(Boolean).join('-'),
+      }
+    : {}),
 });
 export const fromNewPtm = (r: {
   studentId: string;
@@ -594,7 +606,11 @@ export const approvalRequestSchema = leaveResponseSchema;
 function humanizeRequesterRole(raw: string): string {
   const leaf = raw.includes('.') ? (raw.split('.').pop() ?? raw) : raw;
   if (!leaf) return raw;
-  return leaf.charAt(0).toUpperCase() + leaf.slice(1).toLowerCase();
+  return leaf
+    .split(/[_\s]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ');
 }
 export const toApprovalRequest = (d: ApprovalRequestDTO): ApprovalRequest => {
   const days = dayCount(d.from_date, d.to_date);
@@ -757,6 +773,7 @@ const toStaffEntry = (s: z.infer<typeof staffEntrySchema>) => {
     phone: s.phone ?? '',
     checkedIn: s.checked_in,
     checkInAt: s.check_in_at ?? undefined,
+    checkOutAt: s.check_out_at ?? undefined,
     checkInVerified: s.check_in_verified ?? undefined,
     designation: legacyTeachingTitle,
     role: legacyTeachingTitle ? undefined : rawRole,

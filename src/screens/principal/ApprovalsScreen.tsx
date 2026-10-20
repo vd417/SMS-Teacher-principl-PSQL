@@ -18,6 +18,7 @@ import { Avatar, Pill } from '../../components';
 import { AttachmentThumbnails } from '../../components/leave/AttachmentThumbnails';
 import { useApprovals, useDecideApproval } from '@/features/approvals/hooks';
 import { isAppError } from '@/lib/errors';
+import { ErrorState } from '@/ui/state/ErrorState';
 import type { ApprovalListStatus } from '@/data/repositories/types';
 import type { ApprovalRequest, ApprovalStudent, LeaveStatus } from '@/data/domain';
 
@@ -56,7 +57,7 @@ export const ApprovalsScreen: React.FC = () => {
   const route = useRoute();
   const title = route.name === 'StudentLeave' ? 'Student Leave' : 'Approvals';
   const [filter, setFilter] = useState<ApprovalListStatus>('pending');
-  const { data: approvals = [], isLoading } = useApprovals(filter);
+  const { data: approvals = [], isLoading, isError, refetch, error } = useApprovals(filter);
   const decide = useDecideApproval();
   const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [rejectNote, setRejectNote] = useState('');
@@ -137,6 +138,17 @@ export const ApprovalsScreen: React.FC = () => {
 
         {isLoading ? (
           <ActivityIndicator color={Colors.primary} style={{ marginTop: 40 }} />
+        ) : isError ? (
+          <ErrorState
+            message={
+              isAppError(error) && error.status === 403
+                ? 'You do not have permission to view these requests.'
+                : 'Could not load requests. Try again.'
+            }
+            onRetry={() => {
+              void refetch();
+            }}
+          />
         ) : approvals.length === 0 ? (
           <View style={styles.empty}>
             <Ionicons name="checkmark-done-circle" size={48} color={Colors.present} />

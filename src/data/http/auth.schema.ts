@@ -56,7 +56,9 @@ export function pickRole(roles: string[]): Role {
 /** Profile title for UI — principals with a linked teacher row should not show "Teacher". */
 export function resolveDisplayTitle(role: Role, rawTitle?: string | null): string {
   const title = (rawTitle ?? '').trim();
+  const norm = title.toLowerCase();
   if (role === 'principal') {
+    if (norm === 'vice principal') return title;
     if (!title || isTeachingDesignation(title)) return 'Principal';
     return title;
   }

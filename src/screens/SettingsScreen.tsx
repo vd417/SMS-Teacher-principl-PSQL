@@ -1,53 +1,43 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Switch } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
 import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { ScreenHeader, Card } from '../components';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '@/features/auth/AuthProvider';
-
-const SETTINGS_SECTIONS = [
-  {
-    title: 'Notifications',
-    items: [
-      { label: 'Push Notifications', type: 'toggle', value: true },
-      { label: 'Email Alerts', type: 'toggle', value: false },
-      { label: 'SMS Alerts', type: 'toggle', value: true },
-      { label: 'Attendance Reminders', type: 'toggle', value: true },
-    ],
-  },
-  {
-    title: 'Appearance',
-    items: [
-      { label: 'Dark Mode', type: 'toggle', value: false },
-      { label: 'Font Size', type: 'link', value: 'Medium' },
-      { label: 'Language', type: 'link', value: 'English' },
-    ],
-  },
-  {
-    title: 'Privacy',
-    items: [
-      { label: 'Two-Factor Authentication', type: 'toggle', value: false },
-      { label: 'Biometric Login', type: 'toggle', value: true },
-      { label: 'Change Password', type: 'link', value: null },
-    ],
-  },
-  {
-    title: 'About',
-    items: [
-      { label: 'App Version', type: 'info', value: '1.0.0' },
-      { label: 'School', type: 'info', value: 'Westbrook Academy' },
-      { label: 'Terms of Service', type: 'link', value: null },
-      { label: 'Privacy Policy', type: 'link', value: null },
-    ],
-  },
-];
 
 export const SettingsScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
-  const { refreshProfile } = useAuth();
+  const navigation = useNavigation<any>();
+  const { session } = useAuth();
+  const schoolName = session?.tenant.name?.trim() || 'Not assigned';
+
+  const settingsSections = [
+    {
+      title: 'About',
+      items: [
+        { label: 'App', type: 'info' as const, value: 'CatreSchoolDesk Teacher' },
+        { label: 'App Version', type: 'info' as const, value: '1.0.0' },
+        { label: 'School', type: 'info' as const, value: schoolName },
+        {
+          label: 'Change Password',
+          type: 'link' as const,
+          value: null,
+          screen: 'ChangePasswordScreen',
+        },
+        {
+          label: 'Privacy & Security',
+          type: 'link' as const,
+          value: null,
+          screen: 'PrivacyScreen',
+        },
+        { label: 'Help & Support', type: 'link' as const, value: null, screen: 'HelpScreen' },
+      ],
+    },
+  ];
 
   return (
     <ScrollView
@@ -59,7 +49,7 @@ export const SettingsScreen: React.FC = () => {
         <ScreenHeader title="Settings" showBack />
       </Animated.View>
 
-      {SETTINGS_SECTIONS.map((section, si) => (
+      {settingsSections.map((section, si) => (
         <Animated.View
           key={section.title}
           entering={FadeInDown.delay(100 + si * 80).springify()}
@@ -68,18 +58,14 @@ export const SettingsScreen: React.FC = () => {
           <Text style={styles.sectionTitle}>{section.title}</Text>
           <Card padding={0}>
             {section.items.map((item, ii) => (
-              <View
+              <TouchableOpacity
                 key={item.label}
                 style={[styles.settingRow, ii < section.items.length - 1 && styles.settingBorder]}
+                disabled={item.type !== 'link'}
+                onPress={() => item.screen && navigation.navigate(item.screen)}
               >
                 <Text style={styles.settingLabel}>{item.label}</Text>
-                {item.type === 'toggle' ? (
-                  <Switch
-                    value={item.value as boolean}
-                    trackColor={{ true: Colors.primary, false: Colors.rule }}
-                    thumbColor={Colors.white}
-                  />
-                ) : item.type === 'link' ? (
+                {item.type === 'link' ? (
                   <View style={styles.linkRow}>
                     {item.value && <Text style={styles.linkValue}>{item.value}</Text>}
                     <Ionicons name="chevron-forward" size={16} color={Colors.inkSoft} />
@@ -87,7 +73,7 @@ export const SettingsScreen: React.FC = () => {
                 ) : (
                   <Text style={styles.infoValue}>{item.value}</Text>
                 )}
-              </View>
+              </TouchableOpacity>
             ))}
           </Card>
         </Animated.View>

@@ -212,7 +212,7 @@ export interface ChatRepository {
   contacts(): Promise<ChatContact[]>;
   messages(contactId: string): Promise<ChatMessage[]>;
   send(contactId: string, input: ChatSendInput): Promise<ChatMessage>;
-  createThread(input: { name: string; role?: string }): Promise<ChatContact>;
+  createThread(input: { name: string; role?: string; childId?: string }): Promise<ChatContact>;
 }
 export interface AnnouncementsRepository {
   list(): Promise<Announcement[]>;

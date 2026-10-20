@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
 import { Colors, Radii, Shadows } from '../../theme';
 import { FontFamily } from '../../theme/typography';
+import { tabRootScreen, shouldPopTabStack } from '@/lib/tabRootScreen';
 
 const TAB_ICONS: Record<
   string,
@@ -53,7 +54,13 @@ export const TabBar: React.FC<BottomTabBarProps> = ({ state, descriptors, naviga
               target: route.key,
               canPreventDefault: true,
             });
-            if (!isFocused && !event.defaultPrevented) {
+            if (event.defaultPrevented) return;
+            const root = tabRootScreen(route.name);
+            if (shouldPopTabStack(isFocused) && root) {
+              navigation.navigate(route.name, { screen: root });
+              return;
+            }
+            if (!isFocused) {
               navigation.navigate(route.name);
             }
           };

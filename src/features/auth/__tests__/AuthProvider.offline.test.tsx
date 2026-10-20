@@ -138,6 +138,20 @@ test('cold start with a genuine auth failure (401) signs the user out', async ()
   await waitFor(() => expect(screen.getByText('status:unauthenticated')).toBeTruthy());
 });
 
+test('cold start with 403 on me() keeps the cached session', async () => {
+  await seedSession();
+  const me = jest.fn(async () => {
+    throw new AppError({ code: 'forbidden', status: 403, message: 'no access' });
+  });
+  const repos = { auth: { me, listMySchools: jest.fn(async () => []) } } as unknown as Repositories;
+
+  mount(repos);
+
+  await waitFor(() => expect(me).toHaveBeenCalled());
+  expect(screen.getByText('status:authenticated')).toBeTruthy();
+  expect(screen.getByText('name:Asha')).toBeTruthy();
+});
+
 test('refresh THROWS on a network error (no sign-out) but returns false on a genuine 401', async () => {
   await seedSession();
   const refresh = jest.fn();

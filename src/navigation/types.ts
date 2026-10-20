@@ -76,6 +76,10 @@ export type ProfileStackParamList = {
   PayslipScreen: undefined;
   LeaveScreen: undefined;
   SwitchSchool: undefined;
+  PrivacyScreen: undefined;
+  HelpScreen: undefined;
+  PtmScreen: undefined;
+  PtmNewScreen: undefined;
 };
 
 // Principal tab navigator params
@@ -110,6 +114,8 @@ export type PrincipalHomeStackParamList = {
   MyAttendanceScreen: undefined;
   PrincipalTransportScreen: undefined;
   StaffAttendanceHistoryScreen: { personId: string; name: string };
+  PtmScreen: undefined;
+  PtmNewScreen: undefined;
 };
 
 // Shared class→section pick flow (attendance, marks, timetable stacks)

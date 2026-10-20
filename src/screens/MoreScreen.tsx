@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -10,6 +10,7 @@ import { FontFamily } from '../theme/typography';
 import { ScreenHeader } from '../components';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { useFeature } from '@/features/plan/hooks';
+import { FEATURE_LOCKED_MESSAGE } from '@/lib/featureLocked';
 import type { HomeStackParamList } from '../navigation/types';
 import type { ClassSectionPickClassParams } from '../navigation/classSectionFlow';
 
@@ -160,7 +161,13 @@ function MoreGridItem({
     >
       <TouchableOpacity
         style={[styles.card, { backgroundColor: item.soft }, !allowed && styles.cardLocked]}
-        onPress={onPress}
+        onPress={() => {
+          if (!allowed) {
+            Alert.alert('Unavailable', FEATURE_LOCKED_MESSAGE);
+            return;
+          }
+          onPress();
+        }}
         activeOpacity={0.8}
       >
         {!allowed && (

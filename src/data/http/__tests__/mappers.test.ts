@@ -6,6 +6,8 @@ import {
   toExamDTO,
   chatContactSchema,
   toChatContact,
+  chatMessageSchema,
+  toChatMessage,
   approvalRequestSchema,
   toApprovalRequest,
   leaveResponseSchema,
@@ -151,15 +153,31 @@ test("toChatContact surfaces the read-receipt tick for the teacher's own last me
   expect(c.lastMessageStatus).toBe('read');
 });
 
+test('toChatMessage accepts image-only messages with null text', () => {
+  const dto = chatMessageSchema.parse({
+    id: 'm9',
+    sender_id: 'u1',
+    text: null,
+    sent_at: '2026-10-19T08:00:00Z',
+    is_mine: true,
+    image_url: 'https://example.com/pic.jpg',
+  });
+  const msg = toChatMessage(dto);
+  expect(msg.text).toBe('');
+  expect(msg.imageUrl).toBe('https://example.com/pic.jpg');
+});
+
 test('toChatContact surfaces which child a parent thread is about', () => {
   const dto = chatContactSchema.parse({
     id: 't2',
     name: 'Parent Contact',
     role: 'Parent',
+    child_id: 'stu-9',
     child_name: 'Kid Rahul',
     child_class_label: 'Grade 5 - A',
   });
   const c = toChatContact(dto);
+  expect(c.childId).toBe('stu-9');
   expect(c.childName).toBe('Kid Rahul');
   expect(c.childClassLabel).toBe('Grade 5 - A');
 });
@@ -250,6 +268,22 @@ test('APR-01: toApprovalRequest maps a namespaced requester_role to a human labe
   );
   expect(a.requesterRole).toBe('Teacher');
   expect(a.priority).toBe('high');
+});
+
+test('toApprovalRequest title-cases vice_principal as Vice Principal', () => {
+  const a = toApprovalRequest(
+    approvalRequestSchema.parse({
+      id: 'a8',
+      requester_id: 'u2',
+      requester_name: 'Meera Nair',
+      requester_role: 'school.vice_principal',
+      type: 'casual',
+      from_date: '2026-07-01',
+      to_date: '2026-07-01',
+      status: 'pending',
+    })
+  );
+  expect(a.requesterRole).toBe('Vice Principal');
 });
 
 test('toApprovalRequest maps decided_by_name', () => {
@@ -399,6 +433,33 @@ test('toPrincipalOverview maps legacy teacher role into designation', () => {
     designation: undefined,
     role: 'Security',
   });
+});
+
+test('toPrincipalOverview maps check_out_at on the legacy staff path', () => {
+  const overview = toPrincipalOverview(
+    principalOverviewSchema.parse({
+      kpis: {
+        students_present_pct: 80,
+        staff_present: 1,
+        staff_total: 1,
+        pending_approvals: 0,
+      },
+      staff: [
+        {
+          teacher_id: 't1',
+          name: 'Rina Pandey',
+          initials: 'RP',
+          subject: 'Science',
+          checked_in: true,
+          check_in_at: '2026-10-19T08:01:00Z',
+          check_out_at: '2026-10-19T16:05:00Z',
+          role: 'HOD',
+        },
+      ],
+    })
+  );
+  expect(overview.staff[0].checkInAt).toBe('2026-10-19T08:01:00Z');
+  expect(overview.staff[0].checkOutAt).toBe('2026-10-19T16:05:00Z');
 });
 
 test('toPrincipalOverview keeps explicit designation and role separate', () => {

@@ -22,10 +22,15 @@ test('429 rate limiting overrides the code message', () => {
   );
 });
 
-test('network errors explain the API must be running', () => {
+test('network errors explain the connection failed without localhost instructions', () => {
   expect(
     authErrorMessage(new AppError({ code: 'network', status: 0, message: 'Failed to fetch' }))
-  ).toBe('Cannot reach the server. Start sms-backend on http://localhost:5162 and try again.');
+  ).toBe('Cannot reach the server. Check your connection and try again.');
+});
+
+test('invalid credentials are not presented as a rate-limit error', () => {
+  expect(authErrorMessage(appErr('invalid_credentials', 401))).not.toMatch(/too many attempts/i);
+  expect(authErrorMessage(appErr('forbidden', 403))).not.toMatch(/too many attempts/i);
 });
 
 test('falls back for unknown codes and non-errors', () => {

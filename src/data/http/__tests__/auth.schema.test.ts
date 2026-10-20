@@ -24,6 +24,11 @@ test('resolveDisplayTitle shows Principal for principal role even with teacher t
   expect(resolveDisplayTitle('teacher', null)).toBe('');
 });
 
+test('resolveDisplayTitle preserves Vice Principal instead of collapsing it to Principal', () => {
+  expect(resolveDisplayTitle('principal', 'Vice Principal')).toBe('Vice Principal');
+  expect(resolveDisplayTitle('teacher', 'Vice Principal')).toBe('Vice Principal');
+});
+
 test('toUserFromMe maps principal title via resolveDisplayTitle', () => {
   const me = meSchema.parse({
     id: 'u1',

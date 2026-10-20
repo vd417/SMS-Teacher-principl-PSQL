@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -16,8 +16,7 @@ import {
   HomeSchoolHeader,
   NotificationBell,
 } from '../../components';
-import { useAuth, useTenantId } from '@/features/auth/AuthProvider';
-import { queryClient, queryKeys } from '@/lib/queryClient';
+import { useAuth } from '@/features/auth/AuthProvider';
 import { useCurrentSchoolBranding } from '@/features/auth/useCurrentSchoolBranding';
 import { usePrincipalOverview } from '@/features/principal/hooks';
 import { useApprovals } from '@/features/approvals/hooks';
@@ -27,6 +26,8 @@ import { useFeature } from '@/features/plan/hooks';
 import { staffCheckInStatus } from '@/lib/staffCheckIn';
 import { staffDisplayLabel } from '@/lib/staffCategory';
 import { navigateToMoreScreen } from '@/lib/navigateToMore';
+import { MyCheckInCard } from '@/components/home/MyCheckInCard';
+import { FEATURE_LOCKED_MESSAGE } from '@/lib/featureLocked';
 
 const SHORTCUTS = [
   {
@@ -61,7 +62,13 @@ function PrincipalShortcut({
   return (
     <TouchableOpacity
       style={[styles.shortcut, !allowed && styles.shortcutLocked]}
-      onPress={onPress}
+      onPress={() => {
+        if (!allowed) {
+          Alert.alert('Unavailable', FEATURE_LOCKED_MESSAGE);
+          return;
+        }
+        onPress();
+      }}
       activeOpacity={0.8}
     >
       <View style={styles.shortcutIcon}>
@@ -80,8 +87,7 @@ function PrincipalShortcut({
 export const PrincipalHomeScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation<any>();
-  const { session, refreshProfile } = useAuth();
-  const tenantId = useTenantId();
+  const { session } = useAuth();
   const user = session?.user;
   const { name: schoolName, logoUrl: schoolLogoUrl } = useCurrentSchoolBranding();
 
@@ -96,11 +102,7 @@ export const PrincipalHomeScreen: React.FC = () => {
     useCallback(() => {
       void refetch();
       void refetchApprovals();
-      void refreshProfile();
-      if (tenantId) {
-        void queryClient.invalidateQueries({ queryKey: queryKeys.mySchools(tenantId) });
-      }
-    }, [refetch, refetchApprovals, refreshProfile, tenantId])
+    }, [refetch, refetchApprovals])
   );
 
   const pending = approvals.filter((a) => a.status === 'pending');
@@ -130,7 +132,7 @@ export const PrincipalHomeScreen: React.FC = () => {
           <HomeSchoolHeader
             logoUrl={schoolLogoUrl}
             schoolName={schoolName}
-            greetingLine="Welcome,"
+            greetingLine={user?.title ? `${user.title}` : 'Welcome,'}
             nameLine={(user?.name ?? 'Principal').split(' ')[0]}
             rightSlot={
               <View style={styles.headerActions}>
@@ -154,6 +156,10 @@ export const PrincipalHomeScreen: React.FC = () => {
             <SchoolClosedBanner title={schoolClosed.title} description={schoolClosed.description} />
           </Animated.View>
         )}
+
+        <Animated.View entering={FadeInDown.delay(110).springify()}>
+          <MyCheckInCard />
+        </Animated.View>
 
         {/* Attendance chart */}
         <Animated.View entering={FadeInDown.delay(120).springify()}>
@@ -214,7 +220,11 @@ export const PrincipalHomeScreen: React.FC = () => {
 
         {/* Staff checked in */}
         <Animated.View entering={FadeInDown.delay(280).springify()} style={styles.section}>
-          <SectionHeader title="Staff checked in" />
+          <SectionHeader
+            title="Staff checked in"
+            actionLabel="View all"
+            onAction={() => navigation.navigate('StaffAttendanceScreen')}
+          />
           {isLoading ? (
             <Text style={styles.previewMeta}>Loading…</Text>
           ) : staffTotal === 0 ? (

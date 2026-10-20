@@ -15,9 +15,8 @@ import { Skeleton } from '@/ui/state/Skeleton';
 import { ErrorState } from '@/ui/state/ErrorState';
 import { EmptyState } from '@/ui/state/EmptyState';
 import type { PtmMeeting, PtmStatus } from '@/data/domain';
-import type { HomeStackParamList } from '../navigation/types';
 
-type PtmNav = NativeStackNavigationProp<HomeStackParamList, 'PtmScreen'>;
+type PtmNav = NativeStackNavigationProp<{ PtmScreen: undefined; PtmNewScreen: undefined }>;
 
 const STATUS_LABELS: Record<PtmStatus, string> = {
   pending: 'Pending',
@@ -115,6 +114,7 @@ export const PtmScreen: React.FC = () => {
                 <View style={styles.cardHeader}>
                   <Text style={styles.studentName} numberOfLines={1}>
                     {meeting.studentName}
+                    {meeting.classLabel ? ` (${meeting.classLabel})` : ''}
                   </Text>
                   <Pill
                     label={STATUS_LABELS[meeting.status]}
@@ -123,7 +123,11 @@ export const PtmScreen: React.FC = () => {
                     size="sm"
                   />
                 </View>
-                <Text style={styles.subject}>{meeting.subject || '—'}</Text>
+                <Text style={styles.subject}>
+                  {[meeting.parentName ? `Parent: ${meeting.parentName}` : null, meeting.subject]
+                    .filter(Boolean)
+                    .join(' · ') || '—'}
+                </Text>
                 <View style={styles.metaRow}>
                   <View style={styles.metaItem}>
                     <Ionicons name="calendar-outline" size={13} color={Colors.inkMuted} />

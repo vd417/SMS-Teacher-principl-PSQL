@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { FadeInDown } from 'react-native-reanimated';
@@ -8,6 +8,7 @@ import { Colors, Radii, Shadows } from '../../theme';
 import { FontFamily } from '../../theme/typography';
 import { ScreenHeader } from '../../components';
 import { useFeature } from '@/features/plan/hooks';
+import { FEATURE_LOCKED_MESSAGE } from '@/lib/featureLocked';
 
 // Each item navigates either by pushing a screen onto the Principal Home stack
 // (`stack`) or by jumping to a sibling tab (`tab`, with an optional nested
@@ -31,6 +32,14 @@ const MORE_ITEMS: readonly MoreItem[] = [
     color: Colors.pink,
     soft: Colors.pinkSoft,
     target: { stack: 'AnnouncementsScreen' },
+  },
+  {
+    icon: 'people-circle-outline',
+    label: 'PTM',
+    feature: 'academics',
+    color: Colors.pink,
+    soft: Colors.pinkSoft,
+    target: { stack: 'PtmScreen' },
   },
   {
     icon: 'chatbubbles-outline',
@@ -166,7 +175,13 @@ function PrincipalMoreGridItem({
     >
       <TouchableOpacity
         style={[styles.card, { backgroundColor: item.soft }, !allowed && styles.cardLocked]}
-        onPress={onPress}
+        onPress={() => {
+          if (!allowed) {
+            Alert.alert('Unavailable', FEATURE_LOCKED_MESSAGE);
+            return;
+          }
+          onPress();
+        }}
         activeOpacity={0.8}
       >
         {!allowed && (

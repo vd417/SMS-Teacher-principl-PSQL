@@ -6,7 +6,9 @@ import {
   TextInput,
   TouchableOpacity,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
+  Pressable,
   ScrollView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -50,9 +52,15 @@ export const LoginScreen: React.FC = () => {
   const requestErr = requestOtp.error ? authErrorMessage(requestOtp.error) : null;
   const verifyErr = verifyOtp.error ? authErrorMessage(verifyOtp.error) : null;
 
-  const handleSignIn = () => login.mutate({ identifier: identifier.trim(), password });
+  const handleSignIn = () => {
+    if (login.isPending) return;
+    Keyboard.dismiss();
+    login.mutate({ identifier: identifier.trim(), password });
+  };
 
   const handleSendOtp = () => {
+    if (requestOtp.isPending) return;
+    Keyboard.dismiss();
     verifyOtp.reset();
     setOtpCode('');
     requestOtp.mutate(otpIdentifier.trim(), {
@@ -62,8 +70,11 @@ export const LoginScreen: React.FC = () => {
       },
     });
   };
-  const handleVerifyOtp = () =>
+  const handleVerifyOtp = () => {
+    if (verifyOtp.isPending) return;
+    Keyboard.dismiss();
     verifyOtp.mutate({ identifier: otpIdentifier.trim(), code: otpCode });
+  };
   const handleChangeIdentifier = () => {
     setOtpSent(false);
     setOtpCode('');
@@ -87,224 +98,228 @@ export const LoginScreen: React.FC = () => {
     >
       <StatusBar style="light" />
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior="padding"
+        keyboardVerticalOffset={Platform.OS === 'android' ? 24 : 0}
         style={styles.flex}
       >
-        <ScrollView
-          contentContainerStyle={[
-            styles.scroll,
-            { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 24 },
-          ]}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.logoWrap}>
-            <View style={styles.logoCircle}>
-              <Ionicons name="school" size={40} color={Colors.primary} />
-            </View>
-            <Text style={styles.appName}>School Desk</Text>
-            <Text style={styles.appTagline}>School Management System</Text>
-          </Animated.View>
+        <Pressable style={styles.flex} onPress={Keyboard.dismiss}>
+          <ScrollView
+            contentContainerStyle={[
+              styles.scroll,
+              { paddingTop: insets.top + 40, paddingBottom: insets.bottom + 24 },
+            ]}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="on-drag"
+          >
+            <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.logoWrap}>
+              <View style={styles.logoCircle}>
+                <Ionicons name="school" size={40} color={Colors.primary} />
+              </View>
+              <Text style={styles.appName}>CatreSchoolDesk</Text>
+              <Text style={styles.appTagline}>CATRE Teacher App</Text>
+            </Animated.View>
 
-          <Animated.View entering={FadeInDown.delay(250).springify()} style={styles.card}>
-            <Text style={styles.cardTitle}>Welcome Back 👋</Text>
-            <Text style={styles.cardSubtitle}>
-              {mode === 'password'
-                ? 'Sign in with your email or mobile number'
-                : otpSent
-                  ? 'Enter the code we sent you'
-                  : 'Sign in with a one-time code to your mobile or email'}
-            </Text>
+            <Animated.View entering={FadeInDown.delay(250).springify()} style={styles.card}>
+              <Text style={styles.cardTitle}>Welcome Back 👋</Text>
+              <Text style={styles.cardSubtitle}>
+                {mode === 'password'
+                  ? 'Sign in with your email or mobile number'
+                  : otpSent
+                    ? 'Enter the code we sent you'
+                    : 'Sign in with a one-time code to your mobile or email'}
+              </Text>
 
-            {mode === 'password' ? (
-              <View>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Email or Mobile Number</Text>
-                  <View style={styles.inputWrap}>
-                    <Ionicons
-                      name="person-outline"
-                      size={18}
-                      color={Colors.inkMuted}
-                      style={styles.inputIcon}
-                    />
-                    <TextInput
-                      style={styles.textInput}
-                      value={identifier}
-                      onChangeText={setIdentifier}
-                      placeholder="Email or mobile number"
-                      placeholderTextColor={Colors.inkSoft}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                    />
-                  </View>
-                </View>
-
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Password</Text>
-                  <View style={styles.inputWrap}>
-                    <Ionicons
-                      name="lock-closed-outline"
-                      size={18}
-                      color={Colors.inkMuted}
-                      style={styles.inputIcon}
-                    />
-                    <TextInput
-                      style={styles.textInput}
-                      value={password}
-                      onChangeText={setPassword}
-                      placeholder="Password"
-                      placeholderTextColor={Colors.inkSoft}
-                      secureTextEntry={!showPassword}
-                      autoCapitalize="none"
-                    />
-                    <TouchableOpacity onPress={() => setShowPassword((v) => !v)}>
+              {mode === 'password' ? (
+                <View>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Email or Mobile Number</Text>
+                    <View style={styles.inputWrap}>
                       <Ionicons
-                        name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                        name="person-outline"
                         size={18}
                         color={Colors.inkMuted}
+                        style={styles.inputIcon}
                       />
+                      <TextInput
+                        style={styles.textInput}
+                        value={identifier}
+                        onChangeText={setIdentifier}
+                        placeholder="Email or mobile number"
+                        placeholderTextColor={Colors.inkSoft}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                      />
+                    </View>
+                  </View>
+
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Password</Text>
+                    <View style={styles.inputWrap}>
+                      <Ionicons
+                        name="lock-closed-outline"
+                        size={18}
+                        color={Colors.inkMuted}
+                        style={styles.inputIcon}
+                      />
+                      <TextInput
+                        style={styles.textInput}
+                        value={password}
+                        onChangeText={setPassword}
+                        placeholder="Password"
+                        placeholderTextColor={Colors.inkSoft}
+                        secureTextEntry={!showPassword}
+                        autoCapitalize="none"
+                      />
+                      <TouchableOpacity onPress={() => setShowPassword((v) => !v)}>
+                        <Ionicons
+                          name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                          size={18}
+                          color={Colors.inkMuted}
+                        />
+                      </TouchableOpacity>
+                    </View>
+                    {loginErr && <Text style={styles.errorText}>{loginErr}</Text>}
+                  </View>
+
+                  <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
+                    <Text style={[styles.forgotText, styles.forgotRight]}>Forgot password?</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.firstTimeRow}
+                    onPress={() => navigation.navigate('ForgotPassword', { mode: 'create' })}
+                  >
+                    <Text style={styles.firstTimeText}>First time here? </Text>
+                    <Text style={styles.forgotText}>Create a password</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.signInBtn, login.isPending && styles.signInBtnLoading]}
+                    activeOpacity={0.9}
+                    disabled={login.isPending}
+                    onPress={handleSignIn}
+                  >
+                    {login.isPending ? (
+                      <Text style={styles.signInBtnText}>Signing in…</Text>
+                    ) : (
+                      <>
+                        <Text style={styles.signInBtnText}>Sign In</Text>
+                        <Ionicons name="arrow-forward" size={18} color={Colors.white} />
+                      </>
+                    )}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity style={styles.altLink} onPress={() => switchMode('otp')}>
+                    <Text style={styles.altLinkText}>Sign in with a one-time code instead</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : !otpSent ? (
+                <View>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Mobile Number or Email</Text>
+                    <View style={styles.inputWrap}>
+                      <Ionicons
+                        name="person-outline"
+                        size={18}
+                        color={Colors.inkMuted}
+                        style={styles.inputIcon}
+                      />
+                      <TextInput
+                        style={styles.textInput}
+                        value={otpIdentifier}
+                        onChangeText={setOtpIdentifier}
+                        placeholder="Mobile number or email"
+                        placeholderTextColor={Colors.inkSoft}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                      />
+                    </View>
+                    {requestErr && <Text style={styles.errorText}>{requestErr}</Text>}
+                  </View>
+
+                  <TouchableOpacity
+                    style={[styles.signInBtn, requestOtp.isPending && styles.signInBtnLoading]}
+                    activeOpacity={0.9}
+                    disabled={requestOtp.isPending}
+                    onPress={handleSendOtp}
+                  >
+                    {requestOtp.isPending ? (
+                      <Text style={styles.signInBtnText}>Sending…</Text>
+                    ) : (
+                      <>
+                        <Text style={styles.signInBtnText}>Send OTP</Text>
+                        <Ionicons name="paper-plane-outline" size={18} color={Colors.white} />
+                      </>
+                    )}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity style={styles.altLink} onPress={() => switchMode('password')}>
+                    <Text style={styles.altLinkText}>Use password instead</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View>
+                  <View style={styles.inputGroup}>
+                    <Text style={styles.inputLabel}>Verification Code</Text>
+                    <Text style={styles.otpSentText}>Code sent to {otpDestination}</Text>
+                    <View style={styles.inputWrap}>
+                      <Ionicons
+                        name="keypad-outline"
+                        size={18}
+                        color={Colors.inkMuted}
+                        style={styles.inputIcon}
+                      />
+                      <TextInput
+                        style={styles.textInput}
+                        value={otpCode}
+                        onChangeText={setOtpCode}
+                        placeholder="Enter 6-digit code"
+                        placeholderTextColor={Colors.inkSoft}
+                        keyboardType="number-pad"
+                        maxLength={6}
+                      />
+                    </View>
+                    {verifyErr && <Text style={styles.errorText}>{verifyErr}</Text>}
+                  </View>
+
+                  <TouchableOpacity
+                    style={[styles.signInBtn, verifyOtp.isPending && styles.signInBtnLoading]}
+                    activeOpacity={0.9}
+                    disabled={verifyOtp.isPending}
+                    onPress={handleVerifyOtp}
+                  >
+                    {verifyOtp.isPending ? (
+                      <Text style={styles.signInBtnText}>Verifying…</Text>
+                    ) : (
+                      <>
+                        <Text style={styles.signInBtnText}>Verify & Sign In</Text>
+                        <Ionicons name="arrow-forward" size={18} color={Colors.white} />
+                      </>
+                    )}
+                  </TouchableOpacity>
+
+                  <View style={styles.otpLinksRow}>
+                    <TouchableOpacity onPress={handleSendOtp} disabled={requestOtp.isPending}>
+                      <Text style={styles.forgotText}>Resend</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={handleChangeIdentifier}>
+                      <Text style={styles.forgotText}>Change</Text>
                     </TouchableOpacity>
                   </View>
-                  {loginErr && <Text style={styles.errorText}>{loginErr}</Text>}
-                </View>
 
-                <TouchableOpacity onPress={() => navigation.navigate('ForgotPassword')}>
-                  <Text style={[styles.forgotText, styles.forgotRight]}>Forgot password?</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.firstTimeRow}
-                  onPress={() => navigation.navigate('ForgotPassword', { mode: 'create' })}
-                >
-                  <Text style={styles.firstTimeText}>First time here? </Text>
-                  <Text style={styles.forgotText}>Create a password</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.signInBtn, login.isPending && styles.signInBtnLoading]}
-                  activeOpacity={0.9}
-                  disabled={login.isPending}
-                  onPress={handleSignIn}
-                >
-                  {login.isPending ? (
-                    <Text style={styles.signInBtnText}>Signing in…</Text>
-                  ) : (
-                    <>
-                      <Text style={styles.signInBtnText}>Sign In</Text>
-                      <Ionicons name="arrow-forward" size={18} color={Colors.white} />
-                    </>
-                  )}
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.altLink} onPress={() => switchMode('otp')}>
-                  <Text style={styles.altLinkText}>Sign in with a one-time code instead</Text>
-                </TouchableOpacity>
-              </View>
-            ) : !otpSent ? (
-              <View>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Mobile Number or Email</Text>
-                  <View style={styles.inputWrap}>
-                    <Ionicons
-                      name="person-outline"
-                      size={18}
-                      color={Colors.inkMuted}
-                      style={styles.inputIcon}
-                    />
-                    <TextInput
-                      style={styles.textInput}
-                      value={otpIdentifier}
-                      onChangeText={setOtpIdentifier}
-                      placeholder="Mobile number or email"
-                      placeholderTextColor={Colors.inkSoft}
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                    />
-                  </View>
-                  {requestErr && <Text style={styles.errorText}>{requestErr}</Text>}
-                </View>
-
-                <TouchableOpacity
-                  style={[styles.signInBtn, requestOtp.isPending && styles.signInBtnLoading]}
-                  activeOpacity={0.9}
-                  disabled={requestOtp.isPending}
-                  onPress={handleSendOtp}
-                >
-                  {requestOtp.isPending ? (
-                    <Text style={styles.signInBtnText}>Sending…</Text>
-                  ) : (
-                    <>
-                      <Text style={styles.signInBtnText}>Send OTP</Text>
-                      <Ionicons name="paper-plane-outline" size={18} color={Colors.white} />
-                    </>
-                  )}
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.altLink} onPress={() => switchMode('password')}>
-                  <Text style={styles.altLinkText}>Use password instead</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <View>
-                <View style={styles.inputGroup}>
-                  <Text style={styles.inputLabel}>Verification Code</Text>
-                  <Text style={styles.otpSentText}>Code sent to {otpDestination}</Text>
-                  <View style={styles.inputWrap}>
-                    <Ionicons
-                      name="keypad-outline"
-                      size={18}
-                      color={Colors.inkMuted}
-                      style={styles.inputIcon}
-                    />
-                    <TextInput
-                      style={styles.textInput}
-                      value={otpCode}
-                      onChangeText={setOtpCode}
-                      placeholder="Enter 6-digit code"
-                      placeholderTextColor={Colors.inkSoft}
-                      keyboardType="number-pad"
-                      maxLength={6}
-                    />
-                  </View>
-                  {verifyErr && <Text style={styles.errorText}>{verifyErr}</Text>}
-                </View>
-
-                <TouchableOpacity
-                  style={[styles.signInBtn, verifyOtp.isPending && styles.signInBtnLoading]}
-                  activeOpacity={0.9}
-                  disabled={verifyOtp.isPending}
-                  onPress={handleVerifyOtp}
-                >
-                  {verifyOtp.isPending ? (
-                    <Text style={styles.signInBtnText}>Verifying…</Text>
-                  ) : (
-                    <>
-                      <Text style={styles.signInBtnText}>Verify & Sign In</Text>
-                      <Ionicons name="arrow-forward" size={18} color={Colors.white} />
-                    </>
-                  )}
-                </TouchableOpacity>
-
-                <View style={styles.otpLinksRow}>
-                  <TouchableOpacity onPress={handleSendOtp} disabled={requestOtp.isPending}>
-                    <Text style={styles.forgotText}>Resend</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={handleChangeIdentifier}>
-                    <Text style={styles.forgotText}>Change</Text>
+                  <TouchableOpacity style={styles.altLink} onPress={() => switchMode('password')}>
+                    <Text style={styles.altLinkText}>Use password instead</Text>
                   </TouchableOpacity>
                 </View>
+              )}
+            </Animated.View>
 
-                <TouchableOpacity style={styles.altLink} onPress={() => switchMode('password')}>
-                  <Text style={styles.altLinkText}>Use password instead</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </Animated.View>
-
-          <Animated.View entering={FadeInDown.delay(400).springify()} style={styles.footer}>
-            <Text style={styles.footerText}>Westbrook Academy · v1.0.0</Text>
-          </Animated.View>
-        </ScrollView>
+            <Animated.View entering={FadeInDown.delay(400).springify()} style={styles.footer}>
+              <Text style={styles.footerText}>CatreSchoolDesk · Teacher</Text>
+            </Animated.View>
+          </ScrollView>
+        </Pressable>
       </KeyboardAvoidingView>
     </LinearGradient>
   );

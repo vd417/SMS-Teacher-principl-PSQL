@@ -21,6 +21,7 @@ import { Colors, Radii, Shadows } from '../theme';
 import { FontFamily } from '../theme/typography';
 import { Avatar } from '../components';
 import { useChatContacts, useChatMessages } from '@/features/chat/hooks';
+import { formatChatIdentity } from '@/lib/chatThread';
 import { useChatComposer } from '@/features/chat/useChatComposer';
 import { deriveColorSet } from '@/theme/derive';
 import { pickImageFromLibrary } from '@/lib/pickImage';
@@ -125,12 +126,11 @@ export const ChatThreadScreen: React.FC = () => {
           <View style={[styles.avatarPlaceholder]} />
         )}
         <View style={styles.headerInfo}>
-          <Text style={styles.headerName}>{contact?.name ?? '...'}</Text>
-          <Text style={styles.headerRole}>
-            {contact?.role ?? ''}
-            {contact?.childName
-              ? ` · ${contact.childName}${contact.childClassLabel ? ` (${contact.childClassLabel})` : ''}`
-              : ''}
+          <Text style={styles.headerName} numberOfLines={1}>
+            {contact ? formatChatIdentity(contact).title : '...'}
+          </Text>
+          <Text style={styles.headerRole} numberOfLines={1}>
+            {contact ? formatChatIdentity(contact).subtitle : ''}
           </Text>
         </View>
         {contact?.online && <View style={styles.onlineBadge} />}

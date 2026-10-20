@@ -19,6 +19,7 @@ import { DatePickerField } from '../components/ui/DatePickerField';
 import { LeaveAttachmentPicker } from '../components/leave/LeaveAttachmentPicker';
 import { AttachmentThumbnails } from '../components/leave/AttachmentThumbnails';
 import { useLeave, useApplyLeave } from '@/features/leave/hooks';
+import { useAuth } from '@/features/auth/AuthProvider';
 import { leaveSchema, LeaveSchemaType } from '../validation/schemas';
 import type { NewLeaveInput } from '@/data/repositories/types';
 import type { LeaveType, LeaveStatus } from '@/data/domain';
@@ -51,6 +52,8 @@ export const LeaveScreen: React.FC = () => {
 
   const { data: leaveRequests = [], isLoading, isError, refetch } = useLeave();
   const applyMutation = useApplyLeave();
+  const { session } = useAuth();
+  const isPrincipal = session?.user.role === 'principal';
 
   const {
     control,
@@ -127,6 +130,12 @@ export const LeaveScreen: React.FC = () => {
 
         {tab === 'apply' ? (
           <>
+            {isPrincipal ? (
+              <Text style={styles.principalHint}>
+                Principal leave requests are sent to the school owner or admin for approval. Staff
+                leave continues to follow the usual school approval path.
+              </Text>
+            ) : null}
             {/* Leave Type */}
             <Animated.View entering={FadeInDown.delay(150).springify()} style={styles.fieldGroup}>
               <Text style={styles.label}>Leave Type *</Text>
@@ -301,6 +310,9 @@ export const LeaveScreen: React.FC = () => {
                       <Text style={styles.rejectionText}>{req.decidedNote}</Text>
                     </View>
                   ) : null}
+                  {req.decidedByName ? (
+                    <Text style={styles.historyApplied}>Decided by {req.decidedByName}</Text>
+                  ) : null}
                   <Text style={styles.historyApplied}>Applied on {req.appliedOn}</Text>
                 </View>
               </Animated.View>
@@ -400,6 +412,13 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   historyApplied: { fontFamily: FontFamily.regular, fontSize: 12, color: Colors.inkSoft },
+  principalHint: {
+    fontFamily: FontFamily.regular,
+    fontSize: 13,
+    color: Colors.inkMuted,
+    lineHeight: 18,
+    marginBottom: 12,
+  },
   rejectionBox: {
     marginTop: 10,
     padding: 10,

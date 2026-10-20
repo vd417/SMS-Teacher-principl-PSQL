@@ -141,6 +141,7 @@ export interface ChatContact {
   unread: number;
   online: boolean;
   /** Which student this parent thread is about — undefined for staff/group threads. */
+  childId?: string;
   childName?: string;
   childClassLabel?: string;
   /** Read-receipt tick for the Inbox list preview — only meaningful when lastMessageMine. */
@@ -217,6 +218,7 @@ export interface LeaveRequest {
   status: LeaveStatus;
   appliedOn: string;
   decidedNote?: string;
+  decidedByName?: string;
   attachmentUrls?: string[];
 }
 export interface DashboardStats {
@@ -454,6 +456,8 @@ export interface PtmMeeting {
   subject: string | null;
   studentId: string;
   studentName: string;
+  parentName?: string;
+  classLabel?: string;
   mode: string;
   status: PtmStatus;
 }

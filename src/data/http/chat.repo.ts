@@ -35,9 +35,14 @@ export function httpChat(http: HttpClient): ChatRepository {
         .then((x) => toChatMessage(chatMessageSchema.parse(x)));
     },
 
-    createThread: ({ name, role }) =>
+    createThread: ({ name, role, childId }) =>
       http
-        .post('/threads', { name, role: role ?? null, group: false, child_id: null })
+        .post('/threads', {
+          name,
+          role: role ?? null,
+          group: false,
+          child_id: childId?.trim() || null,
+        })
         .then((x) => toChatContact(chatContactSchema.parse(x))),
   };
 }

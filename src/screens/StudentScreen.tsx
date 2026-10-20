@@ -226,7 +226,7 @@ export const StudentScreen: React.FC = () => {
               <TouchableOpacity
                 style={styles.contactBtn}
                 disabled={isOpening(student.name)}
-                onPress={() => openStudentChat(student.name)}
+                onPress={() => openStudentChat(student.name, student.id)}
               >
                 {isOpening(student.name) ? (
                   <ActivityIndicator size="small" color={Colors.primary} />
@@ -239,7 +239,7 @@ export const StudentScreen: React.FC = () => {
                 <TouchableOpacity
                   style={styles.contactBtn}
                   disabled={isOpening(student.parent)}
-                  onPress={() => openParentChat(student.parent)}
+                  onPress={() => openParentChat(student.parent, student.id)}
                 >
                   {isOpening(student.parent) ? (
                     <ActivityIndicator size="small" color={Colors.primary} />

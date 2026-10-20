@@ -22,7 +22,7 @@ test('classifyError buckets each failure kind', () => {
   expect(classifyError(s500)).toBe('server');
   expect(classifyError(s503)).toBe('server');
   expect(classifyError(s401)).toBe('auth');
-  expect(classifyError(s403)).toBe('auth');
+  expect(classifyError(s403)).toBe('forbidden');
   expect(classifyError(s422)).toBe('validation');
   expect(classifyError(s400)).toBe('validation');
   expect(classifyError(s404)).toBe('unknown');

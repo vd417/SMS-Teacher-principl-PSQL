@@ -37,6 +37,8 @@ import { StaffDirectoryScreen } from '../screens/StaffDirectoryScreen';
 import { BusScreen } from '../screens/BusScreen';
 import { PtmScreen } from '../screens/PtmScreen';
 import { PtmNewScreen } from '../screens/PtmNewScreen';
+import { PrivacyScreen } from '../screens/PrivacyScreen';
+import { HelpScreen } from '../screens/HelpScreen';
 import type {
   MainTabParamList,
   HomeStackParamList,
@@ -117,6 +119,10 @@ const ProfileStackNavigator = () => (
     <ProfileStack.Screen name="PayslipScreen" component={PayslipScreen} />
     <ProfileStack.Screen name="LeaveScreen" component={LeaveScreen} />
     <ProfileStack.Screen name="SwitchSchool" component={SchoolPickerScreen} />
+    <ProfileStack.Screen name="PrivacyScreen" component={PrivacyScreen} />
+    <ProfileStack.Screen name="HelpScreen" component={HelpScreen} />
+    <ProfileStack.Screen name="PtmScreen" component={PtmScreen} />
+    <ProfileStack.Screen name="PtmNewScreen" component={PtmNewScreen} />
   </ProfileStack.Navigator>
 );
 

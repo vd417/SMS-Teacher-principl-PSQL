@@ -14,7 +14,7 @@ const withCleartextTraffic = (config) =>
 
 module.exports = {
   expo: {
-    name: 'School Desk Teacher App',
+    name: 'CatreSchoolDesk Teacher App',
     slug: 'teacher-app',
     version: '1.0.0',
     orientation: 'portrait',
@@ -33,9 +33,10 @@ module.exports = {
       package: 'com.catre.schooldeskteacher',
       adaptiveIcon: {
         foregroundImage: './assets/adaptive-icon.png',
-        backgroundColor: '#ffffff',
+        backgroundColor: '#1A0129',
       },
       edgeToEdgeEnabled: true,
+      softwareKeyboardLayoutMode: 'resize',
       predictiveBackGestureEnabled: false,
       config: {
         googleMaps: {
@@ -53,7 +54,7 @@ module.exports = {
         'expo-location',
         {
           locationAlwaysAndWhenInUsePermission:
-            'Allow School Desk to use your location to verify you are at school when you check in.',
+            'Allow CatreSchoolDesk to use your location to verify you are at school when you check in.',
         },
       ],
       [

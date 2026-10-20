@@ -24,7 +24,14 @@ export function isAppError(e: unknown): e is AppError {
 
 // Coarse failure taxonomy used across the app to decide ret/keep-cache/logout
 // behaviour. Kept deliberately small — see docs on offline-first handling.
-export type ErrorKind = 'network' | 'timeout' | 'server' | 'auth' | 'validation' | 'unknown';
+export type ErrorKind =
+  | 'network'
+  | 'timeout'
+  | 'server'
+  | 'auth'
+  | 'forbidden'
+  | 'validation'
+  | 'unknown';
 
 export function classifyError(e: unknown): ErrorKind {
   if (!isAppError(e)) return 'unknown';
@@ -32,7 +39,8 @@ export function classifyError(e: unknown): ErrorKind {
   if (e.code === 'timeout') return 'timeout';
   // A status-0 AppError with no explicit code is a transport failure too.
   if (e.status === 0) return 'network';
-  if (e.status === 401 || e.status === 403) return 'auth';
+  if (e.status === 401) return 'auth';
+  if (e.status === 403) return 'forbidden';
   if (e.status === 400 || e.status === 422) return 'validation';
   if (e.status >= 500) return 'server';
   return 'unknown';

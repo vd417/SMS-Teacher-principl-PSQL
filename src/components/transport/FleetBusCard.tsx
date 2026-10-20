@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Radii } from '@/theme';
 import { FontFamily } from '@/theme/typography';
 import type { FleetBus, FleetBusStatus } from '@/data/domain';
+import { busFreshness } from '@/lib/busFreshness';
 
 const STATUS_LABEL: Record<FleetBusStatus, string> = {
   idle: 'Idle',
@@ -57,7 +58,11 @@ export const FleetBusCard: React.FC<Props> = ({
       </View>
       <View style={[styles.statusPill, { backgroundColor: STATUS_COLOR[bus.status] + '22' }]}>
         <Text style={[styles.statusText, { color: STATUS_COLOR[bus.status] }]}>
-          {STATUS_LABEL[bus.status]}
+          {(() => {
+            const freshness = busFreshness(bus);
+            if (freshness.kind === 'OFFLINE') return 'OFFLINE';
+            return `${freshness.label} · ${STATUS_LABEL[bus.status]}`;
+          })()}
         </Text>
       </View>
     </View>

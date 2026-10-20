@@ -27,6 +27,7 @@ import { useTransportFleetPush } from '@/features/transport/hooks';
 import { useRouteGeometry } from '@/features/transport/useRouteGeometry';
 import { isAppError } from '@/lib/errors';
 import type { BoardingRecord, BoardingStatus, MyRouteBus } from '@/data/domain';
+import { busFreshness, formatBusStatusLine } from '@/lib/busFreshness';
 
 const NEXT: Record<BoardingStatus, BoardingStatus> = {
   pending: 'boarded',
@@ -87,13 +88,21 @@ export const BusScreen: React.FC = () => {
         </Text>
         <TierGate feature="transport.gps" title="Live map locked" minHeight={140}>
           <FleetMap
-            buses={readOnlyBuses.map((b) => ({
-              busId: b.busId,
-              busNo: b.busNo,
-              status: 'on_route',
-              lat: b.lat,
-              lng: b.lng,
-            }))}
+            buses={readOnlyBuses.map((b) => {
+              const freshness = busFreshness({ lat: b.lat, lng: b.lng, lastPingAt: b.lastPingAt });
+              return {
+                busId: b.busId,
+                busNo: b.busNo,
+                status:
+                  freshness.kind === 'LIVE'
+                    ? 'on_route'
+                    : freshness.kind === 'DELAYED'
+                      ? 'delayed'
+                      : 'idle',
+                lat: b.lat,
+                lng: b.lng,
+              };
+            })}
             selectedBusId={selectedReadOnlyBusId}
             onSelectBus={(id) => setSelectedReadOnlyBusId((prev) => (prev === id ? null : id))}
             routeGeometry={selectedReadOnlyRouteGeometry}
@@ -163,7 +172,11 @@ export const BusScreen: React.FC = () => {
                   <Ionicons name="navigate" size={14} color={Colors.primary} />
                   <Text style={styles.statusText}>
                     {position
-                      ? `En route to ${position.nextStopName} · ~${position.etaMinutes} min`
+                      ? formatBusStatusLine({
+                          freshness: busFreshness(position),
+                          nextStopName: position.nextStopName,
+                          etaMinutes: position.etaMinutes,
+                        })
                       : 'Locating bus…'}
                   </Text>
                 </View>
@@ -264,8 +277,11 @@ const RouteRow: React.FC<{ bus: MyRouteBus }> = ({ bus }) => (
         {bus.routeName ? ` · ${bus.routeName}` : ''}
       </Text>
       <Text style={styles.routeMeta}>
-        {bus.nextStopName ? `Next: ${bus.nextStopName}` : 'Location not live yet'}
-        {bus.lastPingAt ? ` · ${new Date(bus.lastPingAt).toLocaleTimeString()}` : ''}
+        {formatBusStatusLine({
+          freshness: busFreshness(bus),
+          nextStopName: bus.nextStopName,
+          etaMinutes: null,
+        })}
       </Text>
     </View>
   </View>

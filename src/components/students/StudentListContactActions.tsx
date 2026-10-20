@@ -6,6 +6,7 @@ import { CallActionButton } from '@/components/contact/CallActionButton';
 import { useStudentChatActions } from '@/features/students/useStudentChatActions';
 
 export interface StudentListContactActionsProps {
+  studentId?: string;
   studentName: string;
   parentName?: string | null;
   parentPhone?: string | null;
@@ -13,6 +14,7 @@ export interface StudentListContactActionsProps {
 
 /** Chat + call shortcuts per student row (teacher + principal class lists). */
 export const StudentListContactActions: React.FC<StudentListContactActionsProps> = ({
+  studentId,
   studentName,
   parentName,
   parentPhone,
@@ -28,8 +30,8 @@ export const StudentListContactActions: React.FC<StudentListContactActionsProps>
       />
       <TouchableOpacity
         style={styles.btn}
-        onPress={() => openStudentChat(studentName)}
-        disabled={isOpening(studentName)}
+        onPress={() => openStudentChat(studentName, studentId)}
+        disabled={isOpening(studentName, studentId)}
         accessibilityLabel={`Chat with ${studentName}`}
       >
         {isOpening(studentName) ? (
@@ -41,8 +43,8 @@ export const StudentListContactActions: React.FC<StudentListContactActionsProps>
       {parent ? (
         <TouchableOpacity
           style={styles.btn}
-          onPress={() => openParentChat(parent)}
-          disabled={isOpening(parent)}
+          onPress={() => openParentChat(parent, studentId)}
+          disabled={isOpening(parent, studentId)}
           accessibilityLabel={`Chat with parent ${parent}`}
         >
           {isOpening(parent) ? (

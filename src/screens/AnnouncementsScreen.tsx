@@ -25,6 +25,8 @@ import { useAuth } from '@/features/auth/AuthProvider';
 import { Skeleton } from '@/ui/state/Skeleton';
 import { ErrorState } from '@/ui/state/ErrorState';
 import { EmptyState } from '@/ui/state/EmptyState';
+import { OfflineBanner } from '@/components/OfflineBanner';
+import { useConnectivity } from '@/lib/connectivity';
 import { resolveNotificationRoute } from '@/lib/notificationRouting';
 import type { AnnouncementType } from '@/data/domain';
 
@@ -49,8 +51,14 @@ export const AnnouncementsScreen: React.FC = () => {
 
   const pinned = announcements.filter((a) => a.pinned);
   const rest = announcements.filter((a) => !a.pinned);
-  const loading = isLoading || notificationsLoading;
-  const hasError = isError || notificationsError;
+  const { status: connStatus } = useConnectivity();
+  const offline = connStatus === 'offline';
+  const loading =
+    (isLoading || notificationsLoading) &&
+    announcements.length === 0 &&
+    appNotifications.length === 0;
+  const hasCached = announcements.length > 0 || appNotifications.length > 0;
+  const hasError = (isError || notificationsError) && !hasCached;
   const retry = () => {
     void refetch();
     void refetchNotifications();
@@ -82,7 +90,7 @@ export const AnnouncementsScreen: React.FC = () => {
   const [draftBody, setDraftBody] = useState('');
 
   const submitAnnouncement = () => {
-    if (!draftTitle.trim() || !draftBody.trim()) return;
+    if (offline || !draftTitle.trim() || !draftBody.trim()) return;
     createAnnouncement.mutate(
       { title: draftTitle.trim(), body: draftBody.trim(), type: 'info' },
       {
@@ -97,6 +105,7 @@ export const AnnouncementsScreen: React.FC = () => {
 
   return (
     <View style={{ flex: 1 }}>
+      <OfflineBanner />
       <ScrollView
         style={styles.screen}
         contentContainerStyle={[styles.scroll, { paddingTop: insets.top + 16, paddingBottom: 40 }]}
@@ -115,7 +124,13 @@ export const AnnouncementsScreen: React.FC = () => {
         ) : hasError ? (
           <ErrorState onRetry={retry} />
         ) : announcements.length === 0 && appNotifications.length === 0 ? (
-          <EmptyState label="No announcements yet" />
+          <EmptyState
+            label={
+              offline
+                ? 'No cached broadcasts. Connect to the internet to load announcements.'
+                : 'No announcements yet'
+            }
+          />
         ) : (
           <>
             {appNotifications.length > 0 && (
@@ -233,7 +248,7 @@ export const AnnouncementsScreen: React.FC = () => {
         )}
       </ScrollView>
 
-      {isPrincipal && (
+      {isPrincipal && !offline && (
         <TouchableOpacity
           style={styles.fab}
           onPress={() => setComposeOpen(true)}
