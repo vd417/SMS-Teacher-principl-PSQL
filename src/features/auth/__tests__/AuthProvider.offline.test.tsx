@@ -126,7 +126,7 @@ test('cold start ONLINE refreshes the session from me()', async () => {
   expect(screen.getByText('status:authenticated')).toBeTruthy();
 });
 
-test('cold start with a genuine auth failure (401) signs the user out', async () => {
+test('cold start with a 401 keeps the cached session until the user logs out', async () => {
   await seedSession();
   const me = jest.fn(async () => {
     throw new AppError({ code: 'unauthorized', status: 401, message: 'invalid' });
@@ -135,7 +135,9 @@ test('cold start with a genuine auth failure (401) signs the user out', async ()
 
   mount(repos);
 
-  await waitFor(() => expect(screen.getByText('status:unauthenticated')).toBeTruthy());
+  await waitFor(() => expect(me).toHaveBeenCalled());
+  expect(screen.getByText('status:authenticated')).toBeTruthy();
+  expect(screen.getByText('name:Asha')).toBeTruthy();
 });
 
 test('cold start with 403 on me() keeps the cached session', async () => {
@@ -172,7 +174,7 @@ test('refresh THROWS on a network error (no sign-out) but returns false on a gen
   });
   await expect(authBridge.refresh()).rejects.toBeTruthy();
 
-  // Genuine rejection -> return false, which triggers sign-out in httpClient.
+  // Genuine rejection -> return false. The request fails; the session stays.
   refresh.mockImplementationOnce(async () => {
     throw new AppError({ code: 'invalid_grant', status: 401, message: 'x' });
   });

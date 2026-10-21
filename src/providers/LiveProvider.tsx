@@ -60,7 +60,9 @@ export function LiveProvider({ children }: { children: ReactNode }) {
       cancelled = true;
       setConnected(false);
       connection.off('live_event');
-      void connection.stop();
+      void connection.stop().catch(() => {
+        /* stopping while offline must not surface as a crash */
+      });
     };
   }, [status, qc]);
 

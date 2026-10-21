@@ -22,6 +22,9 @@ import { StaffListContactActions } from '@/components/staff/StaffListContactActi
 import { usePrincipalAttendance } from '@/features/principal/hooks';
 import { formatLongDate, parseISO, todayISO } from '@/lib/date';
 import { splitStaffByCategory, staffDisplayLabel } from '@/lib/staffCategory';
+import { homeroomPlaces, teacherListMeta } from '@/lib/teacherListLabel';
+import { useSchoolTeachers } from '@/features/teachers/hooks';
+import { useClasses } from '@/features/classes/hooks';
 import { filterStaffBySearch } from '@/lib/staffSearch';
 import { staffCheckInStatus } from '@/lib/staffCheckIn';
 import { useFeature } from '@/features/plan/hooks';
@@ -38,6 +41,8 @@ export const StaffAttendanceScreen: React.FC = () => {
   const navigation = useNavigation<StaffAttendanceNav>();
   const [selectedDate, setSelectedDate] = useState(todayISO());
   const { data, isLoading, isError } = usePrincipalAttendance(selectedDate);
+  const { data: teachers = [] } = useSchoolTeachers();
+  const { data: classes = [] } = useClasses();
 
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [staffView, setStaffView] = useState<'teaching' | 'support' | null>(null);
@@ -45,6 +50,15 @@ export const StaffAttendanceScreen: React.FC = () => {
   const geofence = useFeature('attendance.geofence');
 
   const allStaff = data?.staff ?? [];
+  const teacherById = useMemo(
+    () => new Map(teachers.map((teacher) => [teacher.id, teacher])),
+    [teachers]
+  );
+  const classTeacherLine = (teacherId: string, designation: string) => {
+    const places = homeroomPlaces(teacherId, teacherById.get(teacherId)?.classTeacher, classes);
+    if (places.length === 0) return undefined;
+    return teacherListMeta(designation, places);
+  };
   const { teaching: teachingStaff, nonTeaching: supportStaff } = splitStaffByCategory(allStaff);
   const presentCount = (list: typeof allStaff) => list.filter((s) => s.checkedIn).length;
 
@@ -197,8 +211,9 @@ export const StaffAttendanceScreen: React.FC = () => {
                         <Text style={styles.staffMatchMeta}>
                           {member.category === 'teaching' ? 'Teaching' : 'Non-teaching'}
                           {' · '}
-                          {member.category === 'teaching' && member.subject
-                            ? member.subject
+                          {member.category === 'teaching'
+                            ? (classTeacherLine(member.teacherId, staffDisplayLabel(member)) ??
+                              (member.subject || staffDisplayLabel(member)))
                             : staffDisplayLabel(member)}
                         </Text>
                       </View>
@@ -304,7 +319,13 @@ export const StaffAttendanceScreen: React.FC = () => {
       <TeacherSubjectDrawer
         visible={staffView !== null}
         title={staffView === 'support' ? 'Non-teaching staff' : 'Teaching staff'}
-        staff={staffView === 'support' ? supportStaff : teachingStaff}
+        staff={(staffView === 'support' ? supportStaff : teachingStaff).map((member) => ({
+          ...member,
+          detail:
+            staffView === 'teaching'
+              ? classTeacherLine(member.teacherId, staffDisplayLabel(member))
+              : undefined,
+        }))}
         initialSearch={searchQuery}
         onClose={() => setStaffView(null)}
         onPressTeacher={(t) => {

@@ -77,6 +77,7 @@ describe('applyPositionToBusPosition', () => {
       lat: 2,
       lng: 2,
       speedKmh: 25,
+      heading: undefined,
       nextStopName: 'New Stop',
       lastPingAt: '2026-09-05T08:30:00Z',
       currentStopIndex: 1,
@@ -114,6 +115,18 @@ describe('applyPositionToFleet', () => {
     const updated = applyPositionToFleet(baseFleet, push);
     expect(updated?.find((b) => b.busId === 'b2')).toMatchObject({ lat: 6, lng: 6, speedKmh: 12 });
     expect(updated?.find((b) => b.busId === 'b1')).toEqual(baseFleet[0]);
+  });
+
+  it('keeps the GPS heading so the bus icon can rotate', () => {
+    const push = parseBusPositionPush({
+      bus_id: 'b2',
+      lat: 6,
+      lng: 6,
+      speed_kmh: 22,
+      heading: 135,
+    })!;
+    const updated = applyPositionToFleet(baseFleet, push);
+    expect(updated?.find((b) => b.busId === 'b2')).toMatchObject({ heading: 135, speedKmh: 22 });
   });
 
   it('passes through when there is no cached fleet yet', () => {

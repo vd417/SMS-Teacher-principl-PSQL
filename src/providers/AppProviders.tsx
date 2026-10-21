@@ -23,15 +23,12 @@ export const AppProviders: React.FC<{ children: React.ReactNode }> = ({ children
     initConnectivity();
 
     // getAuth reads the live snapshot AuthProvider keeps current, so every request
-    // carries the latest token + tenant with no startup race. onRefresh/onAuthLost
-    // delegate to AuthProvider via authBridge (registered when it mounts).
+    // carries the latest token + tenant with no startup race. A failed refresh
+    // rejects that request only. The session stays until the user taps Log Out.
     const http = createHttpClient({
       baseUrl: env.API_BASE_URL,
       getAuth: () => authSnapshot.get(),
       onRefresh: () => authBridge.refresh(),
-      onAuthLost: () => {
-        void authBridge.signOut();
-      },
     });
     setRepositories(createHttpRepositories(http));
 

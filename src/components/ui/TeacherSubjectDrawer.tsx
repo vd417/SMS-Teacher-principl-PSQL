@@ -24,6 +24,8 @@ export interface DrawerStaff {
   designation?: string;
   /** Non-teaching role (Security, Guard, Peon); teachers group by subject. */
   role?: string;
+  /** Designation plus the class they are class teacher of. */
+  detail?: string;
 }
 
 interface TeacherSubjectDrawerProps {
@@ -114,9 +116,16 @@ export const TeacherSubjectDrawer: React.FC<TeacherSubjectDrawerProps> = ({
                           onPress={() => onPressTeacher?.(t)}
                         >
                           <Avatar initials={t.initials} size={36} backgroundColor={cs.color} />
-                          <Text style={styles.teacherName} numberOfLines={1}>
-                            {t.name}
-                          </Text>
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.teacherName} numberOfLines={1}>
+                              {t.name}
+                            </Text>
+                            {t.detail ? (
+                              <Text style={styles.teacherDetail} numberOfLines={2}>
+                                {t.detail}
+                              </Text>
+                            ) : null}
+                          </View>
                           <View
                             style={[
                               styles.statusPill,
@@ -261,7 +270,13 @@ const styles = StyleSheet.create({
     paddingRight: 8,
   },
   historyLinkText: { fontFamily: FontFamily.semiBold, fontSize: 12, color: Colors.primary },
-  teacherName: { fontFamily: FontFamily.semiBold, fontSize: 14, color: Colors.ink, flex: 1 },
+  teacherName: { fontFamily: FontFamily.semiBold, fontSize: 14, color: Colors.ink },
+  teacherDetail: {
+    fontFamily: FontFamily.regular,
+    fontSize: 12,
+    color: Colors.inkMuted,
+    marginTop: 2,
+  },
   statusPill: {
     flexDirection: 'row',
     alignItems: 'center',

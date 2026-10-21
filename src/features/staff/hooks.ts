@@ -6,6 +6,7 @@ import { useAuth, useTenantId } from '@/features/auth/AuthProvider';
 import { queryKeys } from '@/lib/queryClient';
 import { mergeSchoolStaffDirectory } from '@/lib/mergeSchoolStaffDirectory';
 import { staffDisplayLabel } from '@/lib/staffCategory';
+import { withSignedInPrincipal } from '@/lib/staffDirectory';
 
 function staffEntryToMember(entry: StaffAttendanceEntry): SchoolStaffMember {
   const label = staffDisplayLabel(entry);
@@ -28,7 +29,6 @@ export function useSchoolStaffDirectory() {
   const tenantId = useTenantId();
   const { session } = useAuth();
   const isPrincipal = session?.user.role === 'principal';
-  const selfName = session?.user.name?.trim().toLowerCase() ?? '';
 
   const principalQ = useQuery({
     queryKey: queryKeys.principalOverview(tenantId),
@@ -39,7 +39,6 @@ export function useSchoolStaffDirectory() {
   const teachersQ = useQuery({
     queryKey: queryKeys.teachers(tenantId),
     queryFn: () => repos.teachers.list(),
-    enabled: !isPrincipal,
   });
 
   // A-9 (STF-01): GET /staff is school.principal-only (SD-1: teachers do not
@@ -50,9 +49,8 @@ export function useSchoolStaffDirectory() {
       ? (principalQ.data?.staff ?? []).map(staffEntryToMember)
       : mergeSchoolStaffDirectory(teachersQ.data ?? [], []);
 
-    if (!selfName) return rows;
-    return rows.filter((m) => m.name.trim().toLowerCase() !== selfName);
-  }, [isPrincipal, principalQ.data, teachersQ.data, selfName]);
+    return withSignedInPrincipal(rows, session?.user ?? {}, teachersQ.data ?? []);
+  }, [isPrincipal, principalQ.data, teachersQ.data, session?.user]);
 
   return {
     members,

@@ -16,6 +16,7 @@ const busPositionPushSchema = z
     lat: z.number().nullish(),
     lng: z.number().nullish(),
     speed_kmh: z.number().nullish(),
+    heading: z.number().nullish(),
     next_stop_name: z.string().nullish(),
     last_ping_at: z.string().nullish(),
     last_update_at: z.string().nullish(),
@@ -25,6 +26,7 @@ const busPositionPushSchema = z
     lat: d.lat,
     lng: d.lng,
     speed_kmh: d.speed_kmh,
+    heading: d.heading,
     next_stop_name: d.next_stop_name,
     last_ping_at: d.last_ping_at ?? d.last_update_at,
   }));
@@ -46,6 +48,7 @@ export function applyPositionToBusPosition(
     lat: push.lat ?? prev.lat,
     lng: push.lng ?? prev.lng,
     speedKmh: push.speed_kmh ?? prev.speedKmh,
+    heading: push.heading ?? prev.heading,
     nextStopName: push.next_stop_name ?? prev.nextStopName,
     lastPingAt: push.last_ping_at ?? prev.lastPingAt,
   };
@@ -56,6 +59,7 @@ interface PositionRow {
   lat?: number;
   lng?: number;
   speedKmh?: number;
+  heading?: number;
   nextStopName?: string;
   lastPingAt?: string;
 }
@@ -72,6 +76,7 @@ export function applyPositionToBusRows<T extends PositionRow>(
           lat: push.lat ?? bus.lat,
           lng: push.lng ?? bus.lng,
           speedKmh: push.speed_kmh ?? bus.speedKmh,
+          heading: push.heading ?? bus.heading,
           nextStopName: push.next_stop_name ?? bus.nextStopName,
           lastPingAt: push.last_ping_at ?? bus.lastPingAt,
         }

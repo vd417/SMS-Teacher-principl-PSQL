@@ -81,14 +81,19 @@ export function initConnectivity(): void {
   if (initialised) return;
   initialised = true;
 
-  onlineManager.setEventListener((setOnline) => {
-    const unsub = NetInfo.addEventListener((state) => setOnline(isConnected(state.isConnected)));
-    return () => {
-      if (typeof unsub === 'function') unsub();
-    };
-  });
+  try {
+    onlineManager.setEventListener((setOnline) => {
+      const unsub = NetInfo.addEventListener((state) => setOnline(isConnected(state.isConnected)));
+      return () => {
+        if (typeof unsub === 'function') unsub();
+      };
+    });
 
-  NetInfo.addEventListener((state) => connectivity.handleRaw(isConnected(state.isConnected)));
+    NetInfo.addEventListener((state) => connectivity.handleRaw(isConnected(state.isConnected)));
+  } catch {
+    // No network module or no connection yet: stay on the cached session and let
+    // requests fail softly instead of crashing the exported app.
+  }
 }
 
 /** React hook: the current connectivity snapshot. */

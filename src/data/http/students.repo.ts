@@ -4,6 +4,13 @@ import { toStudent, studentSchema } from './mappers';
 
 export function httpStudents(http: HttpClient): StudentsRepository {
   return {
+    list: () =>
+      http.getList<unknown>('/students').then((page) =>
+        page.items.flatMap((row) => {
+          const parsed = studentSchema.safeParse(row);
+          return parsed.success ? [toStudent(parsed.data)] : [];
+        })
+      ),
     // The roster endpoint carries the class in the path; inject it into each row.
     // It is cursor-paginated, so we pass limit/cursor and return a Page.
     listByClass: (classId, page) =>

@@ -37,7 +37,8 @@ export const ChatScreen: React.FC = () => {
       c.name.toLowerCase().includes(q) ||
       c.role.toLowerCase().includes(q) ||
       (c.childName ?? '').toLowerCase().includes(q) ||
-      (c.childClassLabel ?? '').toLowerCase().includes(q)
+      (c.childClassLabel ?? '').toLowerCase().includes(q) ||
+      (c.childSummaries ?? []).some((line) => line.toLowerCase().includes(q))
     );
   });
 
@@ -105,7 +106,12 @@ export const ChatScreen: React.FC = () => {
                   activeOpacity={0.8}
                 >
                   <View style={styles.avatarWrap}>
-                    <Avatar initials={item.initials} size={50} backgroundColor={color} />
+                    <Avatar
+                      initials={item.initials}
+                      size={50}
+                      backgroundColor={color}
+                      photoUri={item.photoUrl}
+                    />
                     {item.online && <View style={styles.onlineDot} />}
                   </View>
                   <View style={styles.contactInfo}>
@@ -115,7 +121,7 @@ export const ChatScreen: React.FC = () => {
                       </Text>
                       <Text style={styles.contactTime}>{item.time}</Text>
                     </View>
-                    <Text style={styles.contactRole} numberOfLines={2}>
+                    <Text style={styles.contactRole} numberOfLines={6}>
                       {identity.subtitle}
                     </Text>
                     <View style={styles.lastMessageRow}>

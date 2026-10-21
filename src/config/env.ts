@@ -1,10 +1,10 @@
 // The app talks only to the live backend. API_BASE_URL must include the /v1
 // prefix (every backend route is under /v1); repositories use /v1-relative paths.
-// In production a missing/placeholder/non-https URL sets `configError` instead
-// of throwing, so a misconfigured build still starts and shows the user a
-// connection banner (see ConfigErrorBanner) rather than crashing before any UI
-// exists. In dev we keep a localhost default and never set a config error.
+// In production a placeholder or non-https URL sets `configError` instead of
+// throwing, so a misconfigured build still starts. A missing URL uses the live
+// production API. In dev we keep a localhost default and never set a config error.
 const PLACEHOLDER = 'https://api.schooldesk.local/v1';
+const PRODUCTION_API = 'https://api.sms.catretech.me/v1';
 
 // Exempts private-LAN/loopback http URLs from the https requirement below, so a
 // build can be pointed at a backend running on a developer's machine for
@@ -32,8 +32,15 @@ export function loadEnv(raw: Record<string, string | undefined>, isDev: boolean)
 
   if (!isDev) {
     if (!url) {
-      configError = `EXPO_PUBLIC_API_BASE_URL is required in production builds. ${EAS_BUILD_HINT}`;
-    } else if (url === PLACEHOLDER) {
+      return {
+        API_BASE_URL: PRODUCTION_API,
+        GOOGLE_MAPS_API_KEY: raw.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? '',
+        GOOGLE_MAPS_MAP_ID: raw.EXPO_PUBLIC_GOOGLE_MAPS_MAP_ID ?? '',
+        SENTRY_DSN: raw.EXPO_PUBLIC_SENTRY_DSN ?? '',
+        configError: null,
+      };
+    }
+    if (url === PLACEHOLDER) {
       configError = `EXPO_PUBLIC_API_BASE_URL is still the placeholder (${PLACEHOLDER}). ${EAS_BUILD_HINT}`;
     } else if (!url.startsWith('https://') && !LAN_HTTP_PATTERN.test(url)) {
       configError = `EXPO_PUBLIC_API_BASE_URL must use https in production. ${EAS_BUILD_HINT}`;

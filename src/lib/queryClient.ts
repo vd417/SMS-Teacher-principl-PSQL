@@ -27,6 +27,7 @@ export const queryKeys = {
   classes: (tenantId: string) => ['classes', tenantId] as const,
   class: (tenantId: string, id: string) => ['classes', tenantId, id] as const,
   studentsByClass: (tenantId: string, classId: string) => ['students', tenantId, classId] as const,
+  studentDirectory: (tenantId: string) => ['students', tenantId, 'directory'] as const,
   student: (tenantId: string, id: string) => ['student', tenantId, id] as const,
   attendance: (tenantId: string, classId: string, date: string) =>
     ['attendance', tenantId, classId, date] as const,

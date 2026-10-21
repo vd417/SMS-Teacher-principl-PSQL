@@ -8,4 +8,8 @@ export interface MappableBus {
   lat?: number;
   lng?: number;
   stops?: BusStop[];
+  /** Transport route this bus runs, so its icon sits on that route. */
+  routeId?: string;
+  speedKmh?: number;
+  heading?: number;
 }

@@ -134,6 +134,8 @@ export interface ClassesRepository {
   get(id: string): Promise<Class>;
 }
 export interface StudentsRepository {
+  /** School roster, used to show a parent's class and section in the inbox. */
+  list(): Promise<Student[]>;
   // The class roster is the one truly cursor-paginated list (limit 1–200, cursor).
   listByClass(classId: string, page?: { limit?: number; cursor?: string }): Promise<Page<Student>>;
   get(id: string): Promise<Student>;

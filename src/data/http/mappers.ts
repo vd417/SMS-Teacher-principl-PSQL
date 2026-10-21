@@ -105,7 +105,10 @@ export const studentSchema = z.object({
   id: z.string(),
   name: z.string(),
   roll: z.union([z.number(), z.string()]).nullish(),
+  admission_no: z.string().nullish(),
   grade: z.string().nullish(),
+  section: z.string().nullish(),
+  class_label: z.string().nullish(),
   attendance_pct: z.number().nullish(),
   guardian_name: z.string().nullish(),
   guardian_phone: z.string().nullish(),
@@ -116,10 +119,13 @@ export const toStudent = (d: StudentDTO, classId = ''): Student => ({
   id: d.id,
   name: d.name,
   roll: d.roll != null ? String(d.roll) : '',
+  ...(d.admission_no?.trim() ? { admissionNo: d.admission_no.trim() } : {}),
   initials: initialsFrom(d.name),
   classId,
   attendance: d.attendance_pct == null ? null : Number(d.attendance_pct),
   grade: d.grade ?? '',
+  ...(d.section?.trim() ? { section: d.section.trim() } : {}),
+  ...(d.class_label?.trim() ? { classLabel: d.class_label.trim() } : {}),
   parent: d.guardian_name ?? '',
   parentPhone: d.guardian_phone ?? '',
   photoUrl: d.photo_url ?? null,
@@ -447,6 +453,7 @@ export const chatContactSchema = z.object({
   designation: z.string().nullish(),
   last_message_mine: z.boolean().nullish(),
   last_message_status: z.enum(['sent', 'delivered', 'read']).nullish(),
+  photo_url: z.string().nullish(),
 });
 export type ChatContactDTO = z.infer<typeof chatContactSchema>;
 
@@ -475,6 +482,7 @@ export const toChatContact = (d: ChatContactDTO): ChatContact => ({
   ...(d.last_at ? { lastAt: d.last_at } : {}),
   lastMessageMine: d.last_message_mine ?? false,
   lastMessageStatus: d.last_message_status ?? undefined,
+  ...(d.photo_url?.trim() ? { photoUrl: d.photo_url.trim() } : {}),
 });
 
 export const chatMessageSchema = z.object({
@@ -726,7 +734,10 @@ export const teacherDirectorySchema = z.object({
   id: z.string(),
   name: z.string(),
   phone: z.string().nullish(),
+  email: z.string().nullish(),
+  user_id: z.string().nullish(),
   designation: z.string().nullish(),
+  class_teacher: z.string().nullish(),
   department: z.string().nullish(),
   subjects: z.union([z.array(z.string()), z.string()]).optional(),
   photo_url: z.string().nullish(),
@@ -738,6 +749,7 @@ export const toSchoolStaffMember = (d: TeacherDirectoryDTO): SchoolStaffMember =
   const subjects = normalizeTeacherSubjects(d.subjects);
   const designation = d.designation?.trim();
   const department = d.department?.trim();
+  const classTeacher = d.class_teacher?.trim();
   const roleLabel = designation || department || 'Teacher';
   const subtitle = subjects[0] || department || roleLabel;
 
@@ -746,8 +758,11 @@ export const toSchoolStaffMember = (d: TeacherDirectoryDTO): SchoolStaffMember =
     name: d.name,
     initials: initialsFrom(d.name),
     phone: d.phone?.trim() || undefined,
+    email: d.email?.trim() || undefined,
+    userId: d.user_id?.trim() || undefined,
     roleLabel,
     subtitle,
+    ...(classTeacher ? { classTeacher } : {}),
     photoUrl: d.photo_url ?? undefined,
   };
 };
@@ -756,6 +771,8 @@ export const staffDirectorySchema = z.object({
   id: z.string(),
   name: z.string(),
   phone: z.string().nullish(),
+  email: z.string().nullish(),
+  user_id: z.string().nullish(),
   role: z.string().nullish(),
   department: z.string().nullish(),
   photo_url: z.string().nullish(),
@@ -772,6 +789,8 @@ export const toStaffDirectoryMember = (d: StaffDirectoryDTO): SchoolStaffMember 
     name: d.name,
     initials: initialsFrom(d.name),
     phone: d.phone?.trim() || undefined,
+    email: d.email?.trim() || undefined,
+    userId: d.user_id?.trim() || undefined,
     roleLabel,
     subtitle: department || roleLabel,
     photoUrl: d.photo_url ?? undefined,

@@ -17,8 +17,10 @@ import { Avatar, ScreenHeader, SearchField } from '../components';
 import { StaffListContactActions } from '@/components/staff/StaffListContactActions';
 import { useSchoolStaffDirectory } from '@/features/staff/hooks';
 import { useSchoolTeachers } from '@/features/teachers/hooks';
+import { useClasses } from '@/features/classes/hooks';
 import { useAuth } from '@/features/auth/AuthProvider';
 import { staffCheckInStatus } from '@/lib/staffCheckIn';
+import { homeroomPlaces, teacherListMeta } from '@/lib/teacherListLabel';
 import { ErrorState } from '@/ui/state/ErrorState';
 import { EmptyState } from '@/ui/state/EmptyState';
 
@@ -30,19 +32,39 @@ export const StaffDirectoryScreen: React.FC = () => {
   const [search, setSearch] = useState('');
   const { members, isLoading, isError, refetch } = useSchoolStaffDirectory();
   const { data: teachers = [] } = useSchoolTeachers();
+  const { data: classes = [] } = useClasses();
 
   const teacherIds = useMemo(() => new Set(teachers.map((t) => t.id)), [teachers]);
+  const teacherById = useMemo(
+    () => new Map(teachers.map((teacher) => [teacher.id, teacher])),
+    [teachers]
+  );
+
+  const roleLine = (
+    memberId: string,
+    roleLabel: string,
+    fallback: string,
+    classTeacher?: string
+  ) => {
+    const teacher = teacherById.get(memberId);
+    const places = homeroomPlaces(memberId, teacher?.classTeacher ?? classTeacher, classes);
+    if (places.length === 0) return fallback;
+    return teacherListMeta(roleLabel || fallback, places);
+  };
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return members;
-    return members.filter(
-      (m) =>
+    return members.filter((m) => {
+      const line = roleLine(m.id, m.roleLabel, m.subtitle, m.classTeacher);
+      return (
         m.name.toLowerCase().includes(q) ||
         m.subtitle.toLowerCase().includes(q) ||
-        m.roleLabel.toLowerCase().includes(q)
-    );
-  }, [members, search]);
+        m.roleLabel.toLowerCase().includes(q) ||
+        line.toLowerCase().includes(q)
+      );
+    });
+  }, [members, search, teacherById, classes]);
 
   const openTeacherAcademics = (teacherId: string, teacherName: string) => {
     navigation.navigate('TeacherAcademicsScreen', { teacherId, teacherName });
@@ -93,7 +115,9 @@ export const StaffDirectoryScreen: React.FC = () => {
                 <Avatar initials={member.initials} size={42} photoUri={member.photoUrl} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.name}>{member.name}</Text>
-                  <Text style={styles.meta}>{member.subtitle}</Text>
+                  <Text style={styles.meta}>
+                    {roleLine(member.id, member.roleLabel, member.subtitle, member.classTeacher)}
+                  </Text>
                 </View>
                 {status ? (
                   <View

@@ -1,10 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMemo } from 'react';
 import { useRepositories } from '@/data/repositories/RepositoryContext';
-import { useTenantId } from '@/features/auth/AuthProvider';
+import { useAuth, useTenantId } from '@/features/auth/AuthProvider';
 import { useLive } from '@/providers/LiveProvider';
 import { queryKeys } from '@/lib/queryClient';
 import { assertChatMessageAllowed, assertChatImageAllowed } from '@/lib/chatModeration';
-import { findExistingThread } from '@/lib/chatThread';
+import {
+  findExistingThread,
+  selfDisplayNames,
+  withParentClassSections,
+  withProfilePhotos,
+  withStaffRoles,
+  withoutSelfChat,
+} from '@/lib/chatThread';
 import type { ChatContact, ChatMessage } from '@/data/domain';
 import type { ChatSendInput } from '@/data/repositories/types';
 
@@ -12,11 +20,61 @@ export function useChatContacts() {
   const repos = useRepositories();
   const tenantId = useTenantId();
   const { connected } = useLive();
-  return useQuery({
+  const { session } = useAuth();
+  const contactsQuery = useQuery({
     queryKey: queryKeys.chatContacts(tenantId),
     queryFn: () => repos.chat.contacts(),
     refetchInterval: connected ? false : 8_000,
   });
+  const rosterQuery = useQuery({
+    queryKey: queryKeys.studentDirectory(tenantId),
+    queryFn: () => repos.students.list().catch(() => []),
+    staleTime: 60_000,
+  });
+  const isPrincipal = session?.user.role === 'principal';
+  const teachersQuery = useQuery({
+    queryKey: queryKeys.teachers(tenantId),
+    queryFn: () => repos.teachers.list().catch(() => []),
+    staleTime: 60_000,
+    enabled: Boolean(session?.user.id),
+  });
+  const classesQuery = useQuery({
+    queryKey: queryKeys.classes(tenantId),
+    queryFn: () => repos.classes.list().catch(() => []),
+    staleTime: 60_000,
+    enabled: Boolean(session?.user.id),
+  });
+  const staffQuery = useQuery({
+    queryKey: queryKeys.staffDirectory(tenantId),
+    queryFn: () => repos.staff.list().catch(() => []),
+    staleTime: 60_000,
+    enabled: Boolean(session?.user.id) && isPrincipal,
+  });
+  const data = useMemo(() => {
+    if (!contactsQuery.data) return contactsQuery.data;
+    const directory = [...(teachersQuery.data ?? []), ...(staffQuery.data ?? [])];
+    const selfNames = selfDisplayNames(session?.user ?? {}, directory);
+    const labeled = withStaffRoles(
+      contactsQuery.data,
+      directory,
+      session?.user.role === 'principal' ? session.user.id : undefined,
+      classesQuery.data ?? []
+    );
+    const visible = withoutSelfChat(labeled, selfNames);
+    return withProfilePhotos(
+      withParentClassSections(visible, rosterQuery.data ?? []),
+      rosterQuery.data ?? [],
+      directory
+    );
+  }, [
+    contactsQuery.data,
+    rosterQuery.data,
+    session?.user,
+    teachersQuery.data,
+    classesQuery.data,
+    staffQuery.data,
+  ]);
+  return { ...contactsQuery, data };
 }
 
 /** Find an existing thread by contact name or create one, then navigate via callback. */

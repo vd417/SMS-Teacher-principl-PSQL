@@ -118,7 +118,12 @@ export const ChatThreadScreen: React.FC = () => {
       style={[styles.msgWrap, item.isMe ? styles.msgWrapMe : styles.msgWrapOther]}
     >
       {!item.isMe && contact && (
-        <Avatar initials={contact.initials} size={32} backgroundColor={avatarColor} />
+        <Avatar
+          initials={contact.initials}
+          size={32}
+          backgroundColor={avatarColor}
+          photoUri={contact.photoUrl}
+        />
       )}
       <View style={[styles.bubble, item.isMe ? styles.bubbleMe : styles.bubbleOther]}>
         {item.imageUrl ? (
@@ -149,7 +154,12 @@ export const ChatThreadScreen: React.FC = () => {
           <Ionicons name="arrow-back" size={22} color={Colors.ink} />
         </TouchableOpacity>
         {contact ? (
-          <Avatar initials={contact.initials} size={40} backgroundColor={avatarColor} />
+          <Avatar
+            initials={contact.initials}
+            size={40}
+            backgroundColor={avatarColor}
+            photoUri={contact.photoUrl}
+          />
         ) : (
           <View style={[styles.avatarPlaceholder]} />
         )}
@@ -157,7 +167,7 @@ export const ChatThreadScreen: React.FC = () => {
           <Text style={styles.headerName} numberOfLines={1}>
             {contact ? formatChatIdentity(contact).title : '...'}
           </Text>
-          <Text style={styles.headerRole} numberOfLines={2}>
+          <Text style={styles.headerRole} numberOfLines={6}>
             {contact ? formatChatIdentity(contact).subtitle : ''}
           </Text>
         </View>

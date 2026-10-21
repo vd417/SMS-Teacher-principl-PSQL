@@ -6,7 +6,11 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyCLBnzIqfPTAoo_HnCVMP_nnd57nOMU7GY",
+        "EXPO_PUBLIC_GOOGLE_MAPS_MAP_ID": "aab697c91ef02136bf693efd"
+      }
     },
     "preview": {
       "distribution": "internal",
@@ -16,13 +20,17 @@
       },
       "env": {
         "EXPO_PUBLIC_API_BASE_URL": "https://staging-api.schooldesk.app/v1",
+        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyCLBnzIqfPTAoo_HnCVMP_nnd57nOMU7GY",
+        "EXPO_PUBLIC_GOOGLE_MAPS_MAP_ID": "aab697c91ef02136bf693efd",
         "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       }
     },
     "production": {
       "autoIncrement": true,
       "env": {
-        "EXPO_PUBLIC_API_BASE_URL": "https://api.sms.catretech.me/v1"
+        "EXPO_PUBLIC_API_BASE_URL": "https://api.sms.catretech.me/v1",
+        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyCLBnzIqfPTAoo_HnCVMP_nnd57nOMU7GY",
+        "EXPO_PUBLIC_GOOGLE_MAPS_MAP_ID": "aab697c91ef02136bf693efd"
       }
     },
     "production-apk": {
@@ -33,6 +41,8 @@
       },
       "env": {
         "EXPO_PUBLIC_API_BASE_URL": "https://api.sms.catretech.me/v1",
+        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyCLBnzIqfPTAoo_HnCVMP_nnd57nOMU7GY",
+        "EXPO_PUBLIC_GOOGLE_MAPS_MAP_ID": "aab697c91ef02136bf693efd",
         "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       }
     },
@@ -44,6 +54,8 @@
       },
       "env": {
         "EXPO_PUBLIC_API_BASE_URL": "http://192.168.0.103:5162/v1",
+        "EXPO_PUBLIC_GOOGLE_MAPS_API_KEY": "AIzaSyCLBnzIqfPTAoo_HnCVMP_nnd57nOMU7GY",
+        "EXPO_PUBLIC_GOOGLE_MAPS_MAP_ID": "aab697c91ef02136bf693efd",
         "SENTRY_DISABLE_AUTO_UPLOAD": "true"
       }
     }

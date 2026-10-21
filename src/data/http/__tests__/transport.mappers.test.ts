@@ -18,6 +18,7 @@ test('toFleetBus maps fleet wire row', () => {
     lat: 12.97,
     lng: 77.59,
     speed_kmh: 22,
+    heading: 214.5,
     next_stop_name: 'MG Road',
     teacher_user_id: 't1',
     teacher_name: 'Asha Rao',
@@ -33,6 +34,7 @@ test('toFleetBus maps fleet wire row', () => {
   expect(bus.status).toBe('on_route');
   expect(bus.teacherName).toBe('Asha Rao');
   expect(bus.studentsRiding).toBe(12);
+  expect(bus.heading).toBe(214.5);
   expect(bus.conductorStaffId).toBe('c1');
   expect(bus.travelingTeachers).toEqual([{ teacherUserId: 't2', teacherName: 'Bob Iyer' }]);
   expect(bus.stops).toEqual([

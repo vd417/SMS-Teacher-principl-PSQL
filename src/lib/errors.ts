@@ -57,7 +57,7 @@ export function isTimeoutError(e: unknown): boolean {
 // The "don't punish the user for the network" set: a network drop, a timeout, or
 // a server 5xx. These must NEVER force a logout and must NEVER discard cached
 // data — they mean "can't reach the backend right now", not "you are signed out".
-// Only a genuine auth rejection (see classifyError -> 'auth') ends a session.
+// The session ends only when the user taps Log Out.
 export function isConnectivityError(e: unknown): boolean {
   const k = classifyError(e);
   return k === 'network' || k === 'timeout' || k === 'server';

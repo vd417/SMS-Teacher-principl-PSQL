@@ -61,8 +61,10 @@ export const BusScreen: React.FC = () => {
   // The read-only "other routes" FleetMap has no built-in selection, so add a minimal local
   // selection here purely to give road-geometry lookup a bus to key off.
   const [selectedReadOnlyBusId, setSelectedReadOnlyBusId] = useState<string | null>(null);
-  const selectedReadOnlyRouteId =
-    readOnlyBuses.find((b) => b.busId === selectedReadOnlyBusId)?.routeId ?? null;
+  const selectedReadOnlyBus =
+    readOnlyBuses.find((b) => b.busId === selectedReadOnlyBusId) ??
+    readOnlyBuses.find((b) => Boolean(b.routeId));
+  const selectedReadOnlyRouteId = selectedReadOnlyBus?.routeId ?? null;
   const { data: selectedReadOnlyRouteGeometry } = useRouteGeometry(selectedReadOnlyRouteId);
 
   const [draft, setDraft] = useState<BoardingRecord[]>([]);
@@ -101,9 +103,12 @@ export const BusScreen: React.FC = () => {
                       : 'idle',
                 lat: b.lat,
                 lng: b.lng,
+                routeId: b.routeId,
+                speedKmh: b.speedKmh,
+                heading: b.heading,
               };
             })}
-            selectedBusId={selectedReadOnlyBusId}
+            selectedBusId={selectedReadOnlyBus?.busId ?? null}
             onSelectBus={(id) => setSelectedReadOnlyBusId((prev) => (prev === id ? null : id))}
             routeGeometry={selectedReadOnlyRouteGeometry}
           />

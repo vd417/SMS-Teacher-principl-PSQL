@@ -11,11 +11,10 @@ describe('loadEnv', () => {
     expect(out.configError).toBeNull();
   });
 
-  it('sets a config error in production when the URL is missing, and falls back to the placeholder', () => {
+  it('uses the production API when the URL is missing in a production build', () => {
     const out = loadEnv({}, false);
-    expect(out.configError).toMatch(/EXPO_PUBLIC_API_BASE_URL/);
-    expect(out.configError).toMatch(/eas build --profile production/);
-    expect(out.API_BASE_URL).toBe(PLACEHOLDER);
+    expect(out.API_BASE_URL).toBe('https://api.sms.catretech.me/v1');
+    expect(out.configError).toBeNull();
   });
 
   it('sets a config error in production when the URL is the placeholder host', () => {

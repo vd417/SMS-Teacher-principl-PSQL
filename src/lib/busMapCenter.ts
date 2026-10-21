@@ -22,3 +22,21 @@ export function busMapCenter(
   if (!first || first.lat == null || first.lng == null) return undefined;
   return { lat: first.lat, lng: first.lng };
 }
+
+/** Where the fleet map should open. Live GPS wins, then the CRM road route, then a stop. */
+export function fleetMapFocus(
+  located: MapPoint[],
+  route: MapPoint[] = [],
+  stops: MapPoint[] = []
+): MapPoint | undefined {
+  const live = located.find((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng));
+  if (live) {
+    return {
+      lat: located.reduce((sum, p) => sum + p.lat, 0) / located.length,
+      lng: located.reduce((sum, p) => sum + p.lng, 0) / located.length,
+    };
+  }
+  const path = route.find((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng));
+  if (path) return path;
+  return stops.find((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng));
+}

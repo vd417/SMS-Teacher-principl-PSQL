@@ -59,12 +59,18 @@ export interface Class {
 export interface Student {
   id: string;
   name: string;
+  /** School student id (admission number), when the roster sends one. */
+  admissionNo?: string;
   roll: string;
   initials: string;
   classId: string;
   /** Official period attendance % from API; null when unmarked. */
   attendance: number | null;
   grade: string;
+  /** Roster section, e.g. "A", when the student record has one. */
+  section?: string;
+  /** Combined class label from the API, e.g. "5-A", when grade/section are empty. */
+  classLabel?: string;
   parent: string;
   parentPhone: string;
   photoUrl: string | null;
@@ -143,9 +149,17 @@ export interface ChatContact {
   /** Which student this parent thread is about — undefined for staff/group threads. */
   childId?: string;
   childName?: string;
+  /** School student id (admission number) for the child this parent thread is about. */
+  childAdmissionNo?: string;
   childClassLabel?: string;
+  /** One line per child when a parent has more than one student. */
+  childSummaries?: string[];
   /** Teaching title when the API sends it separately from role. Shown once, not beside role. */
   designation?: string;
+  /** Class this teacher is class teacher of, e.g. "I · Section A". */
+  classTeacherOf?: string;
+  /** Profile photo for a student, parent, teacher, or driver. */
+  photoUrl?: string;
   /** ISO timestamp of the last message, used to collapse duplicate threads. */
   lastAt?: string;
   /** Read-receipt tick for the Inbox list preview — only meaningful when lastMessageMine. */
@@ -288,9 +302,14 @@ export interface SchoolStaffMember {
   name: string;
   initials: string;
   phone?: string;
+  email?: string;
+  /** Login this roster row is linked to. Used to hide the signed-in person's own chat. */
+  userId?: string;
   /** Chat thread role label (e.g. Teacher, Principal, Security). */
   roleLabel: string;
   subtitle: string;
+  /** Class name from the teacher record when this person is a class teacher. */
+  classTeacher?: string;
   photoUrl?: string;
   checkedIn?: boolean;
   checkInAt?: string;
@@ -353,6 +372,8 @@ export interface BusPosition {
   lat?: number;
   lng?: number;
   speedKmh?: number;
+  /** GPS heading in degrees. The live bus icon rotates to this, same as the admin map. */
+  heading?: number;
   nextStopName?: string;
   etaMinutes?: number;
   lastPingAt?: string;
@@ -370,6 +391,8 @@ export interface FleetBus {
   lat?: number;
   lng?: number;
   speedKmh?: number;
+  /** GPS heading in degrees. The live bus icon rotates to this, same as the admin map. */
+  heading?: number;
   nextStopName?: string;
   lastPingAt?: string;
   teacherUserId?: string;
@@ -391,6 +414,7 @@ export interface MyRouteBus {
   lat?: number;
   lng?: number;
   speedKmh?: number;
+  heading?: number;
   nextStopName?: string;
   lastPingAt?: string;
   /** dbo.TransportRoutes.Id, for GET /transport/routes/{routeId}/geometry (A-7). */

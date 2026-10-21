@@ -15,7 +15,7 @@ import { sessionForStorage } from '@/lib/sessionStorage';
 import { authSnapshot } from '@/lib/authSnapshot';
 import { authBridge } from '@/features/auth/authBridge';
 import { queryClient } from '@/lib/queryClient';
-import { classifyError, isConnectivityError } from '@/lib/errors';
+import { isConnectivityError } from '@/lib/errors';
 import {
   startCachePersistence,
   clearCachePersistence,
@@ -143,24 +143,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .catch(() => {
             /* logo is optional */
           });
-      } catch (e) {
-        // A network / timeout / 5xx here means "can't reach the backend right
-        // now", NOT "signed out": keep the cached session so the app stays usable
-        // offline. Only a genuine auth rejection ends the session.
-        if (classifyError(e) === 'auth') {
-          await tokenStore.clear();
-          await writeJson<Session | null>(SESSION_KEY, null);
-          if (identityRef.current) await clearCachePersistence(identityRef.current);
-          stopPersistence();
-          identityRef.current = null;
-          authSnapshot.clear();
-          queryClient.clear();
-          setSession(null);
-          setStatus('unauthenticated');
-        }
+      } catch {
+        // me() failing — including a 401 — must not end the session. The user
+        // stays signed in on the cached login until they tap Log Out.
       }
     })();
-  }, [repos, beginPersistence, stopPersistence]);
+  }, [repos, beginPersistence]);
 
   const establishSession = useCallback(
     async (s: Session) => {
@@ -308,10 +296,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [repos, stopPersistence]);
 
   // Rotates tokens on a 401 (driven by httpClient via authBridge).
-  // Returns true when a fresh access token is in the snapshot, false on a genuine
-  // rejection (→ httpClient signs the user out). A network/timeout/5xx while
-  // refreshing is transient: THROW so the original request fails and cached data
-  // stays, but the session is NOT ended.
+  // Returns true when a fresh access token is in the snapshot. A rejected refresh
+  // returns false and the original request fails, but the session stays. A
+  // network/timeout/5xx while refreshing is transient and THROWS.
   const refresh = useCallback(async (): Promise<boolean> => {
     const tokens = await tokenStore.read();
     if (!tokens) return false;

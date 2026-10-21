@@ -5,6 +5,7 @@ import { Colors, Radii } from '@/theme';
 import { FontFamily } from '@/theme/typography';
 import type { FleetBus, FleetBusStatus } from '@/data/domain';
 import { busFreshness } from '@/lib/busFreshness';
+import { SchoolBusIcon } from './BusMarker';
 
 const STATUS_LABEL: Record<FleetBusStatus, string> = {
   idle: 'Idle',
@@ -44,7 +45,7 @@ export const FleetBusCard: React.FC<Props> = ({
   <View style={styles.card}>
     <View style={styles.head}>
       <View style={styles.busIcon}>
-        <Ionicons name="bus" size={20} color={Colors.white} />
+        <SchoolBusIcon size={28} />
       </View>
       <View style={{ flex: 1 }}>
         <Text style={styles.title}>
@@ -168,7 +169,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: Radii.md,
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.card,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -25,7 +25,7 @@ import {
   useRemoveTravelingTeacher,
   useTransportFleetPush,
 } from '@/features/transport/hooks';
-import { useRouteGeometry } from '@/features/transport/useRouteGeometry';
+import { useRouteGeometries } from '@/features/transport/useRouteGeometry';
 import { useSchoolStaffDirectory } from '@/features/staff/hooks';
 import { isAppError } from '@/lib/errors';
 
@@ -50,10 +50,18 @@ export const PrincipalTransportScreen: React.FC = () => {
   );
 
   const pickerBus = fleet.find((b) => b.busId === picker?.busId);
-  // A-7: GET /transport/routes/{routeId}/geometry 403s on a bus id — pass the
-  // real route_id, which /transport/fleet already sends (fleetBusSchema kept it).
-  const expandedRouteId = fleet.find((b) => b.busId === expandedId)?.routeId ?? null;
-  const { data: selectedRouteGeometry } = useRouteGeometry(expandedRouteId);
+  // The CRM route is drawn even before a driver sends a GPS ping. A selected bus
+  // wins; otherwise the first bus that has a mapped route.
+  const routeBus =
+    fleet.find((b) => b.busId === expandedId) ?? fleet.find((b) => Boolean(b.routeId));
+  const routeIds = useMemo(
+    () => fleet.map((bus) => bus.routeId).filter((id): id is string => Boolean(id)),
+    [fleet]
+  );
+  const routeGeometries = useRouteGeometries(routeIds);
+  const selectedRouteGeometry = routeGeometries.find(
+    (route) => route.routeId === routeBus?.routeId
+  );
 
   const onPickTeacher = (teacherUserId: string) => {
     if (!picker) return;
@@ -181,8 +189,9 @@ export const PrincipalTransportScreen: React.FC = () => {
               <Animated.View entering={FadeInDown.delay(120).springify()} style={styles.mapWrap}>
                 <FleetMap
                   buses={fleet}
-                  selectedBusId={expandedId}
+                  selectedBusId={routeBus?.busId ?? null}
                   onSelectBus={(busId) => setExpandedId((id) => (id === busId ? null : busId))}
+                  routes={routeGeometries}
                   routeGeometry={selectedRouteGeometry}
                 />
               </Animated.View>

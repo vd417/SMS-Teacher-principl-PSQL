@@ -1,4 +1,13 @@
-import { dedupeChatContacts, findExistingThread, formatChatIdentity } from '../chatThread';
+import {
+  dedupeChatContacts,
+  findExistingThread,
+  formatChatIdentity,
+  selfDisplayNames,
+  withParentClassSections,
+  withProfilePhotos,
+  withStaffRoles,
+  withoutSelfChat,
+} from '../chatThread';
 import type { ChatContact } from '@/data/domain';
 
 const contact = (
@@ -17,6 +26,7 @@ const contact = (
   childName: overrides.childName,
   childClassLabel: overrides.childClassLabel,
   designation: overrides.designation,
+  photoUrl: overrides.photoUrl,
   lastAt: overrides.lastAt,
 });
 
@@ -86,7 +96,20 @@ test('formatChatIdentity shows the student class, section, and name for a parent
     })
   ).toEqual({
     title: 'Rahul Sharma',
-    subtitle: 'John Doe · Class 5 · Section A',
+    subtitle: 'Parent\nJohn Doe · Class 5 · Section A',
+  });
+});
+
+test('formatChatIdentity shows a student role with class and section', () => {
+  expect(
+    formatChatIdentity({
+      name: 'Aarav Sharma',
+      role: 'Student',
+      childClassLabel: 'I - A',
+    })
+  ).toEqual({
+    title: 'Aarav Sharma',
+    subtitle: 'Student · I · Section A',
   });
 });
 
@@ -100,7 +123,7 @@ test('formatChatIdentity splits a compact class-section label', () => {
     })
   ).toEqual({
     title: 'Rahul Sharma',
-    subtitle: 'John Doe · Class 5 · Section A',
+    subtitle: 'Parent\nJohn Doe · Class 5 · Section A',
   });
 });
 
@@ -118,6 +141,10 @@ test('formatChatIdentity shows a staff designation and the role', () => {
   expect(formatChatIdentity({ name: 'Neha Singh', role: 'Senior Teacher · Teacher' })).toEqual({
     title: 'Neha Singh',
     subtitle: 'Senior Teacher · Teacher',
+  });
+  expect(formatChatIdentity({ name: 'Neha Singh', role: 'HOD' })).toEqual({
+    title: 'Neha Singh',
+    subtitle: 'HOD · Teacher',
   });
 });
 
@@ -141,6 +168,34 @@ test('formatChatIdentity omits empty child details and does not repeat the paren
     title: 'Rahul Sharma',
     subtitle: 'Parent',
   });
+});
+
+test('withoutSelfChat hides the signed-in person from their own inbox', () => {
+  const rows = withoutSelfChat(
+    [
+      contact({ id: 'self', name: 'Neha Singh', role: 'HOD' }),
+      contact({ id: 'p1', name: 'Ramesh Sharma', role: 'Parent' }),
+    ],
+    'neha singh'
+  );
+  expect(rows.map((row) => row.id)).toEqual(['p1']);
+});
+
+test('withoutSelfChat hides the principal when the login name is blank but the teacher row matches', () => {
+  const names = selfDisplayNames({ id: 'user-neha', name: '', email: 'neha@school.test' }, [
+    { name: 'Neha Singh', userId: 'user-neha', email: 'neha@school.test' },
+    { name: 'Asha Rao', userId: 'user-asha', email: 'asha@school.test' },
+  ]);
+  const rows = withoutSelfChat(
+    [
+      contact({ id: 'self', name: 'Mrs. Neha Singh', role: 'Principal' }),
+      contact({ id: 'p1', name: 'Ramesh Sharma', role: 'Parent' }),
+      contact({ id: 't1', name: 'Asha Rao', role: 'Teacher' }),
+    ],
+    names
+  );
+  expect(names).toEqual(['Neha Singh']);
+  expect(rows.map((row) => row.id)).toEqual(['p1', 't1']);
 });
 
 test('dedupeChatContacts keeps one staff card and one parent card per student', () => {
@@ -197,4 +252,169 @@ test('dedupeChatContacts keeps one staff card and one parent card per student', 
   expect(rows.map((row) => row.id)).toEqual(['new', 'p2']);
   expect(rows[1].childClassLabel).toBe('5 - A');
   expect(rows[0].unread).toBe(2);
+});
+
+test('withParentClassSections shows class and section for a parent instead of only Parent', () => {
+  const [row] = withParentClassSections(
+    [contact({ id: 'p1', name: 'Ramesh Sharma', role: 'Parent' })],
+    [
+      {
+        id: 'stu-1',
+        name: 'Amit Sharma',
+        admissionNo: 'STU-14',
+        parent: 'Ramesh Sharma',
+        grade: '5',
+        section: 'A',
+      },
+    ]
+  );
+  expect(formatChatIdentity(row)).toEqual({
+    title: 'Ramesh Sharma',
+    subtitle: 'Parent\nAmit Sharma · Class 5 · Section A',
+  });
+});
+
+test('withParentClassSections adds the student name and id when class section is already known', () => {
+  const [row] = withParentClassSections(
+    [
+      contact({
+        id: 'p1',
+        name: 'Ramesh Sharma',
+        role: 'Parent',
+        childClassLabel: 'I - A',
+      }),
+    ],
+    [
+      {
+        id: 'stu-1',
+        name: 'Amit Sharma',
+        admissionNo: 'STU-14',
+        parent: 'Ramesh Sharma',
+        grade: 'I',
+        section: 'A',
+      },
+    ]
+  );
+  expect(formatChatIdentity(row)).toEqual({
+    title: 'Ramesh Sharma',
+    subtitle: 'Parent\nAmit Sharma · I · Section A',
+  });
+});
+
+test('withParentClassSections lists each child of the same parent on a separate line', () => {
+  const [row] = withParentClassSections(
+    [
+      contact({
+        id: 'p1',
+        name: 'Ramesh Sharma',
+        role: 'Parent',
+        childName: 'Aarav Sharma',
+        childClassLabel: 'I - A',
+      }),
+    ],
+    [
+      {
+        id: 'stu-1',
+        name: 'Aarav Sharma',
+        admissionNo: 'itm/STU/26/0002',
+        parent: 'Ramesh Sharma',
+        grade: 'I',
+        section: 'A',
+      },
+      {
+        id: 'stu-2',
+        name: 'Aarav Sharma',
+        admissionNo: 'itm/STU/26/0003',
+        parent: 'Ramesh Sharma',
+        grade: 'II',
+        section: 'B',
+      },
+    ]
+  );
+  expect(formatChatIdentity(row)).toEqual({
+    title: 'Ramesh Sharma',
+    subtitle: 'Parent\nAarav Sharma · I · Section A\nAarav Sharma · II · Section B',
+  });
+});
+
+test('withParentClassSections shows class and section on a student chat', () => {
+  const [row] = withParentClassSections(
+    [contact({ id: 's1', name: 'Aarav Sharma', role: 'Student' })],
+    [
+      {
+        id: 'stu-1',
+        name: 'Aarav Sharma',
+        grade: 'I',
+        section: 'A',
+      },
+    ]
+  );
+  expect(formatChatIdentity(row)).toEqual({
+    title: 'Aarav Sharma',
+    subtitle: 'Student · I · Section A',
+  });
+});
+
+test('formatChatIdentity shows the class a teacher is class teacher of', () => {
+  expect(
+    formatChatIdentity({
+      name: 'Asha Rao',
+      role: 'Teacher',
+      designation: 'HOD',
+      classTeacherOf: 'I · Section A',
+    })
+  ).toEqual({
+    title: 'Asha Rao',
+    subtitle: 'HOD · Teacher · Class teacher · I · Section A',
+  });
+});
+
+test('withStaffRoles adds the class from the teacher record', () => {
+  const [row] = withStaffRoles(
+    [contact({ id: 't1', name: 'Asha Rao', role: 'Teacher' })],
+    [{ id: 'teacher-1', name: 'Asha Rao', roleLabel: 'HOD', classTeacher: 'VI-A' }]
+  );
+  expect(formatChatIdentity(row)).toEqual({
+    title: 'Asha Rao',
+    subtitle: 'HOD · Teacher · Class teacher · VI · Section A',
+  });
+});
+
+test('withStaffRoles labels the principal with designation and Principal', () => {
+  const [row] = withStaffRoles(
+    [contact({ id: 'self', name: 'Neha Singh', role: 'HOD' })],
+    [{ name: 'Neha Singh', roleLabel: 'HOD', userId: 'user-neha' }],
+    'user-neha'
+  );
+  expect(formatChatIdentity(row)).toEqual({
+    title: 'Neha Singh',
+    subtitle: 'HOD · Principal',
+  });
+});
+
+test('withProfilePhotos uses the student, teacher, and driver photo in chat', () => {
+  const rows = withProfilePhotos(
+    [
+      contact({ id: 's1', name: 'Aarav Sharma', role: 'Student', childId: 'stu-1' }),
+      contact({
+        id: 'p1',
+        name: 'Rahul Sharma',
+        role: 'Parent',
+        photoUrl: 'https://cdn.example/parent.png',
+      }),
+      contact({ id: 't1', name: 'Asha Rao', role: 'Teacher' }),
+      contact({ id: 'd1', name: 'Ravi Das', role: 'Driver' }),
+    ],
+    [{ id: 'stu-1', name: 'Aarav Sharma', photoUrl: 'https://cdn.example/student.png' }],
+    [
+      { name: 'Asha Rao', photoUrl: 'https://cdn.example/teacher.png' },
+      { name: 'Ravi Das', photoUrl: 'https://cdn.example/driver.png' },
+    ]
+  );
+  expect(rows.map((row) => row.photoUrl)).toEqual([
+    'https://cdn.example/student.png',
+    'https://cdn.example/parent.png',
+    'https://cdn.example/teacher.png',
+    'https://cdn.example/driver.png',
+  ]);
 });
