@@ -117,6 +117,25 @@ export function useTransportFleetPush(busIds: string[]): void {
     };
     syncRef.current = syncJoins;
 
+    const busIdFrom = (payload: unknown): string | null => {
+      if (!payload || typeof payload !== 'object') return null;
+      const row = payload as Record<string, unknown>;
+      const id = row.bus_id ?? row.busId;
+      return typeof id === 'string' && id.length > 0 ? id : null;
+    };
+    const refreshTrip = (payload: unknown) => {
+      const busId = busIdFrom(payload);
+      void qc.invalidateQueries({ queryKey: queryKeys.transportFleet(tenantId) });
+      void qc.invalidateQueries({ queryKey: queryKeys.myRouteBuses(tenantId) });
+      void qc.invalidateQueries({ queryKey: queryKeys.bus(tenantId) });
+      if (!busId) return;
+      void qc.invalidateQueries({ queryKey: queryKeys.busRoster(tenantId, busId) });
+      void qc.invalidateQueries({ queryKey: queryKeys.busPosition(tenantId, busId) });
+    };
+    for (const event of ['trip_started', 'trip_ended', 'student_pickup', 'student_drop'] as const) {
+      connection.on(event, refreshTrip);
+    }
+
     connection.on(TRANSPORT_HUB_PUSH_EVENT, (payload: unknown) => {
       const push = parseBusPositionPush(payload);
       if (!push) return;
@@ -148,6 +167,7 @@ export function useTransportFleetPush(busIds: string[]): void {
       cancelled = true;
       syncRef.current = () => {};
       connection.off(TRANSPORT_HUB_PUSH_EVENT);
+      for (const event of ['trip_started', 'trip_ended', 'student_pickup', 'student_drop']) connection.off(event);
       void connection.stop();
     };
   }, [status, tenantId, qc]);

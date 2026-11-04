@@ -52,7 +52,7 @@ export const transportBusSchema = z.object({
 
 function normalizeFleetStatus(raw: string): FleetBusStatus {
   const s = raw.toLowerCase();
-  if (s === 'on_route' || s === 'at_stop' || s === 'delayed' || s === 'idle') return s;
+  if (s === 'on_route' || s === 'at_stop' || s === 'delayed' || s === 'idle' || s === 'running') return s;
   return 'idle';
 }
 

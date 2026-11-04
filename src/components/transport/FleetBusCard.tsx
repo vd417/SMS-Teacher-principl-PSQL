@@ -9,13 +9,15 @@ import { SchoolBusIcon } from './BusMarker';
 
 const STATUS_LABEL: Record<FleetBusStatus, string> = {
   idle: 'Idle',
-  on_route: 'On route',
-  at_stop: 'At stop',
+  running: 'RUNNING',
+  on_route: 'LIVE',
+  at_stop: 'LIVE',
   delayed: 'Delayed',
 };
 
 export const STATUS_COLOR: Record<FleetBusStatus, string> = {
   idle: Colors.inkMuted,
+  running: Colors.primary,
   on_route: Colors.primary,
   at_stop: Colors.present,
   delayed: Colors.absent,

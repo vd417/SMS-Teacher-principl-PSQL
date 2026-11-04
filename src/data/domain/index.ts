@@ -378,7 +378,7 @@ export interface BusPosition {
   etaMinutes?: number;
   lastPingAt?: string;
 }
-export type FleetBusStatus = 'idle' | 'on_route' | 'at_stop' | 'delayed';
+export type FleetBusStatus = 'idle' | 'running' | 'on_route' | 'at_stop' | 'delayed';
 export interface FleetBus {
   busId: string;
   busNo: string;
