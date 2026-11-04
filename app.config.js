@@ -57,6 +57,7 @@ module.exports = {
       ['expo-notifications', { defaultChannel: 'default' }],
       'expo-font',
       'expo-secure-store',
+      'expo-notifications',
       [
         'expo-location',
         {

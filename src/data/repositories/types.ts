@@ -296,6 +296,11 @@ export interface BusRepository {
   myRoutes(): Promise<MyRouteBus[]>;
 }
 
+export interface DevicesRepository {
+  /** Idempotent upsert of this device's Expo push token for the signed-in user. */
+  register(input: { expoPushToken: string; platform: 'ios' | 'android' }): Promise<void>;
+}
+
 export interface Repositories {
   auth: AuthRepository;
   classes: ClassesRepository;
@@ -320,4 +325,5 @@ export interface Repositories {
   staff: StaffRepository;
   bus: BusRepository;
   myAttendance: MyAttendanceRepository;
+  devices: DevicesRepository;
 }
