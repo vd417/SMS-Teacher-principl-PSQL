@@ -28,12 +28,15 @@ module.exports = {
     },
     ios: {
       supportsTablet: true,
+      bundleIdentifier: 'com.catreschool.teacher',
+      googleServicesFile: './GoogleService-Info.plist',
       config: {
         googleMapsApiKey: process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ?? '',
       },
     },
     android: {
-      package: 'com.catre.schooldeskteacher',
+      package: 'com.catreschool.teacher',
+      googleServicesFile: './google-services.json',
       adaptiveIcon: {
         foregroundImage: './assets/adaptive-icon.png',
         backgroundColor: '#1A0129',
@@ -51,6 +54,7 @@ module.exports = {
       favicon: './assets/favicon.png',
     },
     plugins: [
+      ['expo-notifications', { defaultChannel: 'default' }],
       'expo-font',
       'expo-secure-store',
       [

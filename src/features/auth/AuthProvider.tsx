@@ -24,6 +24,7 @@ import {
 } from '@/lib/queryPersist';
 import { useRepositories } from '@/data/repositories/RepositoryContext';
 import { logoForTenant, withTenantLogo } from '@/lib/schoolBranding';
+import { registerDevicePush } from '@/lib/pushRegistration';
 
 // User + tenant are persisted here; tokens live in SecureStore (tokenStore).
 // Together they rehydrate a full Session across app restarts.
@@ -149,6 +150,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     })();
   }, [repos, beginPersistence]);
+
+  useEffect(() => {
+    if (status === 'authenticated') void registerDevicePush('teacher');
+  }, [status]);
 
   const establishSession = useCallback(
     async (s: Session) => {
