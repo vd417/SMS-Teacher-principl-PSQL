@@ -24,7 +24,7 @@ import {
 } from '@/lib/queryPersist';
 import { useRepositories } from '@/data/repositories/RepositoryContext';
 import { logoForTenant, withTenantLogo } from '@/lib/schoolBranding';
-import { registerDevicePush } from '@/lib/pushRegistration';
+import { registerDevicePush, unregisterDevicePush } from '@/lib/pushRegistration';
 
 // User + tenant are persisted here; tokens live in SecureStore (tokenStore).
 // Together they rehydrate a full Session across app restarts.
@@ -281,6 +281,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = useCallback(async () => {
     try {
+      await unregisterDevicePush();
       const tokens = await tokenStore.read();
       if (tokens) await repos.auth.logout(tokens.refreshToken);
     } catch {
