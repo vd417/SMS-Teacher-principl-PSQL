@@ -15,7 +15,7 @@ const withCleartextTraffic = (config) =>
 module.exports = {
   expo: {
     name: 'CatreSchoolDesk Teacher App',
-    slug: 'teacher-app',
+    slug: 'school-desk-teacher-app',
     version: '1.0.0',
     orientation: 'portrait',
     icon: './assets/icon.png',
@@ -76,9 +76,9 @@ module.exports = {
     ],
     extra: {
       eas: {
-        projectId: '8520504e-1cdf-41a1-9cbb-56cd896e6763',
+        projectId: '64431794-8eea-4172-b4d4-d7ce4a5a813f',
       },
     },
-    owner: 'vaibhavdds-team',
+    owner: 'catre',
   },
 };
