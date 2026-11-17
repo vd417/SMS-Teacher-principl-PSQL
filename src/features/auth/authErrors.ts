@@ -15,6 +15,7 @@ export function authErrorMessage(err: unknown, fallback: string = DEFAULT_FALLBA
     if (err.status === 0) {
       return 'Cannot reach the server. Check your connection and try again.';
     }
+    if (err.code === 'otp_cooldown') return err.message;
     if (err.status === 429) return 'Too many attempts. Please wait a moment and try again.';
     return MESSAGES[err.code] ?? err.message ?? fallback;
   }

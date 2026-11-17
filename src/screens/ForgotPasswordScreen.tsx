@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -24,6 +24,17 @@ import { validateNewPassword } from '@/features/auth/passwordValidation';
 import { getForgotPasswordCopy } from '@/features/auth/forgotPasswordCopy';
 import type { RootStackParamList } from '../navigation/types';
 
+function otpWaitMs(identifier: string): number {
+  return identifier.includes('@') ? 60_000 : 300_000;
+}
+
+function formatWait(ms: number): string {
+  const seconds = Math.max(0, Math.ceil(ms / 1000));
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  return m <= 0 ? `${s}s` : `${m}:${String(s).padStart(2, '0')}`;
+}
+
 type Nav = NativeStackNavigationProp<RootStackParamList, 'ForgotPassword'>;
 type Route = RouteProp<RootStackParamList, 'ForgotPassword'>;
 
@@ -42,11 +53,29 @@ export const ForgotPasswordScreen: React.FC = () => {
   const [confirm, setConfirm] = useState('');
   const [localErr, setLocalErr] = useState<string | null>(null);
   const [done, setDone] = useState(false);
+  const [resendUntil, setResendUntil] = useState(0);
+  const [resendNow, setResendNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (resendUntil <= Date.now()) return;
+    const id = setInterval(() => setResendNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [resendUntil]);
+  const resendLeft = Math.max(0, resendUntil - resendNow);
 
   const forgotErr = forgot.error ? authErrorMessage(forgot.error) : null;
   const resetErr = reset.error ? authErrorMessage(reset.error) : null;
 
-  const handleSend = () => forgot.mutate(identifier.trim(), { onSuccess: () => setSent(true) });
+  const handleSend = () => {
+    if (resendLeft > 0) return;
+    forgot.mutate(identifier.trim(), {
+      onSuccess: () => {
+        const at = Date.now();
+        setResendNow(at);
+        setResendUntil(at + otpWaitMs(identifier.trim()));
+        setSent(true);
+      },
+    });
+  };
 
   const handleReset = () => {
     const v = validateNewPassword(password, confirm);
@@ -116,11 +145,15 @@ export const ForgotPasswordScreen: React.FC = () => {
                 {forgotErr && <Text style={styles.errorText}>{forgotErr}</Text>}
                 <TouchableOpacity
                   style={[styles.primaryBtn, forgot.isPending && styles.btnLoading]}
-                  disabled={forgot.isPending}
+                  disabled={forgot.isPending || resendLeft > 0}
                   onPress={handleSend}
                 >
                   <Text style={styles.primaryBtnText}>
-                    {forgot.isPending ? 'Sending…' : 'Send code'}
+                    {forgot.isPending
+                      ? 'Sending…'
+                      : resendLeft > 0
+                        ? `Send code ${formatWait(resendLeft)}`
+                        : 'Send code'}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -193,9 +226,11 @@ export const ForgotPasswordScreen: React.FC = () => {
                 <TouchableOpacity
                   style={styles.resendRow}
                   onPress={handleSend}
-                  disabled={forgot.isPending}
+                  disabled={forgot.isPending || resendLeft > 0}
                 >
-                  <Text style={styles.forgotText}>Resend code</Text>
+                  <Text style={[styles.forgotText, resendLeft > 0 && { opacity: 0.5 }]}>
+                    {resendLeft > 0 ? `Resend code ${formatWait(resendLeft)}` : 'Resend code'}
+                  </Text>
                 </TouchableOpacity>
               </View>
             )}
